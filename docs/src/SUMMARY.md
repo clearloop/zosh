@@ -5,5 +5,5 @@
 - [Intro](./intro.md)
 - [Bridge](./bridge.md)
 - [Clients](./clients.md)
-- [Guardians](./guardians.md)
+- [MPC Protocol](./mpc.md)
 - [zSVM](./zSVM.md)
