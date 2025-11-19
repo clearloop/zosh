@@ -55,3 +55,11 @@ end
     PSS -.->|Regular Key Refresh| GN
     CG -.->|Governs Parameters| GN
 ```
+
+### Development Links
+
+- [zecfaucet][faucet]
+- [zcash testnet](zectestnet)
+
+[faucet]: https://testnet.zecfaucet.com/
+[zectestnet]: https://blockexplorer.one/zcash/testnet

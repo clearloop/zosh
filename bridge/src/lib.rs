@@ -1,14 +1,5 @@
-pub fn add(left: u64, right: u64) -> u64 {
-    left + right
-}
+//! unmbrella repo for the zypher bridge
 
-#[cfg(test)]
-mod tests {
-    use super::*;
+pub use signer::Signer;
 
-    #[test]
-    fn it_works() {
-        let result = add(2, 2);
-        assert_eq!(result, 4);
-    }
-}
+mod signer;
