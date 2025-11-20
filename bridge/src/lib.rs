@@ -2,4 +2,5 @@
 
 pub use signer::Signer;
 
+mod config;
 mod signer;
