@@ -535,21 +535,6 @@ name = "chain"
 version = "0.1.0"
 
 [[package]]
-name = "client"
-version = "0.1.0"
-dependencies = [
- "anyhow",
- "bs58",
- "frost-core",
- "jsonrpsee-http-client",
- "postcard",
- "reddsa",
- "serde",
- "solana-sdk",
- "tokio",
-]
-
-[[package]]
 name = "cobs"
 version = "0.3.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1890,6 +1875,13 @@ dependencies = [
 [[package]]
 name = "runtime"
 version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "bs58",
+ "postcard",
+ "reddsa",
+ "solana-sdk",
+]
 
 [[package]]
 name = "rustc_version"
@@ -3644,6 +3636,17 @@ dependencies = [
  "proc-macro2",
  "quote",
  "unicode-ident",
+]
+
+[[package]]
+name = "sync"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "jsonrpsee-http-client",
+ "serde",
+ "solana-sdk",
+ "tokio",
 ]
 
 [[package]]

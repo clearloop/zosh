@@ -1,15 +1,11 @@
 [package]
-name = "client"
+name = "sync"
 version.workspace = true
 edition.workspace = true
 
 [dependencies]
 anyhow.workspace = true
-bs58.workspace = true
-frost-core.workspace = true
 jsonrpsee-http-client.workspace = true
-postcard.workspace = true
-reddsa.workspace = true
-serde = { workspace = true, features = ["derive"] }
+serde.workspace = true
 solana-sdk.workspace = true
 tokio.workspace = true
