@@ -1,0 +1,6 @@
+[package]
+name = "chain"
+version.workspace = true
+edition.workspace = true
+
+[dependencies]
