@@ -1,5 +1,5 @@
 [package]
-name = "chain"
+name = "zypher-core"
 version.workspace = true
 edition.workspace = true
 

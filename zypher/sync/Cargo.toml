@@ -1,5 +1,5 @@
 [package]
-name = "sync"
+name = "zypher-sync"
 version.workspace = true
 edition.workspace = true
 

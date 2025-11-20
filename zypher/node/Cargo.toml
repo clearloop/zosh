@@ -1,6 +1,11 @@
 [package]
-name = "node"
+name = "zypher-node"
 version.workspace = true
 edition.workspace = true
 
 [dependencies]
+clap.workspace = true
+dirs.workspace = true
+serde.workspace = true
+sync.workspace = true
+runtime.workspace = true
