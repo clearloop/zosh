@@ -5,9 +5,10 @@ use serde::{Deserialize, Serialize};
 /// Key configuration of a ZypherBridge client
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct Key {
-    pub zcash: Frost,
+    /// zcash orchard shard key
+    pub zcash: Option<Frost>,
 
-    /// solana secret key
+    /// solana keypair
     pub solana: String,
 }
 

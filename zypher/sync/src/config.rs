@@ -1,14 +1,14 @@
 //! Configuration for the sync library
 
 use serde::{Deserialize, Serialize};
-use std::net::SocketAddr;
+use url::Url;
 
 /// Configuration for the sync library
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
-pub struct Config {
+pub struct Rpc {
     /// solana RPC address
-    pub solana: SocketAddr,
+    pub solana: Url,
 
     /// zcash RPC address
-    pub zcash: SocketAddr,
+    pub zcash: Url,
 }

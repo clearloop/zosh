@@ -1,12 +1,15 @@
 [package]
-name = "runtime"
+name = "zypher-runtime"
 version.workspace = true
 edition.workspace = true
 
 [dependencies]
 anyhow.workspace = true
 bs58.workspace = true
+orchard.workspace = true
 postcard.workspace = true
+rand.workspace = true
+rand_core.workspace = true
 reddsa.workspace = true
 serde.workspace = true
 solana-sdk.workspace = true

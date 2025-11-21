@@ -1,3 +1,3 @@
 //! sync library for ZypherBridge
 
-mod config;
+pub mod config;

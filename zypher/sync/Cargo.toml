@@ -1,5 +1,5 @@
 [package]
-name = "sync"
+name = "zypher-sync"
 version.workspace = true
 edition.workspace = true
 
@@ -9,3 +9,4 @@ jsonrpsee-http-client.workspace = true
 serde.workspace = true
 solana-sdk.workspace = true
 tokio.workspace = true
+url.workspace = true
