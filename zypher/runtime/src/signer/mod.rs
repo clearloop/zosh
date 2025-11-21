@@ -3,8 +3,8 @@
 use crate::config;
 use anyhow::Result;
 use reddsa::frost::redjubjub::Identifier;
-pub use share::ZcashSharedSigner;
 pub use solana_sdk::signer::keypair::Keypair;
+pub use {group::ZcashGroupSigners, share::ZcashSharedSigner};
 
 mod group;
 mod share;
