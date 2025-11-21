@@ -6,7 +6,7 @@ use reddsa::frost::redjubjub::{
     keys::{PublicKeyPackage, SecretShare},
     Identifier,
 };
-use solana_sdk::signer::keypair::Keypair;
+pub use solana_sdk::signer::keypair::Keypair;
 
 /// Signer of a ZypherBridge client
 #[derive(Debug)]

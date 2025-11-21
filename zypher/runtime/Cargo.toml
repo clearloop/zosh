@@ -1,5 +1,5 @@
 [package]
-name = "runtime"
+name = "zypher-runtime"
 version.workspace = true
 edition.workspace = true
 
