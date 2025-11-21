@@ -3,6 +3,7 @@
 use clap::Parser;
 use std::{path::PathBuf, sync::OnceLock};
 
+mod conf;
 mod dev;
 
 /// Command line interface for the ZypherBridge node
@@ -25,6 +26,7 @@ impl App {
     pub fn run(&self) -> anyhow::Result<()> {
         match &self.command {
             Command::Dev(dev) => dev.run(&self.config),
+            Command::GenConf => conf::generate(&self.config),
         }?;
 
         Ok(())
@@ -36,6 +38,9 @@ pub enum Command {
     /// Development command
     #[clap(subcommand)]
     Dev(dev::Dev),
+
+    /// Generate configuration files
+    GenConf,
 }
 
 fn default_config_dir() -> &'static str {

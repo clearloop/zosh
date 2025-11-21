@@ -5,7 +5,7 @@ use clap::Parser;
 use reddsa::frost::redjubjub::keys;
 use runtime::{
     config::Key,
-    signer::{Keypair, Signer},
+    signer::{Keypair, Signer, ZcashSigner},
 };
 use solana_signer::Signer as _;
 use std::{fs, path::PathBuf};
@@ -43,9 +43,11 @@ impl Dev {
         let signers = shares
             .iter()
             .map(|(ident, share)| Signer {
-                identifier: ident.clone(),
-                rjpackage: package.clone(),
-                rjshare: share.clone(),
+                zcash: Some(ZcashSigner {
+                    identifier: ident.clone(),
+                    rjpackage: package.clone(),
+                    rjshare: share.clone(),
+                }),
                 solana: Keypair::new(),
             })
             .collect::<Vec<_>>();

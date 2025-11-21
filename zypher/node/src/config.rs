@@ -2,11 +2,14 @@
 
 use serde::{Deserialize, Serialize};
 
+pub use {runtime::config::Key, sync::config::Rpc};
+
+/// Configuration for the ZypherBridge node
 #[derive(Debug, Serialize, Deserialize)]
 pub struct Config {
     /// sync configurations
-    pub sync: sync::config::Rpc,
+    pub sync: Rpc,
 
     /// Key configurations
-    pub key: runtime::config::Key,
+    pub key: Key,
 }

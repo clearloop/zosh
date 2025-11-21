@@ -1,4 +1,6 @@
 //! ZyperBridge Node Implementation
 
+pub use config::Config;
+
 pub mod cmd;
-pub mod config;
+mod config;

@@ -6,7 +6,7 @@ use serde::{Deserialize, Serialize};
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct Key {
     /// zcash orchard shard key
-    pub zcash: Frost,
+    pub zcash: Option<Frost>,
 
     /// solana keypair
     pub solana: String,
