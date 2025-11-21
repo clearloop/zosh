@@ -2,55 +2,21 @@
 
 use crate::config;
 use anyhow::Result;
-use orchard::keys::{FullViewingKey, SpendValidatingKey, SpendingKey};
-use rand::Rng;
-use reddsa::frost::redjubjub::{
-    keys::{PublicKeyPackage, SecretShare},
-    Identifier,
-};
+use reddsa::frost::redjubjub::Identifier;
+pub use share::ZcashSharedSigner;
 pub use solana_sdk::signer::keypair::Keypair;
+
+mod group;
+mod share;
 
 /// Signer of a ZypherBridge client
 #[derive(Debug)]
 pub struct Signer {
     /// zcash signer
-    pub zcash: Option<ZcashSigner>,
+    pub zcash: Option<ZcashSharedSigner>,
 
     /// solana keypair
     pub solana: Keypair,
-}
-
-/// Zcash signer of a ZypherBridge client
-#[derive(Debug)]
-pub struct ZcashSigner {
-    /// frost redjubjub identifier
-    pub identifier: Identifier,
-
-    /// frost redjubjub public key package
-    pub rjpackage: PublicKeyPackage,
-
-    /// frost redjubjub secret share
-    pub rjshare: SecretShare,
-}
-
-impl ZcashSigner {
-    /// Get the orchard full viewing key
-    pub fn orchard(&self) -> Result<FullViewingKey> {
-        let ak = self.rjpackage.verifying_key().serialize()?;
-        let ak = SpendValidatingKey::from_bytes(&ak)
-            .ok_or(anyhow::anyhow!("Invalid spend validating key"))?;
-
-        let mut rng = rand::rng();
-        let sk = loop {
-            let random_bytes = rng.random::<[u8; 32]>();
-            let sk = SpendingKey::from_bytes(random_bytes);
-            if let Some(sk) = sk.into_option() {
-                break sk;
-            }
-        };
-
-        Ok(FullViewingKey::from_sk_and_ak(&sk, ak))
-    }
 }
 
 impl TryFrom<&config::Key> for Signer {
@@ -68,7 +34,7 @@ impl TryFrom<&config::Key> for Signer {
         let rjpkg = bs58::decode(&zcash.package).into_vec()?;
         let rjshare = bs58::decode(&zcash.share).into_vec()?;
         Ok(Signer {
-            zcash: Some(ZcashSigner {
+            zcash: Some(ZcashSharedSigner {
                 identifier: Identifier::deserialize(&ident)?,
                 rjpackage: postcard::from_bytes(&rjpkg)?,
                 rjshare: postcard::from_bytes(&rjshare)?,
