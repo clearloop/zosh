@@ -8,7 +8,7 @@ use runtime::{
     signer::{Keypair, Signer, ZcashSharedSigner},
 };
 use solana_signer::Signer as _;
-use std::{fs, path::PathBuf};
+use std::{fs, path::Path};
 
 /// Development command for the zyper bridge
 #[derive(Parser)]
@@ -29,22 +29,22 @@ pub enum Dev {
 
 impl Dev {
     /// Run the development command
-    pub fn run(&self, config: &PathBuf) -> Result<()> {
+    pub fn run(&self, config: &Path) -> Result<()> {
         match self {
             Self::Dealer { name, min, max } => Self::dealers(config, name, *max, *min),
         }
     }
 
     /// Generate dealers for the MPC protocol
-    pub fn dealers(config: &PathBuf, name: &str, max: u16, min: u16) -> Result<()> {
-        let mut rng = rand_core::OsRng;
+    pub fn dealers(config: &Path, name: &str, max: u16, min: u16) -> Result<()> {
+        let rng = rand_core::OsRng;
         let (shares, package) =
-            keys::generate_with_dealer(max, min, keys::IdentifierList::Default, &mut rng)?;
+            keys::generate_with_dealer(max, min, keys::IdentifierList::Default, rng)?;
         let signers = shares
             .iter()
             .map(|(ident, share)| Signer {
                 zcash: Some(ZcashSharedSigner {
-                    identifier: ident.clone(),
+                    identifier: *ident,
                     rjpackage: package.clone(),
                     rjshare: share.clone(),
                 }),

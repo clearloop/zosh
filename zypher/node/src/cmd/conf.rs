@@ -6,7 +6,7 @@ use crate::{
 };
 use anyhow::Result;
 use runtime::signer::Keypair;
-use std::{fs, path::PathBuf};
+use std::{fs, path::Path};
 
 const NOTE: &str = r#"
 # Zyphers Configurations
@@ -16,7 +16,7 @@ const NOTE: &str = r#"
 "#;
 
 /// Generate configuration file
-pub fn generate(config: &PathBuf) -> Result<()> {
+pub fn generate(config: &Path) -> Result<()> {
     let target = config.join("config.toml");
     if target.exists() {
         return Err(anyhow::anyhow!("Configuration file already exists"));
@@ -35,7 +35,7 @@ pub fn generate(config: &PathBuf) -> Result<()> {
     };
     fs::write(
         &target,
-        &format!("{}\n{}", NOTE, toml::to_string_pretty(&config)?),
+        format!("{}\n{}", NOTE, toml::to_string_pretty(&config)?),
     )?;
     println!(
         "Configuration file generated successfully in {}",
