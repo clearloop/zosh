@@ -9,3 +9,4 @@ jsonrpsee-http-client.workspace = true
 serde.workspace = true
 solana-sdk.workspace = true
 tokio.workspace = true
+url.workspace = true

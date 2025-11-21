@@ -5,6 +5,7 @@ use crate::{
     Config,
 };
 use anyhow::Result;
+use runtime::signer::Keypair;
 use std::{fs, path::PathBuf};
 
 const NOTE: &str = r#"
@@ -29,7 +30,7 @@ pub fn generate(config: &PathBuf) -> Result<()> {
         },
         key: Key {
             zcash: None,
-            solana: "".to_string(),
+            solana: Keypair::new().to_base58_string(),
         },
     };
     fs::write(

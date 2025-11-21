@@ -4651,6 +4651,7 @@ dependencies = [
  "serde",
  "solana-signer",
  "toml 0.9.8",
+ "url",
  "zypher-runtime",
  "zypher-sync",
 ]
@@ -4676,4 +4677,5 @@ dependencies = [
  "serde",
  "solana-sdk",
  "tokio",
+ "url",
 ]

@@ -39,7 +39,7 @@ pub enum Command {
     #[clap(subcommand)]
     Dev(dev::Dev),
 
-    /// Generate configuration files
+    /// Generate configuration file
     GenConf,
 }
 
