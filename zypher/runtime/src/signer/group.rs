@@ -24,9 +24,9 @@ pub struct ZcashGroupSigners {
 impl ZcashGroupSigners {
     /// Generate a new group of signers
     pub fn new(max: u16, min: u16) -> Result<Self> {
-        let mut rng = rand_core::OsRng;
+        let rng = rand_core::OsRng;
         let (shares, package) =
-            keys::generate_with_dealer(max, min, keys::IdentifierList::Default, &mut rng)?;
+            keys::generate_with_dealer(max, min, keys::IdentifierList::Default, rng)?;
         Ok(Self {
             shares,
             package,
@@ -58,15 +58,15 @@ impl ZcashGroupSigners {
         ////////////////////////////////////////////////////////////////////////////
         let mut signatures = BTreeMap::new();
         let signing_package = SigningPackage::new(commitments, message);
-        let randomizer = Randomizer::new(&mut rand_core::OsRng, &signing_package)?;
+        let randomizer = Randomizer::new(rand_core::OsRng, &signing_package)?;
         for (identifier, nonce) in nonces {
             let keypkg = &keypkgs[identifier];
-            let share = round2::sign(&signing_package, &nonce, &keypkg, randomizer)?;
+            let share = round2::sign(&signing_package, &nonce, keypkg, randomizer)?;
             signatures.insert(*identifier, share);
         }
 
         // aggregate the signature shares
-        let params = RandomizedParams::from_randomizer(&self.package.verifying_key(), randomizer);
+        let params = RandomizedParams::from_randomizer(self.package.verifying_key(), randomizer);
         let signature =
             redjubjub::aggregate(&signing_package, &signatures, &self.package, &params)?;
         Ok((signature, *params.randomized_verifying_key()))
