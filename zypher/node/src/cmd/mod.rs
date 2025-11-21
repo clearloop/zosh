@@ -1,4 +1,4 @@
-//! Command line interface for the ZypherBridge node
+//! Command line interface for the zyphers node
 
 use clap::Parser;
 use std::{path::PathBuf, sync::OnceLock};
@@ -33,6 +33,7 @@ impl App {
     }
 }
 
+/// Command line interface for the zyphers node
 #[derive(Parser)]
 pub enum Command {
     /// Development command

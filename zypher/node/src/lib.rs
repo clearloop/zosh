@@ -1,4 +1,4 @@
-//! ZyperBridge Node Implementation
+//! Zyphers Node Implementation
 
 pub use config::Config;
 
