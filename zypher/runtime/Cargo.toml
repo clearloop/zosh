@@ -13,3 +13,5 @@ rand_core.workspace = true
 reddsa.workspace = true
 serde.workspace = true
 solana-sdk.workspace = true
+zcash_keys.workspace = true
+zcash_primitives.workspace = true

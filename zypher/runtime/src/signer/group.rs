@@ -36,7 +36,7 @@ impl ZcashGroupSigners {
 
     /// Sign a message with the group of signers
     /// Returns the signature and the randomized verifying key (needed for verification)
-    pub fn sign(&self, message: &[u8]) -> Result<(Signature, VerifyingKey)> {
+    pub fn sign_message(&self, message: &[u8]) -> Result<(Signature, VerifyingKey)> {
         let mut nonces = BTreeMap::new();
         let mut commitments = BTreeMap::new();
         let mut keypkgs = BTreeMap::new();
@@ -77,7 +77,7 @@ impl ZcashGroupSigners {
 fn test_redjubjub_aggregate() {
     let group = ZcashGroupSigners::new(3, 2).unwrap();
     let message = b"zypherpunk";
-    let (signature, verifying_key) = group.sign(message).unwrap();
+    let (signature, verifying_key) = group.sign_message(message).unwrap();
     // For rerandomized FROST, signatures must be verified with the randomized verifying key
     // (not the original verifying key)
     assert!(verifying_key.verify(message, &signature).is_ok())
