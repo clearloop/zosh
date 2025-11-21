@@ -5,6 +5,7 @@ use reddsa::frost::redjubjub::{
     self,
     keys::{self, KeyPackage, PublicKeyPackage, SecretShare},
     round1, round2, Identifier, RandomizedParams, Randomizer, Signature, SigningPackage,
+    VerifyingKey,
 };
 use std::collections::BTreeMap;
 
@@ -34,7 +35,8 @@ impl ZcashGroupSigners {
     }
 
     /// Sign a message with the group of signers
-    pub fn sign(&self, message: &[u8]) -> Result<Signature> {
+    /// Returns the signature and the randomized verifying key (needed for verification)
+    pub fn sign(&self, message: &[u8]) -> Result<(Signature, VerifyingKey)> {
         let mut nonces = BTreeMap::new();
         let mut commitments = BTreeMap::new();
         let mut keypkgs = BTreeMap::new();
@@ -63,22 +65,20 @@ impl ZcashGroupSigners {
             signatures.insert(*identifier, share);
         }
 
-        // returns the signature
-        let params = RandomizedParams::new(
-            &self.package.verifying_key(),
-            &signing_package,
-            &mut rand_core::OsRng,
-        )?;
-
-        redjubjub::aggregate(&signing_package, &signatures, &self.package, &params)
-            .map_err(Into::into)
+        // aggregate the signature shares
+        let params = RandomizedParams::from_randomizer(&self.package.verifying_key(), randomizer);
+        let signature =
+            redjubjub::aggregate(&signing_package, &signatures, &self.package, &params)?;
+        Ok((signature, *params.randomized_verifying_key()))
     }
 }
 
 #[test]
 fn test_redjubjub_aggregate() {
     let group = ZcashGroupSigners::new(3, 2).unwrap();
-    let signature = group.sign(b"zypherpunk").unwrap();
-    let verifying_key = group.package.verifying_key();
-    assert!(verifying_key.verify(b"zypherpunk", &signature).is_ok())
+    let message = b"zypherpunk";
+    let (signature, verifying_key) = group.sign(message).unwrap();
+    // For rerandomized FROST, signatures must be verified with the randomized verifying key
+    // (not the original verifying key)
+    assert!(verifying_key.verify(message, &signature).is_ok())
 }
