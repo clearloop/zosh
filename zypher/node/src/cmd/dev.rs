@@ -92,7 +92,7 @@ impl Dev {
             let address = zcash.external_address()?;
             println!(
                 "External address: {}",
-                hex::encode(&address.to_raw_address_bytes())
+                hex::encode(address.to_raw_address_bytes())
             );
 
             let uaddr = zcash.unified_address()?;

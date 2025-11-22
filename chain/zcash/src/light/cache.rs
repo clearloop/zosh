@@ -80,9 +80,9 @@ impl BlockSource for BlockDb {
                 // We will only perform this check on the first row.
                 let from_height = from_height.expect("can only reach here if set");
                 if from_height != height {
-                    return Err(Error::BlockSource(
-                        SqliteClientError::CacheMiss(from_height).into(),
-                    ));
+                    return Err(Error::BlockSource(SqliteClientError::CacheMiss(
+                        from_height,
+                    )));
                 } else {
                     from_height_found = true;
                 }
@@ -92,14 +92,13 @@ impl BlockSource for BlockDb {
             let block =
                 CompactBlock::decode(&data[..]).map_err(|e| Error::BlockSource(e.into()))?;
             if block.height() != height {
-                return Err(Error::BlockSource(
-                    SqliteClientError::CorruptedData(format!(
+                return Err(Error::BlockSource(SqliteClientError::CorruptedData(
+                    format!(
                         "Block height {} did not match row's height field value {}",
                         block.height(),
                         height
-                    ))
-                    .into(),
-                ));
+                    ),
+                )));
             }
 
             with_block(block)?;
@@ -107,9 +106,9 @@ impl BlockSource for BlockDb {
 
         if !from_height_found {
             let from_height = from_height.expect("can only reach here if set");
-            return Err(Error::BlockSource(
-                SqliteClientError::CacheMiss(from_height).into(),
-            ));
+            return Err(Error::BlockSource(SqliteClientError::CacheMiss(
+                from_height,
+            )));
         }
 
         Ok(())
