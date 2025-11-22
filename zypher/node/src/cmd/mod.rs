@@ -5,6 +5,7 @@ use std::{path::PathBuf, sync::OnceLock};
 
 mod conf;
 mod dev;
+mod zcash;
 
 /// Command line interface for the ZypherBridge node
 #[derive(Parser)]
@@ -23,10 +24,11 @@ pub struct App {
 
 impl App {
     /// Run the application
-    pub fn run(&self) -> anyhow::Result<()> {
+    pub async fn run(&self) -> anyhow::Result<()> {
         match &self.command {
             Command::Dev(dev) => dev.run(&self.config),
             Command::GenConf => conf::generate(&self.config),
+            Command::Zcash(zcash) => zcash.run(&self.cache).await,
         }?;
 
         Ok(())
@@ -39,6 +41,10 @@ pub enum Command {
     /// Development command
     #[clap(subcommand)]
     Dev(dev::Dev),
+
+    /// Zcash command
+    #[clap(subcommand)]
+    Zcash(zcash::Zcash),
 
     /// Generate configuration file
     GenConf,

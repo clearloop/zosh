@@ -2,18 +2,15 @@
 
 use crate::config;
 use anyhow::Result;
-use reddsa::frost::redjubjub::Identifier;
+use reddsa::frost::redpallas::Identifier;
 pub use solana_sdk::signer::keypair::Keypair;
-pub use {group::ZcashGroupSigners, share::ZcashSharedSigner};
-
-mod group;
-mod share;
+pub use zcash::signer::{GroupSigners, ShareSigner};
 
 /// Signer of a ZypherBridge client
 #[derive(Debug)]
 pub struct Signer {
     /// zcash signer
-    pub zcash: Option<ZcashSharedSigner>,
+    pub zcash: Option<ShareSigner>,
 
     /// solana keypair
     pub solana: Keypair,
@@ -34,7 +31,7 @@ impl TryFrom<&config::Key> for Signer {
         let rjpkg = bs58::decode(&zcash.package).into_vec()?;
         let rjshare = bs58::decode(&zcash.share).into_vec()?;
         Ok(Signer {
-            zcash: Some(ZcashSharedSigner {
+            zcash: Some(ShareSigner {
                 identifier: Identifier::deserialize(&ident)?,
                 rjpackage: postcard::from_bytes(&rjpkg)?,
                 rjshare: postcard::from_bytes(&rjshare)?,

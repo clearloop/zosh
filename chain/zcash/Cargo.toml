@@ -1,0 +1,25 @@
+[package]
+name = "zyphers-zcash"
+version.workspace = true
+edition.workspace = true
+description = "Zcash related stuffs for zyphers"
+
+[dependencies]
+anyhow.workspace = true
+async-trait.workspace = true
+jsonrpsee-http-client.workspace = true
+orchard.workspace = true
+prost.workspace = true
+rand.workspace = true
+rand_core.workspace = true
+reddsa.workspace = true
+serde.workspace = true
+rusqlite.workspace = true
+tonic.workspace = true
+tracing.workspace = true
+url.workspace = true
+zcash_client_backend.workspace = true
+zcash_client_sqlite.workspace = true
+zcash_keys.workspace = true
+zcash_primitives.workspace = true
+zcash_protocol.workspace = true

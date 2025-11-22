@@ -2,13 +2,14 @@
 
 use anyhow::Result;
 use clap::Parser;
-use reddsa::frost::redjubjub::keys;
+use reddsa::frost::redpallas::keys;
 use runtime::{
     config::Key,
-    signer::{Keypair, Signer, ZcashSharedSigner},
+    signer::{Keypair, Signer},
 };
 use solana_signer::Signer as _;
 use std::{fs, path::Path};
+use zcash::signer::ShareSigner;
 
 /// Development command for the zyper bridge
 #[derive(Parser)]
@@ -25,6 +26,11 @@ pub enum Dev {
         #[clap(long, default_value = "2")]
         min: u16,
     },
+    Info {
+        /// Group name of the signers
+        #[clap(short, long, default_value = "default")]
+        group: String,
+    },
 }
 
 impl Dev {
@@ -32,6 +38,7 @@ impl Dev {
     pub fn run(&self, config: &Path) -> Result<()> {
         match self {
             Self::Dealer { name, min, max } => Self::dealers(config, name, *max, *min),
+            Self::Info { group } => Self::info(config, group),
         }
     }
 
@@ -43,7 +50,7 @@ impl Dev {
         let signers = shares
             .iter()
             .map(|(ident, share)| Signer {
-                zcash: Some(ZcashSharedSigner {
+                zcash: Some(ShareSigner {
                     identifier: *ident,
                     rjpackage: package.clone(),
                     rjshare: share.clone(),
@@ -62,6 +69,43 @@ impl Dev {
         }
 
         println!("Signers generated successfully in {}", group.display());
+        Ok(())
+    }
+
+    /// Get the info of a group
+    pub fn info(config: &Path, group: &str) -> Result<()> {
+        let config = config.join(group);
+        for entry in fs::read_dir(config)? {
+            let entry = entry?;
+            let path = entry.path();
+            if path.is_dir() {
+                continue;
+            }
+
+            let file = fs::read_to_string(path)?;
+            let key = toml::from_str::<Key>(&file)?;
+            let signer = Signer::try_from(&key)?;
+            let Some(zcash) = signer.zcash else {
+                continue;
+            };
+
+            let address = zcash.external_address()?;
+            println!(
+                "External address: {}",
+                hex::encode(address.to_raw_address_bytes())
+            );
+
+            let uaddr = zcash.unified_address()?;
+            println!("Unified address: {}", uaddr.encode(&zcash::TestNetwork));
+
+            let ufvk = zcash.ufvk()?;
+            println!(
+                "Unified full viewing key: {}",
+                ufvk.encode(&zcash::TestNetwork)
+            );
+
+            break;
+        }
         Ok(())
     }
 }
