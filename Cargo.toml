@@ -1,5 +1,5 @@
 [workspace]
-members = ["zypher/*", "programs/*"]
+members = ["chain/*", "zypher/*", "programs/*"]
 resolver = "2"
 
 [workspace.package]
