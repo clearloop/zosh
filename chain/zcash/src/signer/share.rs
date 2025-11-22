@@ -44,7 +44,7 @@ impl ShareSigner {
     /// Get the unified address of the share
     pub fn unified_address(&self) -> Result<UnifiedAddress> {
         let addr = self.external_address()?;
-        let uaddr = UnifiedAddress::from_receivers(Some(addr), None)
+        let uaddr = UnifiedAddress::from_receivers(Some(addr), None, None)
             .ok_or(anyhow::anyhow!("Invalid unified address"))?;
         Ok(uaddr)
     }

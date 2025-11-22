@@ -13,6 +13,7 @@ reddsa.workspace = true
 jsonrpsee-http-client.workspace = true
 serde.workspace = true
 tracing.workspace = true
+zcash_client_backend.workspace = true
 zcash_keys.workspace = true
 zcash_primitives.workspace = true
 zcash_protocol.workspace = true
