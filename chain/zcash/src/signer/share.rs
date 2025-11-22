@@ -5,7 +5,6 @@ use orchard::{
     keys::{FullViewingKey, Scope, SpendValidatingKey, SpendingKey},
     Address,
 };
-use rand::Rng;
 use reddsa::frost::redpallas::{
     keys::{PublicKeyPackage, SecretShare},
     Identifier,
@@ -31,16 +30,7 @@ impl ShareSigner {
         let ak = self.rjpackage.verifying_key().serialize()?;
         let ak = SpendValidatingKey::from_bytes(&ak)
             .ok_or(anyhow::anyhow!("Invalid spend validating key"))?;
-
-        let mut rng = rand::rng();
-        let sk = loop {
-            let random_bytes = rng.random::<[u8; 32]>();
-            let sk = SpendingKey::from_bytes(random_bytes);
-            if let Some(sk) = sk.into_option() {
-                break sk;
-            }
-        };
-
+        let sk = SpendingKey::from_bytes([0; 32]).unwrap();
         Ok(FullViewingKey::from_sk_and_ak(&sk, ak))
     }
 

@@ -88,6 +88,7 @@ impl Dev {
             let Some(zcash) = signer.zcash else {
                 continue;
             };
+
             let address = zcash.external_address()?;
             println!(
                 "External address: {}",
