@@ -5399,7 +5399,9 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "deb4c8d0530fd7a3d65358010f1e0a1ccfe6cc5f1ad63447af089ccc82ae9edf"
 dependencies = [
  "core2",
+ "document-features",
  "hex",
+ "memuse",
 ]
 
 [[package]]
@@ -5581,6 +5583,7 @@ dependencies = [
  "url",
  "zypher-runtime",
  "zypher-sync",
+ "zyphers-zcash",
 ]
 
 [[package]]
@@ -5598,6 +5601,7 @@ dependencies = [
  "solana-sdk",
  "zcash_keys",
  "zcash_primitives",
+ "zyphers-zcash",
 ]
 
 [[package]]
@@ -5619,10 +5623,12 @@ dependencies = [
  "anyhow",
  "jsonrpsee-http-client",
  "orchard",
+ "rand 0.9.2",
  "rand_core 0.6.4",
  "reddsa 0.5.1 (git+https://github.com/ZcashFoundation/reddsa.git)",
  "serde",
  "tracing",
  "zcash_keys",
  "zcash_primitives",
+ "zcash_protocol",
 ]

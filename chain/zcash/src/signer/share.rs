@@ -1,9 +1,16 @@
 //! Share of a ZypherBridge client
 
-use reddsa::frost::redpallas::{
+use anyhow::Result;
+use orchard::{
+    keys::{FullViewingKey, Scope, SpendValidatingKey, SpendingKey},
+    Address,
+};
+use rand::Rng;
+use reddsa::frost::redjubjub::{
     keys::{PublicKeyPackage, SecretShare},
     Identifier,
 };
+use zcash_keys::keys::UnifiedFullViewingKey;
 
 /// Zcash signer of a ZypherBridge client
 #[derive(Debug)]
@@ -16,4 +23,38 @@ pub struct ShareSigner {
 
     /// frost redjubjub secret share
     pub rjshare: SecretShare,
+}
+
+impl ShareSigner {
+    /// Get the orchard full viewing key
+    pub fn orchard(&self) -> Result<FullViewingKey> {
+        let ak = self.rjpackage.verifying_key().serialize()?;
+        let ak = SpendValidatingKey::from_bytes(&ak)
+            .ok_or(anyhow::anyhow!("Invalid spend validating key"))?;
+
+        let mut rng = rand::rng();
+        let sk = loop {
+            let random_bytes = rng.random::<[u8; 32]>();
+            let sk = SpendingKey::from_bytes(random_bytes);
+            if let Some(sk) = sk.into_option() {
+                break sk;
+            }
+        };
+
+        Ok(FullViewingKey::from_sk_and_ak(&sk, ak))
+    }
+
+    /// Get the external address of the share
+    pub fn external_address(&self) -> Result<Address> {
+        let fvk = self.orchard()?;
+        let address = fvk.address_at(0u64, Scope::External);
+        Ok(address)
+    }
+
+    /// Get the unified full viewing key of the share
+    pub fn ufvk(&self) -> Result<UnifiedFullViewingKey> {
+        let fvk = self.orchard()?;
+        let ufvk = UnifiedFullViewingKey::from_orchard_fvk(fvk)?;
+        Ok(ufvk)
+    }
 }

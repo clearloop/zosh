@@ -22,6 +22,7 @@ node = { path = "zypher/node", package = "zypher-node" }
 runtime = { path = "zypher/runtime", package = "zypher-runtime" }
 sync = { path = "zypher/sync", package = "zypher-sync" }
 zcore = { path = "zypher/core", package = "zypher-core" }
+zcash = { path = "chain/zcash", package = "zyphers-zcash" }
 
 # crates-io dependencies
 anyhow = "1.0.100"
@@ -53,6 +54,7 @@ tracing-subscriber = "0.3.20"
 url = "2.5.7"
 zcash_keys = { version = "0.12.0", features = ["orchard", "unstable-frost"] }
 zcash_primitives = "0.26.1"
+zcash_protocol = "0.7.1"
 zebra-chain = "3.0.1"
 zebra-rpc = { version = "3.1.0", default-features = false }
 

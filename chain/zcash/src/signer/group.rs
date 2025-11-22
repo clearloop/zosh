@@ -74,11 +74,9 @@ impl GroupSigners {
 }
 
 #[test]
-fn test_redjubjub_aggregate() {
+fn test_redpallas_aggregate() {
     let group = GroupSigners::new(3, 2).unwrap();
     let message = b"zypherpunk";
     let (signature, verifying_key) = group.sign_message(message).unwrap();
-    // For rerandomized FROST, signatures must be verified with the randomized verifying key
-    // (not the original verifying key)
     assert!(verifying_key.verify(message, &signature).is_ok())
 }

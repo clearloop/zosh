@@ -5,10 +5,11 @@ use clap::Parser;
 use reddsa::frost::redjubjub::keys;
 use runtime::{
     config::Key,
-    signer::{Keypair, Signer, ZcashSharedSigner},
+    signer::{Keypair, Signer},
 };
 use solana_signer::Signer as _;
 use std::{fs, path::Path};
+use zcash::signer::ShareSigner;
 
 /// Development command for the zyper bridge
 #[derive(Parser)]
@@ -25,6 +26,14 @@ pub enum Dev {
         #[clap(long, default_value = "2")]
         min: u16,
     },
+    ViewingKey {
+        /// Group name of the signers
+        #[clap(short, long, default_value = "default")]
+        group: String,
+        /// Address of the share
+        #[clap(short, long, default_value = "default")]
+        address: String,
+    },
 }
 
 impl Dev {
@@ -32,6 +41,7 @@ impl Dev {
     pub fn run(&self, config: &Path) -> Result<()> {
         match self {
             Self::Dealer { name, min, max } => Self::dealers(config, name, *max, *min),
+            Self::ViewingKey { group, address } => Self::viewing_key(config, group, address),
         }
     }
 
@@ -43,7 +53,7 @@ impl Dev {
         let signers = shares
             .iter()
             .map(|(ident, share)| Signer {
-                zcash: Some(ZcashSharedSigner {
+                zcash: Some(ShareSigner {
                     identifier: *ident,
                     rjpackage: package.clone(),
                     rjshare: share.clone(),
@@ -62,6 +72,23 @@ impl Dev {
         }
 
         println!("Signers generated successfully in {}", group.display());
+        Ok(())
+    }
+
+    /// Generate viewing key for a share
+    pub fn viewing_key(config: &Path, group: &str, address: &str) -> Result<()> {
+        let config = config.join(group).join(address).with_extension("toml");
+        let share = fs::read_to_string(config)?;
+        let key = toml::from_str::<Key>(&share)?;
+        let signer = Signer::try_from(&key)?;
+        let Some(zcash) = signer.zcash else {
+            return Err(anyhow::anyhow!("No zcash key found"));
+        };
+        let ufvk = zcash.ufvk()?;
+        println!(
+            "Unified full viewing key: {}",
+            ufvk.encode(&zcash::TestNetwork)
+        );
         Ok(())
     }
 }
