@@ -3,7 +3,8 @@
 use clap::Parser;
 use zypher_node::cmd::App;
 
-fn main() -> anyhow::Result<()> {
+#[tokio::main]
+async fn main() -> anyhow::Result<()> {
     let app = App::try_parse()?;
-    app.run()
+    app.run().await
 }

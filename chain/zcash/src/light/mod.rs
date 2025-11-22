@@ -2,15 +2,18 @@
 
 use anyhow::Result;
 use cache::BlockDb;
-pub use config::Config;
+pub use config::{Config, Network};
 use rusqlite::Connection;
 use std::path::Path;
 use tonic::transport::Channel;
 use zcash_client_backend::{
-    proto::service::compact_tx_streamer_client::CompactTxStreamerClient, sync,
+    data_api::{chain::ChainState, AccountBirthday, AccountPurpose, WalletWrite},
+    proto::service::{compact_tx_streamer_client::CompactTxStreamerClient, BlockId, Empty},
+    sync,
 };
 use zcash_client_sqlite::{util::SystemClock, WalletDb};
-use zcash_protocol::consensus::Network;
+use zcash_keys::keys::UnifiedFullViewingKey;
+use zcash_protocol::consensus;
 
 mod cache;
 mod config;
@@ -21,7 +24,7 @@ pub struct Light {
     pub block: BlockDb,
 
     /// Wallet database path
-    pub wallet: WalletDb<Connection, Network, SystemClock, rand_core::OsRng>,
+    pub wallet: WalletDb<Connection, consensus::Network, SystemClock, rand_core::OsRng>,
 
     /// Compact transaction streamer client
     pub client: CompactTxStreamerClient<Channel>,
@@ -55,6 +58,14 @@ impl Light {
         })
     }
 
+    /// Get the light client info
+    pub async fn info(&mut self) -> Result<()> {
+        let response = self.client.get_lightd_info(Empty {}).await?;
+        let info = response.into_inner();
+        println!("Light client info: {:?}", info);
+        Ok(())
+    }
+
     /// Sync the wallet
     pub async fn sync(&mut self) -> Result<()> {
         sync::run(
@@ -66,5 +77,32 @@ impl Light {
         )
         .await
         .map_err(Into::into)
+    }
+
+    /// Import a unified full viewing key
+    pub async fn import(
+        &mut self,
+        name: &str,
+        birth: u32,
+        ufvk: UnifiedFullViewingKey,
+    ) -> Result<()> {
+        let block = self
+            .client
+            .get_block(BlockId {
+                height: birth as u64,
+                hash: Default::default(),
+            })
+            .await?
+            .into_inner();
+
+        let chain_state = ChainState::empty(block.height(), block.hash());
+        self.wallet.import_account_ufvk(
+            name,
+            &ufvk,
+            &AccountBirthday::from_parts(chain_state, None),
+            AccountPurpose::ViewOnly,
+            None,
+        )?;
+        Ok(())
     }
 }

@@ -14,6 +14,7 @@ runtime.workspace = true
 serde.workspace = true
 sync.workspace = true
 solana-signer.workspace = true
+tokio = { workspace = true, features = ["full"] }
 toml.workspace = true
 url.workspace = true
 zcash.workspace = true
