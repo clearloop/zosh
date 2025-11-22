@@ -1,12 +1,13 @@
 [package]
-name = "solana"
-version = "0.1.0"
-description = "Created with Anchor"
-edition = "2021"
+name = "zyphers"
+version.workspace = true
+edition.workspace = true
+description = "Zyphers solana consensus program"
+
 
 [lib]
 crate-type = ["cdylib", "lib"]
-name = "solana"
+name = "zyphers"
 
 [features]
 default = []

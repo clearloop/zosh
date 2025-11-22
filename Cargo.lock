@@ -3436,13 +3436,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "solana"
-version = "0.1.0"
-dependencies = [
- "anchor-lang",
-]
-
-[[package]]
 name = "solana-account"
 version = "3.2.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -6285,6 +6278,13 @@ dependencies = [
  "solana-sdk",
  "tokio",
  "url",
+]
+
+[[package]]
+name = "zyphers"
+version = "0.1.0"
+dependencies = [
+ "anchor-lang",
 ]
 
 [[package]]
