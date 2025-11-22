@@ -2,7 +2,7 @@
 
 use anyhow::Result;
 use clap::Parser;
-use reddsa::frost::redjubjub::keys;
+use reddsa::frost::redpallas::keys;
 use runtime::{
     config::Key,
     signer::{Keypair, Signer},
@@ -26,13 +26,10 @@ pub enum Dev {
         #[clap(long, default_value = "2")]
         min: u16,
     },
-    ViewingKey {
+    Info {
         /// Group name of the signers
         #[clap(short, long, default_value = "default")]
         group: String,
-        /// Address of the share
-        #[clap(short, long, default_value = "default")]
-        address: String,
     },
 }
 
@@ -41,7 +38,7 @@ impl Dev {
     pub fn run(&self, config: &Path) -> Result<()> {
         match self {
             Self::Dealer { name, min, max } => Self::dealers(config, name, *max, *min),
-            Self::ViewingKey { group, address } => Self::viewing_key(config, group, address),
+            Self::Info { group } => Self::info(config, group),
         }
     }
 
@@ -75,20 +72,39 @@ impl Dev {
         Ok(())
     }
 
-    /// Generate viewing key for a share
-    pub fn viewing_key(config: &Path, group: &str, address: &str) -> Result<()> {
-        let config = config.join(group).join(address).with_extension("toml");
-        let share = fs::read_to_string(config)?;
-        let key = toml::from_str::<Key>(&share)?;
-        let signer = Signer::try_from(&key)?;
-        let Some(zcash) = signer.zcash else {
-            return Err(anyhow::anyhow!("No zcash key found"));
-        };
-        let ufvk = zcash.ufvk()?;
-        println!(
-            "Unified full viewing key: {}",
-            ufvk.encode(&zcash::TestNetwork)
-        );
+    /// Get the info of a group
+    pub fn info(config: &Path, group: &str) -> Result<()> {
+        let config = config.join(group);
+        for entry in fs::read_dir(config)? {
+            let entry = entry?;
+            let path = entry.path();
+            if path.is_dir() {
+                continue;
+            }
+
+            let file = fs::read_to_string(path)?;
+            let key = toml::from_str::<Key>(&file)?;
+            let signer = Signer::try_from(&key)?;
+            let Some(zcash) = signer.zcash else {
+                continue;
+            };
+            let address = zcash.external_address()?;
+            println!(
+                "External address: {}",
+                hex::encode(&address.to_raw_address_bytes())
+            );
+
+            let uaddr = zcash.unified_address()?;
+            println!("Unified address: {}", uaddr.encode(&zcash::TestNetwork));
+
+            let ufvk = zcash.ufvk()?;
+            println!(
+                "Unified full viewing key: {}",
+                ufvk.encode(&zcash::TestNetwork)
+            );
+
+            break;
+        }
         Ok(())
     }
 }

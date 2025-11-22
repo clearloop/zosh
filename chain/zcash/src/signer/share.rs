@@ -6,11 +6,11 @@ use orchard::{
     Address,
 };
 use rand::Rng;
-use reddsa::frost::redjubjub::{
+use reddsa::frost::redpallas::{
     keys::{PublicKeyPackage, SecretShare},
     Identifier,
 };
-use zcash_keys::keys::UnifiedFullViewingKey;
+use zcash_keys::{address::UnifiedAddress, keys::UnifiedFullViewingKey};
 
 /// Zcash signer of a ZypherBridge client
 #[derive(Debug)]
@@ -49,6 +49,14 @@ impl ShareSigner {
         let fvk = self.orchard()?;
         let address = fvk.address_at(0u64, Scope::External);
         Ok(address)
+    }
+
+    /// Get the unified address of the share
+    pub fn unified_address(&self) -> Result<UnifiedAddress> {
+        let addr = self.external_address()?;
+        let uaddr = UnifiedAddress::from_receivers(Some(addr), None)
+            .ok_or(anyhow::anyhow!("Invalid unified address"))?;
+        Ok(uaddr)
     }
 
     /// Get the unified full viewing key of the share

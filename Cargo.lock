@@ -5575,6 +5575,7 @@ dependencies = [
  "anyhow",
  "clap",
  "dirs",
+ "hex",
  "rand_core 0.6.4",
  "reddsa 0.5.1 (git+https://github.com/ZcashFoundation/reddsa.git)",
  "serde",

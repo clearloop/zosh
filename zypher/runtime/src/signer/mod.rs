@@ -2,7 +2,7 @@
 
 use crate::config;
 use anyhow::Result;
-use reddsa::frost::redjubjub::Identifier;
+use reddsa::frost::redpallas::Identifier;
 pub use solana_sdk::signer::keypair::Keypair;
 pub use zcash::signer::{GroupSigners, ShareSigner};
 
