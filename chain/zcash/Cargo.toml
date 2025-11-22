@@ -5,7 +5,9 @@ edition.workspace = true
 description = "Zcash related stuffs for zyphers"
 
 [dependencies]
+anyhow.workspace = true
 orchard.workspace = true
+rand_core.workspace = true
 reddsa.workspace = true
 jsonrpsee-http-client.workspace = true
 serde.workspace = true

@@ -5287,18 +5287,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "zcash"
-version = "0.1.0"
-dependencies = [
- "orchard",
- "reddsa 0.5.1 (git+https://github.com/ZcashFoundation/reddsa.git)",
- "serde",
- "tracing",
- "zcash_keys",
- "zcash_primitives",
-]
-
-[[package]]
 name = "zcash_address"
 version = "0.10.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -5622,4 +5610,19 @@ dependencies = [
  "solana-sdk",
  "tokio",
  "url",
+]
+
+[[package]]
+name = "zyphers-zcash"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "jsonrpsee-http-client",
+ "orchard",
+ "rand_core 0.6.4",
+ "reddsa 0.5.1 (git+https://github.com/ZcashFoundation/reddsa.git)",
+ "serde",
+ "tracing",
+ "zcash_keys",
+ "zcash_primitives",
 ]
