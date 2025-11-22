@@ -9,6 +9,7 @@ anyhow.workspace = true
 async-trait.workspace = true
 jsonrpsee-http-client.workspace = true
 orchard.workspace = true
+prost.workspace = true
 rand.workspace = true
 rand_core.workspace = true
 reddsa.workspace = true

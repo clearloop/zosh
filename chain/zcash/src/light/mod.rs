@@ -1,16 +1,15 @@
 //! Zcash light client
 
-use std::path::Path;
-
-use crate::light::cache::CacheDb;
 use anyhow::Result;
+use cache::BlockDb;
 pub use config::Config;
 use rusqlite::Connection;
+use std::path::Path;
 use tonic::transport::Channel;
 use zcash_client_backend::{
     proto::service::compact_tx_streamer_client::CompactTxStreamerClient, sync,
 };
-use zcash_client_sqlite::{chain, util::SystemClock, BlockDb, WalletDb};
+use zcash_client_sqlite::{util::SystemClock, WalletDb};
 use zcash_protocol::consensus::Network;
 
 mod cache;
@@ -19,7 +18,7 @@ mod config;
 /// Zcash light client
 pub struct Light {
     /// Block database connection
-    pub block: CacheDb,
+    pub block: BlockDb,
 
     /// Wallet database path
     pub wallet: WalletDb<Connection, Network, SystemClock, rand_core::OsRng>,
@@ -33,8 +32,6 @@ impl Light {
     pub async fn new(config: &Config) -> Result<Self> {
         let cache = Path::new(&config.cache);
         let block = BlockDb::for_path(cache)?;
-        chain::init::init_cache_database(&block)?;
-        let block = CacheDb::from(block);
 
         // create the wallet database
         let wallet = WalletDb::for_path(

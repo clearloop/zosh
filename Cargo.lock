@@ -6283,6 +6283,7 @@ dependencies = [
  "async-trait",
  "jsonrpsee-http-client",
  "orchard",
+ "prost",
  "rand 0.9.2",
  "rand_core 0.6.4",
  "reddsa 0.5.1 (git+https://github.com/ZcashFoundation/reddsa.git)",
