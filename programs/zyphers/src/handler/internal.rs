@@ -12,13 +12,11 @@ pub fn initialize(
     threshold: u16,
 ) -> Result<()> {
     let total_validators = initial_validators.len() as u16;
-
+    require!(total_validators > 0, BridgeError::InvalidThreshold);
     require!(
         threshold > 0 && threshold <= total_validators,
         BridgeError::InvalidThreshold
     );
-
-    require!(total_validators > 0, BridgeError::InvalidThreshold);
 
     let bridge_state = &mut ctx.accounts.bridge_state;
     bridge_state.authority = ctx.accounts.payer.key();
@@ -28,7 +26,6 @@ pub fn initialize(
     bridge_state.nonce = 0;
     bridge_state.szec_mint = ctx.accounts.szec_mint.key();
     bridge_state.bump = ctx.bumps.bridge_state;
-
     msg!(
         "Bridge initialized with {} validators and threshold {}",
         total_validators,

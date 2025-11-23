@@ -23,6 +23,12 @@ pub enum BridgeError {
     #[msg("Invalid amount: must be greater than zero")]
     InvalidAmount,
 
+    #[msg("Invalid mint: mint must be for the sZEC token")]
+    InvalidMint,
+
+    #[msg("Invalid recipient: recipient must be the owner of the token account")]
+    InvalidRecipient,
+
     #[msg("Validator already exists in the set")]
     ValidatorAlreadyExists,
 

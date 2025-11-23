@@ -4,7 +4,6 @@ version.workspace = true
 edition.workspace = true
 description = "Zyphers solana consensus program"
 
-
 [lib]
 crate-type = ["cdylib", "lib"]
 name = "zyphers"
@@ -23,6 +22,7 @@ custom-panic = []
 [dependencies]
 anchor-lang = "0.32.1"
 anchor-spl = "0.32.1"
+solana-sdk-ids = "^2"
 
 [lints.rust]
 unexpected_cfgs = { level = "warn", check-cfg = [

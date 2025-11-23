@@ -8,7 +8,7 @@ use crate::{
 use anchor_lang::prelude::*;
 use anchor_spl::token::{self, MintTo};
 
-/// Mints sZEC tokens to a recipient (threshold action).
+/// Mints sZEC tokens to a recipient.
 pub fn mint(
     ctx: Context<crate::MintSzec>,
     recipient: Pubkey,
@@ -36,12 +36,12 @@ pub fn mint(
         &signatures,
         &validators,
         threshold,
+        &ctx.accounts.instructions,
     )?;
 
     // Mint sZEC tokens
     let seeds = &[b"bridge-state".as_ref(), &[bridge_state_bump]];
     let signer_seeds = &[&seeds[..]];
-
     let cpi_accounts = MintTo {
         mint: ctx.accounts.szec_mint.to_account_info(),
         to: ctx.accounts.recipient_token_account.to_account_info(),
@@ -49,7 +49,6 @@ pub fn mint(
     };
     let cpi_program = ctx.accounts.token_program.to_account_info();
     let cpi_ctx = CpiContext::new_with_signer(cpi_program, cpi_accounts, signer_seeds);
-
     token::mint_to(cpi_ctx, amount)?;
 
     // Emit event
@@ -62,13 +61,11 @@ pub fn mint(
 
     // Increment nonce
     ctx.accounts.bridge_state.nonce += 1;
-
     msg!("Minted {} sZEC to {}", amount, recipient);
-
     Ok(())
 }
 
-/// Updates the entire validator set (threshold action).
+/// Updates the entire validator set.
 pub fn update_validators_full(
     ctx: Context<crate::UpdateValidatorsFull>,
     new_validators: Vec<Pubkey>,
@@ -100,6 +97,7 @@ pub fn update_validators_full(
         &signatures,
         &bridge_state.validators,
         bridge_state.threshold,
+        &ctx.accounts.instructions,
     )?;
 
     // Emit event
@@ -115,7 +113,6 @@ pub fn update_validators_full(
     bridge_state.threshold = new_threshold;
     bridge_state.total_validators = new_total;
     bridge_state.nonce += 1;
-
     msg!(
         "Validator set updated to {} validators with threshold {}",
         new_total,
@@ -125,7 +122,7 @@ pub fn update_validators_full(
     Ok(())
 }
 
-/// Adds a single validator to the set (threshold action).
+/// Adds a single validator to the set.
 pub fn add_validator(
     ctx: Context<crate::AddValidator>,
     validator: Pubkey,
@@ -147,6 +144,7 @@ pub fn add_validator(
         &signatures,
         &bridge_state.validators,
         bridge_state.threshold,
+        &ctx.accounts.instructions,
     )?;
 
     // Add the validator
@@ -164,11 +162,10 @@ pub fn add_validator(
     });
 
     msg!("Validator added: {}", validator);
-
     Ok(())
 }
 
-/// Removes a single validator from the set (threshold action).
+/// Removes a single validator from the set.
 pub fn remove_validator(
     ctx: Context<crate::RemoveValidator>,
     validator: Pubkey,
@@ -197,6 +194,7 @@ pub fn remove_validator(
         &signatures,
         &bridge_state.validators,
         bridge_state.threshold,
+        &ctx.accounts.instructions,
     )?;
 
     // Remove the validator
@@ -214,6 +212,5 @@ pub fn remove_validator(
     });
 
     msg!("Validator removed: {}", validator);
-
     Ok(())
 }

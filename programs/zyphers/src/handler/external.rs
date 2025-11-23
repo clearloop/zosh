@@ -7,8 +7,6 @@ use anchor_spl::token::{self, Burn};
 /// Burn sZEC to bridge back to Zcash (public action)
 pub fn burn(ctx: Context<crate::BurnSzec>, amount: u64, zec_recipient: String) -> Result<()> {
     require!(amount > 0, BridgeError::InvalidAmount);
-
-    // Validate Zcash address (basic validation)
     require!(
         !zec_recipient.is_empty() && zec_recipient.len() >= 26 && zec_recipient.len() <= 95,
         BridgeError::InvalidZcashAddress
@@ -22,7 +20,6 @@ pub fn burn(ctx: Context<crate::BurnSzec>, amount: u64, zec_recipient: String) -
     };
     let cpi_program = ctx.accounts.token_program.to_account_info();
     let cpi_ctx = CpiContext::new(cpi_program, cpi_accounts);
-
     token::burn(cpi_ctx, amount)?;
 
     // Emit event for off-chain validators to monitor

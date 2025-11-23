@@ -180,7 +180,7 @@ pub struct MintSzec<'info> {
         mut,
         seeds = [b"szec-mint"],
         bump,
-        constraint = szec_mint.key() == bridge_state.szec_mint @ BridgeError::InvalidAmount
+        constraint = szec_mint.key() == bridge_state.szec_mint @ BridgeError::InvalidMint
     )]
     pub szec_mint: Account<'info, Mint>,
 
@@ -191,8 +191,8 @@ pub struct MintSzec<'info> {
     /// - Owned by the specified recipient pubkey
     #[account(
         mut,
-        constraint = recipient_token_account.mint == szec_mint.key() @ BridgeError::InvalidAmount,
-        constraint = recipient_token_account.owner == recipient @ BridgeError::InvalidAmount
+        constraint = recipient_token_account.mint == szec_mint.key() @ BridgeError::InvalidMint,
+        constraint = recipient_token_account.owner == recipient @ BridgeError::InvalidRecipient
     )]
     pub recipient_token_account: Account<'info, TokenAccount>,
 
@@ -201,6 +201,15 @@ pub struct MintSzec<'info> {
 
     /// System program.
     pub system_program: Program<'info, System>,
+
+    /// Instructions sysvar for Ed25519 signature verification.
+    ///
+    /// Used to read Ed25519 program verification results.
+    /// Ed25519 instructions must be included before this instruction in the transaction.
+    ///
+    /// CHECK: Must be the Instructions sysvar account
+    #[account(address = anchor_lang::solana_program::sysvar::instructions::ID)]
+    pub instructions: UncheckedAccount<'info>,
 }
 
 /// Accounts for burning sZEC tokens.
@@ -303,6 +312,14 @@ pub struct UpdateValidatorsFull<'info> {
 
     /// System program for account reallocation.
     pub system_program: Program<'info, System>,
+
+    /// Instructions sysvar for Ed25519 signature verification.
+    ///
+    /// Used to read Ed25519 program verification results.
+    ///
+    /// CHECK: Must be the Instructions sysvar account
+    #[account(address = anchor_lang::solana_program::sysvar::instructions::ID)]
+    pub instructions: UncheckedAccount<'info>,
 }
 
 /// Accounts for adding a single validator to the set.
@@ -344,6 +361,14 @@ pub struct AddValidator<'info> {
 
     /// System program for account reallocation.
     pub system_program: Program<'info, System>,
+
+    /// Instructions sysvar for Ed25519 signature verification.
+    ///
+    /// Used to read Ed25519 program verification results.
+    ///
+    /// CHECK: Must be the Instructions sysvar account
+    #[account(address = anchor_lang::solana_program::sysvar::instructions::ID)]
+    pub instructions: UncheckedAccount<'info>,
 }
 
 /// Accounts for removing a single validator from the set.
@@ -391,4 +416,12 @@ pub struct RemoveValidator<'info> {
 
     /// System program for account reallocation.
     pub system_program: Program<'info, System>,
+
+    /// Instructions sysvar for Ed25519 signature verification.
+    ///
+    /// Used to read Ed25519 program verification results.
+    ///
+    /// CHECK: Must be the Instructions sysvar account
+    #[account(address = anchor_lang::solana_program::sysvar::instructions::ID)]
+    pub instructions: UncheckedAccount<'info>,
 }

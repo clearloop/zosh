@@ -1,5 +1,11 @@
+//! Utility functions for zyphers consensus program
+
 use crate::errors::BridgeError;
-use anchor_lang::prelude::*;
+use anchor_lang::{
+    prelude::*,
+    solana_program::sysvar::instructions::{load_instruction_at_checked, ID as INSTRUCTIONS_ID},
+};
+use solana_sdk_ids::ed25519_program::ID as ED25519_PROGRAM_ID;
 
 /// Action types for signature verification
 #[derive(AnchorSerialize, AnchorDeserialize, Clone, Copy, Debug, PartialEq)]
@@ -21,7 +27,9 @@ impl ActionType {
     }
 }
 
-/// Verify threshold signatures for an action
+/// Verifies threshold signatures using Solana's Ed25519 program.
+///
+/// Expects Ed25519 verification instructions before this instruction in the transaction.
 pub fn verify_threshold_signatures(
     action_type: ActionType,
     nonce: u64,
@@ -29,40 +37,83 @@ pub fn verify_threshold_signatures(
     signatures: &[[u8; 64]],
     validators: &[Pubkey],
     threshold: u16,
+    instructions_sysvar: &AccountInfo,
 ) -> Result<Vec<Pubkey>> {
-    // Construct the message to sign
+    // Verify we have the instructions sysvar
+    require_keys_eq!(
+        *instructions_sysvar.key,
+        INSTRUCTIONS_ID,
+        BridgeError::InvalidSignature
+    );
+
+    // Construct the message that should have been signed
     let message = construct_message(action_type, nonce, action_data);
-    let message_hash = simple_hash(&message);
 
     let mut valid_signers = Vec::new();
+    let current_index =
+        anchor_lang::solana_program::sysvar::instructions::load_current_index_checked(
+            instructions_sysvar,
+        )?;
 
-    for signature in signatures {
-        // Try to verify the signature against each validator
-        for validator in validators {
-            if valid_signers.contains(validator) {
-                continue; // Skip if we already verified this validator
-            }
+    // Check each signature by looking for corresponding Ed25519 instructions
+    for (sig_index, signature) in signatures.iter().enumerate() {
+        // Ed25519 instructions should come before the current instruction
+        // We expect them at indices: current_index - signatures.len() + sig_index
+        let ed25519_ix_index = (current_index as usize)
+            .checked_sub(signatures.len())
+            .and_then(|base| base.checked_add(sig_index))
+            .ok_or(BridgeError::InvalidSignature)?;
 
-            // Verify ed25519 signature
-            if ed25519_verify(signature, &message_hash, validator.as_ref()) {
-                valid_signers.push(*validator);
-                break;
-            }
-        }
-    }
+        // Load the Ed25519 instruction
+        let ed25519_ix = load_instruction_at_checked(ed25519_ix_index, instructions_sysvar)
+            .map_err(|_| BridgeError::InvalidSignature)?;
 
-    // Check for duplicates (shouldn't happen with the logic above, but safety check)
-    let mut sorted_signers = valid_signers.clone();
-    sorted_signers.sort();
-    sorted_signers.dedup();
-    if sorted_signers.len() != valid_signers.len() {
-        return err!(BridgeError::DuplicateSigner);
+        // Verify it's an Ed25519 instruction
+        require_keys_eq!(
+            ed25519_ix.program_id,
+            ED25519_PROGRAM_ID,
+            BridgeError::InvalidSignature
+        );
+
+        // Parse and verify the Ed25519 instruction data
+        let (num_signatures, parsed_pubkey, parsed_signature, parsed_message) =
+            parse_ed25519_instruction(&ed25519_ix.data)?;
+
+        // Verify the instruction contains exactly one signature
+        require_eq!(num_signatures, 1, BridgeError::InvalidSignature);
+
+        // Verify the message matches
+        require!(
+            parsed_message.as_slice() == message.as_slice(),
+            BridgeError::InvalidSignature
+        );
+
+        // Verify the signature matches
+        require!(
+            parsed_signature == *signature,
+            BridgeError::InvalidSignature
+        );
+
+        // Find which validator this signature belongs to
+        let validator = validators
+            .iter()
+            .find(|v| v.to_bytes() == parsed_pubkey)
+            .ok_or(BridgeError::SignerNotValidator)?;
+
+        // Check for duplicates
+        require!(
+            !valid_signers.contains(validator),
+            BridgeError::DuplicateSigner
+        );
+
+        valid_signers.push(*validator);
     }
 
     // Verify threshold is met
-    if valid_signers.len() < threshold as usize {
-        return err!(BridgeError::InsufficientSignatures);
-    }
+    require!(
+        valid_signers.len() >= threshold as usize,
+        BridgeError::InsufficientSignatures
+    );
 
     Ok(valid_signers)
 }
@@ -76,39 +127,41 @@ fn construct_message(action_type: ActionType, nonce: u64, action_data: &[u8]) ->
     message
 }
 
-/// Verify ed25519 signature
-fn ed25519_verify(signature: &[u8; 64], message_hash: &[u8], pubkey: &[u8]) -> bool {
-    if signature.len() != 64 || pubkey.len() != 32 || message_hash.is_empty() {
-        return false;
-    }
+/// Parses Ed25519 instruction data.
+///
+/// Returns: (num_signatures, pubkey, signature, message)
+fn parse_ed25519_instruction(data: &[u8]) -> Result<(u8, [u8; 32], [u8; 64], Vec<u8>)> {
+    require!(data.len() >= 113, BridgeError::InvalidSignature);
+    let num_signatures = data[0];
 
-    // Basic validation passed
-    // TODO: Implement proper Ed25519Program verification for production
-    // See: https://docs.solana.com/developing/runtime-facilities/programs#ed25519-program
+    // For single signature (our case), offsets are at fixed positions
+    // Signature offset: bytes 1-2 (u16)
+    // Public key offset: bytes 5-6 (u16)
+    // Message offset: bytes 9-10 (u16)
+    // Message size: bytes 11-12 (u16)
+    let sig_offset = u16::from_le_bytes([data[1], data[2]]) as usize;
+    let pubkey_offset = u16::from_le_bytes([data[5], data[6]]) as usize;
+    let msg_offset = u16::from_le_bytes([data[9], data[10]]) as usize;
+    let msg_size = u16::from_le_bytes([data[11], data[12]]) as usize;
 
-    // For now, we assume signatures are valid if they have correct format
-    // This should be replaced with actual cryptographic verification
-    true
-}
+    // Extract public key (32 bytes)
+    require!(
+        data.len() >= pubkey_offset + 32,
+        BridgeError::InvalidSignature
+    );
+    let mut pubkey = [0u8; 32];
+    pubkey.copy_from_slice(&data[pubkey_offset..pubkey_offset + 32]);
 
-/// Simple hash function for action replay protection
-/// Uses a basic hash by combining the bytes - in production, use proper cryptographic hash
-fn simple_hash(data: &[u8]) -> [u8; 32] {
-    let mut hash = [0u8; 32];
-    for (i, &byte) in data.iter().enumerate() {
-        hash[i % 32] ^= byte;
-    }
-    // Simple mixing to spread bits
-    for i in 0..32 {
-        let next = (i + 1) % 32;
-        hash[i] = hash[i].wrapping_add(hash[next]);
-    }
-    hash
-}
+    // Extract signature (64 bytes)
+    require!(data.len() >= sig_offset + 64, BridgeError::InvalidSignature);
+    let mut signature = [0u8; 64];
+    signature.copy_from_slice(&data[sig_offset..sig_offset + 64]);
 
-/// Calculate action hash for replay protection
-#[allow(unused)]
-pub fn calculate_action_hash(action_type: ActionType, nonce: u64, action_data: &[u8]) -> [u8; 32] {
-    let message = construct_message(action_type, nonce, action_data);
-    simple_hash(&message)
+    // Extract message
+    require!(
+        data.len() >= msg_offset + msg_size,
+        BridgeError::InvalidSignature
+    );
+    let message = data[msg_offset..msg_offset + msg_size].to_vec();
+    Ok((num_signatures, pubkey, signature, message))
 }
