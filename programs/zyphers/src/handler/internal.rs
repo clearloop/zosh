@@ -11,7 +11,6 @@ pub fn initialize(
     validators: Vec<Pubkey>,
     threshold: u8,
 ) -> Result<()> {
-    msg!("entering initialize handler");
     let total_validators = validators.len() as u8;
     require!(total_validators > 0, BridgeError::InvalidThreshold);
     require!(
