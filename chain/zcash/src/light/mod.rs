@@ -4,14 +4,14 @@ use anyhow::Result;
 use cache::BlockDb;
 pub use config::{Config, Network};
 use rusqlite::Connection;
-use std::path::Path;
+use std::{fs, path::Path};
 use tonic::transport::Channel;
 use zcash_client_backend::{
     data_api::{chain::ChainState, AccountBirthday, AccountPurpose, WalletWrite},
     proto::service::{compact_tx_streamer_client::CompactTxStreamerClient, BlockId, Empty},
     sync,
 };
-use zcash_client_sqlite::{util::SystemClock, WalletDb};
+use zcash_client_sqlite::{util::SystemClock, wallet, WalletDb};
 use zcash_keys::keys::UnifiedFullViewingKey;
 use zcash_protocol::consensus;
 
@@ -33,16 +33,24 @@ pub struct Light {
 impl Light {
     /// Create a new light client
     pub async fn new(config: &Config) -> Result<Self> {
+        if let Some(parent) = config.cache.parent() {
+            fs::create_dir_all(parent)?;
+        }
+
         let cache = Path::new(&config.cache);
         let block = BlockDb::for_path(cache)?;
 
         // create the wallet database
-        let wallet = WalletDb::for_path(
+        let mut wallet = WalletDb::for_path(
             config.wallet.as_path(),
             config.network.clone().into(),
             SystemClock,
             rand_core::OsRng,
         )?;
+
+        // Initialize the wallet database schema (creates all required tables)
+        // The seed parameter is None since we're not using a seed for this wallet
+        wallet::init::init_wallet_db(&mut wallet, None)?;
 
         // setup the lightwalletd client
         let channel = Channel::from_shared(config.lightwalletd.to_string())?

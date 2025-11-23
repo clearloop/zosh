@@ -55,7 +55,7 @@ impl Zcash {
     /// Sync the local wallet with the remote light client
     async fn sync(&self, cache: &Path, url: &Url) -> Result<()> {
         let config = Config {
-            cache: cache.to_path_buf(),
+            cache: cache.join("chain.db"),
             wallet: cache.join("wallet.db"),
             lightwalletd: url.clone(),
             network: Network::Mainnet,
