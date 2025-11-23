@@ -77,25 +77,6 @@ fn construct_message(action_type: ActionType, nonce: u64, action_data: &[u8]) ->
 }
 
 /// Verify ed25519 signature
-///
-/// # Note on Implementation
-///
-/// This function performs basic Ed25519 signature verification.
-/// For production use with Solana, there are two recommended approaches:
-///
-/// 1. **Ed25519Program Precompile** (Recommended for gas efficiency):
-///    - Have clients submit signatures to the Ed25519Program in a prior instruction
-///    - The Ed25519Program verifies signatures and stores results in sysvar
-///    - This instruction reads from the sysvar to check verification results
-///    - This is the most gas-efficient approach for multiple signatures
-///
-/// 2. **Off-chain Verification** (Simpler but requires trust):
-///    - Verify signatures off-chain before submission
-///    - Store only the validator commitments on-chain
-///    - Relies on honest relayers but reduces on-chain computation
-///
-/// The current implementation uses a basic approach suitable for testing.
-/// For production deployment, implement one of the above methods.
 fn ed25519_verify(signature: &[u8; 64], message_hash: &[u8], pubkey: &[u8]) -> bool {
     if signature.len() != 64 || pubkey.len() != 32 || message_hash.is_empty() {
         return false;

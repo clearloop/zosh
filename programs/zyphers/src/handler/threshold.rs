@@ -8,7 +8,7 @@ use crate::{
 use anchor_lang::prelude::*;
 use anchor_spl::token::{self, MintTo};
 
-/// Mint sZEC to a recipient (requires threshold signatures)
+/// Mints sZEC tokens to a recipient (threshold action).
 pub fn mint(
     ctx: Context<crate::MintSzec>,
     recipient: Pubkey,
@@ -68,7 +68,7 @@ pub fn mint(
     Ok(())
 }
 
-/// Update the entire validator set (requires threshold signatures)
+/// Updates the entire validator set (threshold action).
 pub fn update_validators_full(
     ctx: Context<crate::UpdateValidatorsFull>,
     new_validators: Vec<Pubkey>,
@@ -125,7 +125,7 @@ pub fn update_validators_full(
     Ok(())
 }
 
-/// Add a single validator to the set (requires threshold signatures)
+/// Adds a single validator to the set (threshold action).
 pub fn add_validator(
     ctx: Context<crate::AddValidator>,
     validator: Pubkey,
@@ -168,7 +168,7 @@ pub fn add_validator(
     Ok(())
 }
 
-/// Remove a single validator from the set (requires threshold signatures)
+/// Removes a single validator from the set (threshold action).
 pub fn remove_validator(
     ctx: Context<crate::RemoveValidator>,
     validator: Pubkey,
