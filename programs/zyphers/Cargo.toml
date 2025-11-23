@@ -25,10 +25,15 @@ anchor-spl.workspace = true
 anyhow.workspace = true
 solana-sdk-ids.workspace = true
 
+[target.'cfg(not(target_os = "solana"))'.dependencies]
+anyhow.workspace = true
+solana-sdk.workspace = true
+
 [dev-dependencies]
 borsh.workspace = true
 mollusk-svm.workspace = true
 solana-sdk.workspace = true
+
 
 [lints.rust]
 unexpected_cfgs = { level = "warn", check-cfg = [

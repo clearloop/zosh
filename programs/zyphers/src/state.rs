@@ -10,10 +10,10 @@ pub struct BridgeState {
     pub validators: Vec<Pubkey>,
 
     /// The threshold for the consensus (e.g., 2 for 2/3)
-    pub threshold: u16,
+    pub threshold: u8,
 
     /// Total number of validators (e.g., 3 for 2/3)
-    pub total_validators: u16,
+    pub total_validators: u8,
 
     /// Nonce for replay protection
     pub nonce: u64,
@@ -31,8 +31,8 @@ impl BridgeState {
         8 + // discriminator
         32 + // authority
         4 + (num_validators * 32) + // validators vec
-        2 + // threshold
-        2 + // total_validators
+        1 + // threshold
+        1 + // total_validators
         8 + // nonce
         32 + // szec_mint
         1 // bump

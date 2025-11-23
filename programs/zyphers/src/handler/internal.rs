@@ -9,9 +9,9 @@ use anchor_lang::prelude::*;
 pub fn initialize(
     ctx: Context<crate::Initialize>,
     initial_validators: Vec<Pubkey>,
-    threshold: u16,
+    threshold: u8,
 ) -> Result<()> {
-    let total_validators = initial_validators.len() as u16;
+    let total_validators = initial_validators.len() as u8;
     require!(total_validators > 0, BridgeError::InvalidThreshold);
     require!(
         threshold > 0 && threshold <= total_validators,

@@ -9,6 +9,7 @@ pub use state::{ActionRecord, BridgeState};
 
 declare_id!("2KwobV7wjmUzGRQfpd3G5HVRfCRUXfry9MoM3Hbks9dz");
 
+pub mod api;
 pub mod errors;
 pub mod events;
 mod handler;
@@ -22,10 +23,10 @@ pub mod zyphers {
     /// Initialize the bridge with initial validator set and create sZEC mint
     pub fn initialize(
         ctx: Context<Initialize>,
-        initial_validators: Vec<Pubkey>,
-        threshold: u16,
+        validators: Vec<Pubkey>,
+        threshold: u8,
     ) -> Result<()> {
-        internal::initialize(ctx, initial_validators, threshold)
+        internal::initialize(ctx, validators, threshold)
     }
 
     /// Mint sZEC to a recipient (threshold action)
@@ -47,7 +48,7 @@ pub mod zyphers {
     pub fn update_validators_full(
         ctx: Context<UpdateValidatorsFull>,
         new_validators: Vec<Pubkey>,
-        new_threshold: u16,
+        new_threshold: u8,
         signatures: Vec<[u8; 64]>,
     ) -> Result<()> {
         threshold::update_validators_full(ctx, new_validators, new_threshold, signatures)

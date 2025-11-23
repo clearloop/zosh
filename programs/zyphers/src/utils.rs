@@ -36,7 +36,7 @@ pub fn verify_threshold_signatures(
     action_data: &[u8],
     signatures: &[[u8; 64]],
     validators: &[Pubkey],
-    threshold: u16,
+    threshold: u8,
     instructions_sysvar: &AccountInfo,
 ) -> Result<Vec<Pubkey>> {
     // Verify we have the instructions sysvar

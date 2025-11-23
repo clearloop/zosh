@@ -69,11 +69,11 @@ pub fn mint(
 pub fn update_validators_full(
     ctx: Context<crate::UpdateValidatorsFull>,
     new_validators: Vec<Pubkey>,
-    new_threshold: u16,
+    new_threshold: u8,
     signatures: Vec<[u8; 64]>,
 ) -> Result<()> {
     let bridge_state = &mut ctx.accounts.bridge_state;
-    let new_total = new_validators.len() as u16;
+    let new_total = new_validators.len() as u8;
 
     // Validate new threshold
     require!(

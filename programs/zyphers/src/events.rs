@@ -39,7 +39,7 @@ pub struct ValidatorSetUpdated {
     pub new_validators: Vec<Pubkey>,
 
     /// New threshold
-    pub threshold: u16,
+    pub threshold: u8,
 
     /// Nonce at time of update
     pub nonce: u64,
