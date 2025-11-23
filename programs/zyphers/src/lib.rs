@@ -1,22 +1,19 @@
+//! zyphers consensus program
+
 use anchor_lang::prelude::*;
 use anchor_spl::token::{Mint, Token, TokenAccount};
+pub use errors::BridgeError;
+pub use events::{BurnEvent, MintEvent, ValidatorSetUpdated};
+use handler::{external, internal, threshold};
+pub use state::{ActionRecord, BridgeState};
 
 declare_id!("2KwobV7wjmUzGRQfpd3G5HVRfCRUXfry9MoM3Hbks9dz");
 
-// Public modules
 pub mod errors;
 pub mod events;
+mod handler;
 pub mod state;
-
-// Internal modules
-mod external;
-mod threshold;
 mod utils;
-
-// Re-export for external use
-pub use errors::BridgeError;
-pub use events::{BurnEvent, MintEvent, ValidatorSetUpdated};
-pub use state::{ActionRecord, BridgeState};
 
 #[program]
 pub mod zyphers {
@@ -28,7 +25,7 @@ pub mod zyphers {
         initial_validators: Vec<Pubkey>,
         threshold: u16,
     ) -> Result<()> {
-        threshold::initialize(ctx, initial_validators, threshold)
+        internal::initialize(ctx, initial_validators, threshold)
     }
 
     /// Mint sZEC to a recipient (threshold action)

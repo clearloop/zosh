@@ -1,9 +1,8 @@
-///! External/public action handlers - operations anyone can submit
+//! External/public action handlers - operations anyone can submit
+
+use crate::{errors::BridgeError, events::BurnEvent};
 use anchor_lang::prelude::*;
 use anchor_spl::token::{self, Burn};
-
-use crate::errors::BridgeError;
-use crate::events::BurnEvent;
 
 /// Burn sZEC to bridge back to Zcash (public action)
 pub fn burn(ctx: Context<crate::BurnSzec>, amount: u64, zec_recipient: String) -> Result<()> {
