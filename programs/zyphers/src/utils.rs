@@ -17,7 +17,7 @@ pub enum ActionType {
 }
 
 impl ActionType {
-    pub fn to_byte(&self) -> u8 {
+    pub fn to_byte(self) -> u8 {
         match self {
             ActionType::UpdateValidatorsFull => 0,
             ActionType::AddValidator => 1,
@@ -130,6 +130,7 @@ fn construct_message(action_type: ActionType, nonce: u64, action_data: &[u8]) ->
 /// Parses Ed25519 instruction data.
 ///
 /// Returns: (num_signatures, pubkey, signature, message)
+#[allow(clippy::type_complexity)]
 fn parse_ed25519_instruction(data: &[u8]) -> Result<(u8, [u8; 32], [u8; 64], Vec<u8>)> {
     require!(data.len() >= 113, BridgeError::InvalidSignature);
     let num_signatures = data[0];
