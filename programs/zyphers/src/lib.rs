@@ -90,7 +90,7 @@ pub mod zyphers {
 /// - `token_program`: Required for mint creation
 /// - `rent`: Rent sysvar for account rent calculations
 #[derive(Accounts)]
-#[instruction(initial_validators: Vec<Pubkey>, threshold: u16)]
+#[instruction(validators: Vec<Pubkey>, threshold: u8)]
 pub struct Initialize<'info> {
     /// Transaction fee payer and rent payer for new accounts.
     ///
@@ -105,7 +105,7 @@ pub struct Initialize<'info> {
     #[account(
         init,
         payer = payer,
-        space = BridgeState::space(initial_validators.len()),
+        space = BridgeState::space(validators.len()),
         seeds = [b"bridge-state"],
         bump
     )]

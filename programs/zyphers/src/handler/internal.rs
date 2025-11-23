@@ -8,10 +8,11 @@ use anchor_lang::prelude::*;
 /// TODO: ensure this instruction should only be called for once.
 pub fn initialize(
     ctx: Context<crate::Initialize>,
-    initial_validators: Vec<Pubkey>,
+    validators: Vec<Pubkey>,
     threshold: u8,
 ) -> Result<()> {
-    let total_validators = initial_validators.len() as u8;
+    msg!("entering initialize handler");
+    let total_validators = validators.len() as u8;
     require!(total_validators > 0, BridgeError::InvalidThreshold);
     require!(
         threshold > 0 && threshold <= total_validators,
@@ -20,7 +21,7 @@ pub fn initialize(
 
     let bridge_state = &mut ctx.accounts.bridge_state;
     bridge_state.authority = ctx.accounts.payer.key();
-    bridge_state.validators = initial_validators;
+    bridge_state.validators = validators;
     bridge_state.threshold = threshold;
     bridge_state.total_validators = total_validators;
     bridge_state.nonce = 0;

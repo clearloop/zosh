@@ -1,7 +1,10 @@
 //! Tests for the instructions
 
 use mollusk_svm::Mollusk;
-use solana_sdk::pubkey::Pubkey;
+use solana_sdk::{
+    account::{AccountSharedData, WritableAccount},
+    pubkey::Pubkey,
+};
 
 mod internal;
 
@@ -16,6 +19,7 @@ pub fn pubkeys(count: u8) -> Vec<Pubkey> {
 pub struct Test {
     /// Mollusk VM client
     pub mollusk: Mollusk,
+
     /// Signer keypair
     pub payer: Pubkey,
 }
@@ -27,5 +31,12 @@ impl Test {
             mollusk: Mollusk::new(&zyphers::ID, "zyphers"),
             payer: Pubkey::new_unique(),
         }
+    }
+
+    /// Create a new account
+    pub fn account() -> AccountSharedData {
+        let mut account = AccountSharedData::default();
+        account.set_lamports(10_000_000_000);
+        account
     }
 }
