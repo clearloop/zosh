@@ -38,7 +38,7 @@ ed25519-dalek = "2.2.0"
 frost-core = "2.2.0"
 hex = "0.4.3"
 jsonrpsee-http-client = "0.26.0"
-mollusk-svm = "0.7.2"
+mollusk-svm = "~0.4"
 orchard = { version = "0.11.0", default-features = false, features = [
     "unstable-frost",
 ] }
@@ -54,10 +54,10 @@ rusqlite = "0.37.0"
 secp256k1 = "0.31.1"
 serde = "1.0.228"
 serde_json = "1.0.145"
-solana-program = "3.0.0"
-solana-sdk = { version = "3.0.0", features = ["full"] }
+solana-program = "2.2.0"
+solana-sdk = { version = "2.2.0", features = ["full"] }
 solana-sdk-ids = "^2"
-solana-signer = "3.0.0"
+solana-signer = "2.2.0"
 spl-associated-token-account = { version = "7.0.0", features = [
     "no-entrypoint",
 ] }

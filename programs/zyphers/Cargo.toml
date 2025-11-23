@@ -24,6 +24,10 @@ anchor-lang.workspace = true
 anchor-spl.workspace = true
 solana-sdk-ids.workspace = true
 
+[dev-dependencies]
+mollusk-svm.workspace = true
+solana-sdk.workspace = true
+
 [lints.rust]
 unexpected_cfgs = { level = "warn", check-cfg = [
     'cfg(target_os, values("solana"))',
