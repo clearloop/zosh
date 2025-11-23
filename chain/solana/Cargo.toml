@@ -1,0 +1,12 @@
+[package]
+name = "zyphers-solana"
+version.workspace = true
+edition.workspace = true
+
+[dependencies]
+solana-sdk.workspace = true
+solana-program.workspace = true
+anchor-lang.workspace = true
+rand.workspace = true
+borsh.workspace = true
+spl-token.workspace = true

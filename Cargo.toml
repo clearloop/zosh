@@ -1,5 +1,5 @@
 [workspace]
-members = ["chain/*", "zypher/*", "programs/*"]
+members = ["chain/zcash", "zypher/*", "programs/*"]
 resolver = "2"
 
 [workspace.package]
@@ -23,10 +23,14 @@ runtime = { path = "zypher/runtime", package = "zypher-runtime" }
 sync = { path = "zypher/sync", package = "zypher-sync" }
 zcore = { path = "zypher/core", package = "zypher-core" }
 zcash = { path = "chain/zcash", package = "zyphers-zcash" }
+solana = { path = "chain/solana", package = "zyphers-solana" }
 
 # crates-io dependencies
+anchor-lang = "0.32.1"
+anchor-spl = "0.32.1"
 anyhow = "1.0.100"
 async-trait = "0.1.89"
+borsh = "1.5.7"
 bs58 = "0.5.1"
 clap = { version = "4.5.53", features = ["derive"] }
 dirs = "6.0.0"
@@ -34,6 +38,7 @@ ed25519-dalek = "2.2.0"
 frost-core = "2.2.0"
 hex = "0.4.3"
 jsonrpsee-http-client = "0.26.0"
+mollusk-svm = "0.7.2"
 orchard = { version = "0.11.0", default-features = false, features = [
     "unstable-frost",
 ] }
@@ -49,8 +54,14 @@ rusqlite = "0.37.0"
 secp256k1 = "0.31.1"
 serde = "1.0.228"
 serde_json = "1.0.145"
+solana-program = "3.0.0"
 solana-sdk = { version = "3.0.0", features = ["full"] }
+solana-sdk-ids = "^2"
 solana-signer = "3.0.0"
+spl-associated-token-account = { version = "7.0.0", features = [
+    "no-entrypoint",
+] }
+spl-token = { version = "9.0.0", features = ["no-entrypoint"] }
 tokio = "1.48.0"
 toml = "0.9.8"
 tonic = "0.14.2"
