@@ -42,6 +42,34 @@ pub mod zyphers {
     pub fn burn(ctx: Context<BurnSzec>, amount: u64, zec_recipient: String) -> Result<()> {
         external::burn(ctx, amount, zec_recipient)
     }
+
+    /// Update the entire validator set (threshold action)
+    pub fn update_validators_full(
+        ctx: Context<UpdateValidatorsFull>,
+        new_validators: Vec<Pubkey>,
+        new_threshold: u16,
+        signatures: Vec<[u8; 64]>,
+    ) -> Result<()> {
+        threshold::update_validators_full(ctx, new_validators, new_threshold, signatures)
+    }
+
+    /// Add a single validator to the set (threshold action)
+    pub fn add_validator(
+        ctx: Context<AddValidator>,
+        validator: Pubkey,
+        signatures: Vec<[u8; 64]>,
+    ) -> Result<()> {
+        threshold::add_validator(ctx, validator, signatures)
+    }
+
+    /// Remove a single validator from the set (threshold action)
+    pub fn remove_validator(
+        ctx: Context<RemoveValidator>,
+        validator: Pubkey,
+        signatures: Vec<[u8; 64]>,
+    ) -> Result<()> {
+        threshold::remove_validator(ctx, validator, signatures)
+    }
 }
 
 // ============================================================================
@@ -135,4 +163,61 @@ pub struct BurnSzec<'info> {
     pub bridge_state: Account<'info, BridgeState>,
 
     pub token_program: Program<'info, Token>,
+}
+
+#[derive(Accounts)]
+#[instruction(new_validators: Vec<Pubkey>, new_threshold: u16, signatures: Vec<[u8; 64]>)]
+pub struct UpdateValidatorsFull<'info> {
+    #[account(mut)]
+    pub payer: Signer<'info>,
+
+    #[account(
+        mut,
+        seeds = [b"bridge-state"],
+        bump = bridge_state.bump,
+        realloc = BridgeState::space(new_validators.len()),
+        realloc::payer = payer,
+        realloc::zero = false
+    )]
+    pub bridge_state: Account<'info, BridgeState>,
+
+    pub system_program: Program<'info, System>,
+}
+
+#[derive(Accounts)]
+#[instruction(validator: Pubkey, signatures: Vec<[u8; 64]>)]
+pub struct AddValidator<'info> {
+    #[account(mut)]
+    pub payer: Signer<'info>,
+
+    #[account(
+        mut,
+        seeds = [b"bridge-state"],
+        bump = bridge_state.bump,
+        realloc = BridgeState::space(bridge_state.validators.len() + 1),
+        realloc::payer = payer,
+        realloc::zero = false
+    )]
+    pub bridge_state: Account<'info, BridgeState>,
+
+    pub system_program: Program<'info, System>,
+}
+
+#[derive(Accounts)]
+#[instruction(validator: Pubkey, signatures: Vec<[u8; 64]>)]
+pub struct RemoveValidator<'info> {
+    #[account(mut)]
+    pub payer: Signer<'info>,
+
+    #[account(
+        mut,
+        seeds = [b"bridge-state"],
+        bump = bridge_state.bump,
+        realloc = BridgeState::space(bridge_state.validators.len().saturating_sub(1)),
+        realloc::payer = payer,
+        realloc::zero = false
+    )]
+    pub bridge_state: Account<'info, BridgeState>,
+
+    pub system_program: Program<'info, System>,
 }

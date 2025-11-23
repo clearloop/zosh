@@ -4,6 +4,8 @@ use crate::errors::BridgeError;
 use anchor_lang::prelude::*;
 
 /// Initialize the bridge with initial validator set
+///
+/// TODO: ensure this instruction should only be called for once.
 pub fn initialize(
     ctx: Context<crate::Initialize>,
     initial_validators: Vec<Pubkey>,
