@@ -8,7 +8,7 @@ use anchor_lang::{
 use solana_sdk_ids::ed25519_program::ID as ED25519_PROGRAM_ID;
 
 /// Action types for signature verification
-#[derive(AnchorSerialize, AnchorDeserialize, Clone, Copy, Debug, PartialEq)]
+#[derive(Clone, Copy, Debug, PartialEq)]
 pub enum ActionType {
     UpdateValidatorsFull,
     AddValidator,

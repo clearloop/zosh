@@ -22,9 +22,11 @@ custom-panic = []
 [dependencies]
 anchor-lang.workspace = true
 anchor-spl.workspace = true
+anyhow.workspace = true
 solana-sdk-ids.workspace = true
 
 [dev-dependencies]
+borsh.workspace = true
 mollusk-svm.workspace = true
 solana-sdk.workspace = true
 
