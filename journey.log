@@ -2,7 +2,7 @@ Nov 24
 
 Finally the lightwalletd server is totally synced, and I still got connection refused, I'm 
 super worried about that if the infra chain of zcash is totally broken, some of their code 
-are well desgined, but they are always facing the problem out-of-maintained in the past years.
+are well designed, but they are always facing the problem out-of-maintained in the past years.
 
 Okay, it is just caused by a config of my lightwalletd, finally, things work now!
 
@@ -30,7 +30,7 @@ The consensus program on solana is pretty simple, while testing it is still pain
 mollusk, they are not compatible, I have to copy the binary from `target/deploy` to
 `tests/fixtures` again and again? it's been so many years and anchor still doesn't have their
 own test framework, such auto vm loading feature works in each of my side projects. don't
-understand how can solana devlopers stand it, this such thing should not block great teams
+understand how can solana developers stand it, this such thing should not block great teams
 building their product, likely this can be a reason that explains why I'm still poor now,
 I've spent too much time on building wheels, making things better, but not building products
 focused on users, the story is different.
@@ -109,7 +109,7 @@ Anyway, need to learn the keys of zcash first.
 
 Nov 15
 
-Doing reasearch, I don't believe there is perfect solution for bridge in the world.
+Doing research, I don't believe there is perfect solution for bridge in the world.
 
 I can start build anyway, init the project, I need to catch up this chance anyway, 
 shine on you crazy diamond.
