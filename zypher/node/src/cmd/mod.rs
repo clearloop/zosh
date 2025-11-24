@@ -1,5 +1,7 @@
 //! Command line interface for the zyphers node
 
+use crate::Config;
+use anyhow::Result;
 use clap::Parser;
 use std::{path::PathBuf, sync::OnceLock};
 use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt, EnvFilter};
@@ -30,6 +32,18 @@ pub struct App {
 impl App {
     /// Run the application
     pub async fn run(&self) -> anyhow::Result<()> {
+        self.init_tracing()?;
+        let config = Config::load(&self.config)?;
+        match &self.command {
+            Command::Dev(dev) => dev.run(&self.config, config.network),
+            Command::Generate => conf::generate(&self.config),
+            Command::Zcash(zcash) => zcash.run(&self.cache, config.network).await,
+        }?;
+
+        Ok(())
+    }
+
+    fn init_tracing(&self) -> Result<()> {
         let verbosity = self.verbose;
         let level = match verbosity {
             0 => "info",
@@ -51,13 +65,6 @@ impl App {
             .with(filter)
             .with(tracing_subscriber::fmt::layer())
             .try_init()?;
-
-        match &self.command {
-            Command::Dev(dev) => dev.run(&self.config),
-            Command::GenConf => conf::generate(&self.config),
-            Command::Zcash(zcash) => zcash.run(&self.cache).await,
-        }?;
-
         Ok(())
     }
 }
@@ -74,7 +81,7 @@ pub enum Command {
     Zcash(zcash::Zcash),
 
     /// Generate configuration file
-    GenConf,
+    Generate,
 }
 
 fn default_config_dir() -> &'static str {

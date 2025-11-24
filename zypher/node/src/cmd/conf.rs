@@ -1,7 +1,7 @@
 //! Configuration command for the zyper bridge
 
 use crate::{
-    config::{Key, Rpc},
+    config::{Key, Network, Rpc},
     Config,
 };
 use anyhow::Result;
@@ -26,12 +26,13 @@ pub fn generate(config: &Path) -> Result<()> {
     let config = Config {
         sync: Rpc {
             solana: "https://api.mainnet-beta.solana.com".parse()?,
-            zcash: "https://api.zcashexplorer.app".parse()?,
+            lightwalletd: "http://127.0.0.1:9067".parse()?,
         },
         key: Key {
             zcash: None,
             solana: Keypair::new().to_base58_string(),
         },
+        network: Network::Testnet,
     };
     fs::write(
         &target,

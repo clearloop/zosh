@@ -8,7 +8,6 @@ use zcash_client_backend::{
     sync,
 };
 use zcash_keys::keys::UnifiedFullViewingKey;
-use zcash_protocol::consensus;
 
 impl Light {
     /// Get the light client info
@@ -20,10 +19,10 @@ impl Light {
     }
 
     /// Sync the wallet
-    pub async fn sync(&mut self, network: consensus::Network) -> Result<()> {
+    pub async fn sync(&mut self) -> Result<()> {
         sync::run(
             &mut self.client,
-            &network,
+            &self.network,
             &self.block,
             &mut self.wallet,
             100,

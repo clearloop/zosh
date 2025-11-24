@@ -1,12 +1,10 @@
 //! Development command for the zyper bridge
 
+use crate::config::{Key, Network};
 use anyhow::Result;
 use clap::Parser;
 use reddsa::frost::redpallas::keys;
-use runtime::{
-    config::Key,
-    signer::{Keypair, Signer},
-};
+use runtime::signer::{Keypair, Signer};
 use solana_signer::Signer as _;
 use std::{fs, path::Path};
 use zcash::signer::ShareSigner;
@@ -35,10 +33,10 @@ pub enum Dev {
 
 impl Dev {
     /// Run the development command
-    pub fn run(&self, config: &Path) -> Result<()> {
+    pub fn run(&self, config: &Path, network: Network) -> Result<()> {
         match self {
             Self::Dealer { name, min, max } => Self::dealers(config, name, *max, *min),
-            Self::Info { group } => Self::info(config, group),
+            Self::Info { group } => Self::info(config, group, network),
         }
     }
 
@@ -73,7 +71,7 @@ impl Dev {
     }
 
     /// Get the info of a group
-    pub fn info(config: &Path, group: &str) -> Result<()> {
+    pub fn info(config: &Path, group: &str, network: Network) -> Result<()> {
         let config = config.join(group);
         for entry in fs::read_dir(config)? {
             let entry = entry?;
@@ -95,14 +93,12 @@ impl Dev {
                 hex::encode(address.to_raw_address_bytes())
             );
 
+            let network: zcash::Network = network.into();
             let uaddr = zcash.unified_address()?;
-            println!("Unified address: {}", uaddr.encode(&zcash::TestNetwork));
+            println!("Unified address: {}", uaddr.encode(&network));
 
             let ufvk = zcash.ufvk()?;
-            println!(
-                "Unified full viewing key: {}",
-                ufvk.encode(&zcash::TestNetwork)
-            );
+            println!("Unified full viewing key: {}", ufvk.encode(&network));
 
             break;
         }

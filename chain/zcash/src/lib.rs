@@ -1,6 +1,6 @@
 //! Zcash related stuffs for zyphers
 
-pub use zcash_primitives::consensus::{MainNetwork, TestNetwork};
+pub use zcash_primitives::consensus::Network;
 
 pub mod light;
 pub mod signer;

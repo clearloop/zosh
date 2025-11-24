@@ -1,11 +1,11 @@
 //! Zcash tools
 
+use crate::config::Network;
 use anyhow::Result;
 use clap::Parser;
 use std::path::Path;
 use url::Url;
-use zcash::light::{Config, Light, Network};
-
+use zcash::light::{Config, Light};
 /// Zcash tools
 #[derive(Parser)]
 pub enum Zcash {
@@ -32,36 +32,34 @@ pub enum Zcash {
 
 impl Zcash {
     /// Run the zcash command
-    pub async fn run(&self, cache: &Path) -> Result<()> {
+    pub async fn run(&self, cache: &Path, network: Network) -> Result<()> {
         match self {
-            Self::Light { url } => self.light(cache, url).await,
-            Self::Sync { url } => self.sync(cache, url).await,
+            Self::Light { url } => self.light(cache, url, network).await,
+            Self::Sync { url } => self.sync(cache, url, network).await,
         }
     }
 
     /// Get the light client info
-    async fn light(&self, cache: &Path, url: &Url) -> Result<()> {
+    async fn light(&self, cache: &Path, url: &Url, network: Network) -> Result<()> {
         let config = Config {
             cache: cache.join("chain.db"),
             wallet: cache.join("wallet.db"),
             lightwalletd: url.clone(),
-            network: Network::Testnet,
         };
-        let mut light = Light::new(&config).await?;
+        let mut light = Light::new(&config, network.into()).await?;
         light.info().await?;
         Ok(())
     }
 
     /// Sync the local wallet with the remote light client
-    async fn sync(&self, cache: &Path, url: &Url) -> Result<()> {
+    async fn sync(&self, cache: &Path, url: &Url, network: Network) -> Result<()> {
         let config = Config {
             cache: cache.join("chain.db"),
             wallet: cache.join("wallet.db"),
             lightwalletd: url.clone(),
-            network: Network::Mainnet,
         };
-        let mut light = Light::new(&config).await?;
-        light.sync(Network::Mainnet.into()).await?;
+        let mut light = Light::new(&config, network.clone().into()).await?;
+        light.sync().await?;
         Ok(())
     }
 }
