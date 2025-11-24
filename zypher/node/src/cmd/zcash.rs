@@ -7,7 +7,7 @@ use std::path::Path;
 use zcash::{
     light::Light,
     signer::{GroupSigners, SignerInfo},
-    UnifiedFullViewingKey,
+    AddressCodec, UnifiedAddress, UnifiedFullViewingKey,
 };
 
 /// Zcash tools
@@ -47,6 +47,16 @@ pub enum Zcash {
         /// The name of the account
         name: String,
     },
+
+    Send {
+        /// The recipient address
+        #[clap(short, long)]
+        recipient: String,
+
+        /// The amount to send
+        #[clap(short, long)]
+        amount: f32,
+    },
 }
 
 impl Zcash {
@@ -59,6 +69,10 @@ impl Zcash {
             Self::Info => self.info(&config),
             Self::Summary => self.summary(&cfg).await,
             Self::Import { ufvk, name } => self.import(&cfg, ufvk, name).await,
+            Self::Send { recipient, amount } => {
+                self.send(&cfg, &config.key.zcash, &recipient, *amount)
+                    .await
+            }
         }
     }
 
@@ -110,6 +124,27 @@ impl Zcash {
     async fn summary(&self, cfg: &zcash::light::Config) -> Result<()> {
         let light = Light::new(&cfg).await?;
         light.summary()?;
+        Ok(())
+    }
+
+    /// Send a fund to a orchard address
+    async fn send(
+        &self,
+        cfg: &zcash::light::Config,
+        group: &str,
+        recipient: &str,
+        amount: f32,
+    ) -> Result<()> {
+        let mut light = Light::new(&cfg).await?;
+        light
+            .send(
+                postcard::from_bytes(&bs58::decode(group).into_vec()?)?,
+                UnifiedAddress::decode(&light.network, recipient)
+                    .map_err(|e| anyhow::anyhow!(e))?,
+                amount,
+            )
+            .await?;
+
         Ok(())
     }
 }

@@ -12,27 +12,24 @@ use orchard::{
     keys::SpendValidatingKey,
     primitives::redpallas::{Signature, SpendAuth},
     value::NoteValue,
-    Address,
 };
 use reddsa::frost::redpallas::Randomizer;
 use zcash_client_backend::{
     data_api::{
-        chain::BlockCache,
-        wallet::{ConfirmationsPolicy, TargetHeight},
-        Account, AccountBirthday, AccountPurpose, InputSource, TargetValue, WalletCommitmentTrees,
-        WalletRead, WalletWrite,
+        wallet::ConfirmationsPolicy, Account, AccountBirthday, AccountPurpose, InputSource,
+        TargetValue, WalletCommitmentTrees, WalletRead, WalletWrite,
     },
     proto::service::{BlockId, Empty, RawTransaction},
     sync,
 };
-use zcash_keys::keys::UnifiedFullViewingKey;
+use zcash_keys::{address::UnifiedAddress, keys::UnifiedFullViewingKey};
 use zcash_primitives::transaction::{
     sighash::{signature_hash, SignableInput},
     txid::TxIdDigester,
     Authorized, TransactionData, TxVersion, Unauthorized,
 };
 use zcash_protocol::{
-    consensus::BranchId,
+    consensus::{BlockHeight, BranchId},
     value::{ZatBalance, Zatoshis},
     ShieldedProtocol,
 };
@@ -61,7 +58,7 @@ impl Light {
 
     /// Import a unified full viewing key
     pub async fn import(&mut self, name: &str, ufvk: UnifiedFullViewingKey) -> Result<()> {
-        let birth = BranchId::Nu6
+        let birth = BranchId::Nu6_1
             .height_bounds(&self.network)
             .ok_or(anyhow::anyhow!("Invalid network"))?
             .0
@@ -111,28 +108,34 @@ impl Light {
     pub async fn send(
         &mut self,
         signer: GroupSigners,
-
-        recipient: Address,
+        recipient: UnifiedAddress,
         amount: f32,
     ) -> Result<()> {
+        let recipient = recipient
+            .orchard()
+            .ok_or(anyhow::anyhow!("Invalid orchard address"))?;
         let ufvk = signer.ufvk()?;
         let amount = (amount * 100_000_000.0).round() as u64;
         let Some(account) = self.wallet.get_account_for_ufvk(&ufvk)? else {
             return Err(anyhow::anyhow!("Account not found by provided ufvk"));
         };
 
-        let Some(latest) = self.block.get_tip_height(None)? else {
-            return Err(anyhow::anyhow!("Failed to get tip height"));
-        };
+        // Get target and anchor heights using the wallet's built-in method
+        // This ensures we use a valid checkpoint that exists in the tree
+        let confirmations_policy = ConfirmationsPolicy::new_symmetrical(1.try_into().unwrap());
+        let (target_height, anchor_height) = self
+            .wallet
+            .get_target_and_anchor_heights(confirmations_policy.trusted())
+            .map_err(|e| anyhow::anyhow!("Failed to get target and anchor heights: {:?}", e))?
+            .ok_or_else(|| anyhow::anyhow!("Wallet sync required"))?;
 
         // 1. get spendable notes
-        let target_height = TargetHeight::from(latest);
         let notes = self.wallet.select_spendable_notes(
             account.id(),
             TargetValue::AtLeast(Zatoshis::from_u64(amount)?),
             &[ShieldedProtocol::Orchard],
             target_height,
-            ConfirmationsPolicy::new_symmetrical(1.try_into().unwrap()),
+            confirmations_policy,
             &[],
         )?;
 
@@ -140,7 +143,7 @@ impl Light {
             return Err(anyhow::anyhow!("No spendable notes found"));
         };
 
-        let anchor_height = latest;
+        // Get anchor and merkle path at the anchor height (guaranteed to have a checkpoint)
         let (anchor, merkle_path) =
             self.wallet
                 .with_orchard_tree_mut::<_, _, anyhow::Error>(|tree| {
@@ -185,7 +188,7 @@ impl Light {
             .ok_or(anyhow::anyhow!("Failed to create spend info"))?],
             vec![OutputInfo::new(
                 None,
-                recipient,
+                recipient.clone(),
                 NoteValue::from_raw(amount),
                 [0; 512],
             )],
@@ -194,11 +197,12 @@ impl Light {
             return Err(anyhow::anyhow!("Failed to create bundle"));
         };
 
+        let expiry_height = BlockHeight::from(target_height) + 20;
         let utx = TransactionData::<Unauthorized>::from_parts(
-            TxVersion::suggested_for_branch(BranchId::Nu6),
-            BranchId::Nu6,
+            TxVersion::suggested_for_branch(BranchId::Nu6_1),
+            BranchId::Nu6_1,
             0,
-            latest + 20,
+            expiry_height,
             None,
             None,
             None,
@@ -256,7 +260,7 @@ impl Light {
             TxVersion::suggested_for_branch(BranchId::Nu6),
             BranchId::Nu6,
             0,
-            latest + 20,
+            expiry_height,
             None,
             None,
             None,
