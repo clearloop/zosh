@@ -3,11 +3,12 @@
 use crate::light::Light;
 use anyhow::Result;
 use zcash_client_backend::{
-    data_api::{chain::ChainState, AccountBirthday, AccountPurpose, WalletWrite},
+    data_api::{AccountBirthday, AccountPurpose, WalletWrite},
     proto::service::{BlockId, Empty},
     sync,
 };
 use zcash_keys::keys::UnifiedFullViewingKey;
+use zcash_protocol::consensus;
 
 impl Light {
     /// Get the light client info
@@ -19,10 +20,10 @@ impl Light {
     }
 
     /// Sync the wallet
-    pub async fn sync(&mut self) -> Result<()> {
+    pub async fn sync(&mut self, network: consensus::Network) -> Result<()> {
         sync::run(
             &mut self.client,
-            &self.wallet.params().clone(),
+            &network,
             &self.block,
             &mut self.wallet,
             100,
@@ -47,11 +48,20 @@ impl Light {
             .await?
             .into_inner();
 
-        let chain_state = ChainState::empty(block.height(), block.hash());
+        let tree = self
+            .client
+            .get_tree_state(BlockId {
+                height: birth as u64,
+                hash: block.hash,
+            })
+            .await?
+            .into_inner();
+
         self.wallet.import_account_ufvk(
             name,
             &ufvk,
-            &AccountBirthday::from_parts(chain_state, None),
+            &AccountBirthday::from_treestate(tree, None)
+                .map_err(|_e| anyhow::anyhow!("Invalid birthday"))?,
             AccountPurpose::ViewOnly,
             None,
         )?;

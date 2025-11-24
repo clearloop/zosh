@@ -7,7 +7,7 @@ use rusqlite::Connection;
 use std::{fs, path::Path};
 use tonic::transport::Channel;
 use zcash_client_backend::proto::service::compact_tx_streamer_client::CompactTxStreamerClient;
-use zcash_client_sqlite::{util::SystemClock, wallet, WalletDb};
+use zcash_client_sqlite::{wallet, WalletDb};
 use zcash_protocol::consensus;
 
 mod api;
@@ -20,7 +20,7 @@ pub struct Light {
     pub block: BlockDb,
 
     /// Wallet database path
-    pub wallet: WalletDb<Connection, consensus::Network, SystemClock, rand_core::OsRng>,
+    pub wallet: WalletDb<Connection, consensus::Network>,
 
     /// Compact transaction streamer client
     pub client: CompactTxStreamerClient<Channel>,
@@ -37,12 +37,8 @@ impl Light {
         let block = BlockDb::for_path(cache)?;
 
         // create the wallet database
-        let mut wallet = WalletDb::for_path(
-            config.wallet.as_path(),
-            config.network.clone().into(),
-            SystemClock,
-            rand_core::OsRng,
-        )?;
+        let mut wallet =
+            WalletDb::for_path(config.wallet.as_path(), config.network.clone().into())?;
 
         // Initialize the wallet database schema (creates all required tables)
         // The seed parameter is None since we're not using a seed for this wallet

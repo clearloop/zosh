@@ -31,7 +31,7 @@ impl ShareSigner {
         let ak = SpendValidatingKey::from_bytes(&ak)
             .ok_or(anyhow::anyhow!("Invalid spend validating key"))?;
         let sk = SpendingKey::from_bytes([0; 32]).unwrap();
-        Ok(FullViewingKey::from_sk_and_ak(&sk, ak))
+        Ok(FullViewingKey::from_sk_ak(&sk, ak))
     }
 
     /// Get the external address of the share

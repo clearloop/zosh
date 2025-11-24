@@ -61,7 +61,7 @@ impl Zcash {
             network: Network::Mainnet,
         };
         let mut light = Light::new(&config).await?;
-        light.sync().await?;
+        light.sync(Network::Mainnet.into()).await?;
         Ok(())
     }
 }
