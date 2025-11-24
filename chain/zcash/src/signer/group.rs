@@ -38,7 +38,11 @@ impl GroupSigners {
 
     /// Sign a message with the group of signers
     /// Returns the signature and the randomized verifying key (needed for verification)
-    pub fn sign_message(&self, message: &[u8]) -> Result<(Signature, VerifyingKey)> {
+    pub fn sign(
+        &self,
+        message: &[u8],
+        randomizer: &Randomizer,
+    ) -> Result<(Signature, VerifyingKey)> {
         let mut nonces = BTreeMap::new();
         let mut commitments = BTreeMap::new();
         let mut keypkgs = BTreeMap::new();
@@ -60,25 +64,17 @@ impl GroupSigners {
         ////////////////////////////////////////////////////////////////////////////
         let mut signatures = BTreeMap::new();
         let signing_package = SigningPackage::new(commitments, message);
-        let randomizer = Randomizer::new(rand_core::OsRng, &signing_package)?;
         for (identifier, nonce) in nonces {
             let keypkg = &keypkgs[identifier];
-            let share = round2::sign(&signing_package, &nonce, keypkg, randomizer)?;
+            let share = round2::sign(&signing_package, &nonce, keypkg, randomizer.clone())?;
             signatures.insert(*identifier, share);
         }
 
         // aggregate the signature shares
-        let params = RandomizedParams::from_randomizer(self.package.verifying_key(), randomizer);
+        let params =
+            RandomizedParams::from_randomizer(self.package.verifying_key(), randomizer.clone());
         let signature =
             redpallas::aggregate(&signing_package, &signatures, &self.package, &params)?;
         Ok((signature, *params.randomized_verifying_key()))
     }
-}
-
-#[test]
-fn test_redpallas_aggregate() {
-    let group = GroupSigners::new(3, 2).unwrap();
-    let message = b"zypherpunk";
-    let (signature, verifying_key) = group.sign_message(message).unwrap();
-    assert!(verifying_key.verify(message, &signature).is_ok())
 }

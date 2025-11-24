@@ -6,11 +6,15 @@ use crate::{
 };
 use anyhow::Result;
 use orchard::{
-    builder::{self, BundleType, OutputInfo, SpendInfo},
+    builder::{self, BundleType, MaybeSigned, OutputInfo, SpendInfo},
     bundle::Flags,
+    circuit::ProvingKey,
+    keys::SpendValidatingKey,
+    primitives::redpallas::{Signature, SpendAuth},
     value::NoteValue,
     Address,
 };
+use reddsa::frost::redpallas::Randomizer;
 use zcash_client_backend::{
     data_api::{
         chain::BlockCache,
@@ -18,11 +22,15 @@ use zcash_client_backend::{
         Account, AccountBirthday, AccountPurpose, InputSource, TargetValue, WalletCommitmentTrees,
         WalletRead, WalletWrite,
     },
-    proto::service::{BlockId, Empty},
+    proto::service::{BlockId, Empty, RawTransaction},
     sync,
 };
 use zcash_keys::keys::UnifiedFullViewingKey;
-use zcash_primitives::transaction::{TransactionData, TxVersion, Unauthorized};
+use zcash_primitives::transaction::{
+    sighash::{signature_hash, SignableInput},
+    txid::TxIdDigester,
+    Authorized, TransactionData, TxVersion, Unauthorized,
+};
 use zcash_protocol::{
     consensus::BranchId,
     value::{ZatBalance, Zatoshis},
@@ -186,8 +194,7 @@ impl Light {
             return Err(anyhow::anyhow!("Failed to create bundle"));
         };
 
-        // 3. create the transaction
-        let _tx = TransactionData::<Unauthorized>::from_parts(
+        let utx = TransactionData::<Unauthorized>::from_parts(
             TxVersion::suggested_for_branch(BranchId::Nu6),
             BranchId::Nu6,
             0,
@@ -198,7 +205,74 @@ impl Light {
             Some(bundle),
         );
 
-        // TODO: prove and sign
+        // 3. Create proof and prepare for signing
+        let txid_parts = utx.digest(TxIdDigester);
+        let sighash = signature_hash(&utx, &SignableInput::Shielded, &txid_parts);
+        let proving_key = ProvingKey::build();
+        let proven = utx
+            .orchard_bundle()
+            .cloned()
+            .ok_or(anyhow::anyhow!("Failed to get orchard bundle"))?
+            .create_proof(&proving_key, rand_core::OsRng)?
+            .prepare(rand_core::OsRng, *sighash.as_ref());
+        let fvk = ufvk
+            .orchard()
+            .ok_or(anyhow::anyhow!("Invalid orchard full viewing key"))?;
+        let ak: SpendValidatingKey = fvk.clone().into();
+        let mut alphas = Vec::new();
+        let proven = proven.map_authorization(
+            &mut rand_core::OsRng,
+            |_rng, _partial, maybe| {
+                if let MaybeSigned::SigningMetadata(parts) = &maybe {
+                    if parts.ak == ak {
+                        alphas.push(parts.alpha);
+                    }
+                }
+                maybe
+            },
+            |_rng, auth| auth,
+        );
+
+        // 4. Sign the transaction
+        let mut signatures = Vec::new();
+        for alpha in alphas.iter() {
+            let randomizer = Randomizer::from_scalar(*alpha);
+            let (signature, _) = signer.sign(sighash.as_ref(), &randomizer)?;
+            let sigbytes: [u8; 64] = signature
+                .serialize()?
+                .try_into()
+                .map_err(|_e| anyhow::anyhow!("Failed to convert signature to bytes"))?;
+            let signature = Signature::<SpendAuth>::from(sigbytes);
+            signatures.push(signature);
+        }
+
+        let proven = proven
+            .append_signatures(&signatures)
+            .map_err(|_e| anyhow::anyhow!("Failed to append signatures"))?
+            .finalize()
+            .map_err(|_e| anyhow::anyhow!("Failed to finalize"))?;
+
+        let tx = TransactionData::<Authorized>::from_parts(
+            TxVersion::suggested_for_branch(BranchId::Nu6),
+            BranchId::Nu6,
+            0,
+            latest + 20,
+            None,
+            None,
+            None,
+            Some(proven),
+        );
+
+        let tx = tx.freeze()?;
+        let mut data = Vec::new();
+        tx.write(&mut data)?;
+        let resp = self
+            .client
+            .send_transaction(RawTransaction { data, height: 0 })
+            .await?
+            .into_inner();
+
+        println!("Transaction sent: {:?}", resp);
         Ok(())
     }
 }
