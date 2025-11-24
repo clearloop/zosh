@@ -43,6 +43,7 @@ orchard = { version = "0.10.1", default-features = false, features = [
     "unstable-frost",
 ] }
 postcard = "1.1.3"
+proptest = "=1.6.0"
 prost = "^0.13"
 rand = "0.8.5"
 rand_core = "0.6.4"
