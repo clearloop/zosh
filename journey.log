@@ -15,6 +15,10 @@ expected, but pretty interesting, I'd fix all version mistach issues for zcash i
 a grant, however I saw zcash people already working on these but the PRs are not merged yet, 
 they likely missing human resources to maintain the codebase.
 
+Too many randomness, not sure if my code would work, fuck it.
+
+Made the first TX via FROST! 60066bafcf8d8fafd4882104930e6901584b364932f0ba585474f62e82cb74da
+
 Nov 23
 
 The node is still syncing, tried to connect with the lightwalletd server, connection
