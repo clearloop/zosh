@@ -2,6 +2,7 @@
 
 use clap::Parser;
 use std::{path::PathBuf, sync::OnceLock};
+use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt, EnvFilter};
 
 mod conf;
 mod dev;
@@ -20,11 +21,37 @@ pub struct App {
 
     #[clap(subcommand)]
     pub command: Command,
+
+    /// Verbosity level
+    #[clap(short, long, default_value = "0")]
+    pub verbose: u8,
 }
 
 impl App {
     /// Run the application
     pub async fn run(&self) -> anyhow::Result<()> {
+        let verbosity = self.verbose;
+        let level = match verbosity {
+            0 => "info",
+            1 => "debug",
+            2 => "trace",
+            _ => "trace",
+        };
+
+        // If verbose flag is set above 0, use it; otherwise use RUST_LOG or default
+        let filter = if verbosity > 0 {
+            EnvFilter::new(level)
+        } else if let Ok(env) = std::env::var("RUST_LOG") {
+            EnvFilter::new(env)
+        } else {
+            EnvFilter::new("info")
+        };
+
+        tracing_subscriber::registry()
+            .with(filter)
+            .with(tracing_subscriber::fmt::layer())
+            .try_init()?;
+
         match &self.command {
             Command::Dev(dev) => dev.run(&self.config),
             Command::GenConf => conf::generate(&self.config),

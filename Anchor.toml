@@ -6,7 +6,7 @@ resolution = true
 skip-lint = false
 
 [programs.localnet]
-solana = "2KwobV7wjmUzGRQfpd3G5HVRfCRUXfry9MoM3Hbks9dz"
+zyphers = "2KwobV7wjmUzGRQfpd3G5HVRfCRUXfry9MoM3Hbks9dz"
 
 [registry]
 url = "https://api.apr.dev"

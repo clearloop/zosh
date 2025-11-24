@@ -16,5 +16,7 @@ sync.workspace = true
 solana-signer.workspace = true
 tokio = { workspace = true, features = ["full"] }
 toml.workspace = true
+tracing.workspace = true
+tracing-subscriber.workspace = true
 url.workspace = true
 zcash.workspace = true

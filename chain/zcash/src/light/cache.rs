@@ -163,8 +163,10 @@ impl BlockCache for BlockDb {
         let tx = source.transaction()?;
         for block in compact_blocks {
             let height: u32 = block.height().into();
+            // Use INSERT OR REPLACE to handle duplicate blocks gracefully
+            // This can happen during re-syncs or if blocks are inserted multiple times
             tx.execute(
-                "INSERT INTO compactblocks (height, data) VALUES (?, ?)",
+                "INSERT OR REPLACE INTO compactblocks (height, data) VALUES (?, ?)",
                 params![height, block.encode_to_vec()],
             )?;
         }
