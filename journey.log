@@ -10,7 +10,10 @@ I hope, I can complete the following tasks today: 1. verify our frost solution c
 2. test coverage for all instructions of the solana program. 3. pack the solana light client
 and our zcash light client into zyhpers.
 
-The tech is too complicated, but I know what to solve now.
+Spent lots of time on downgrade & upgrade zcash deps, the tech is more complicated than I 
+expected, but pretty interesting, I'd fix all version mistach issues for zcash if I can get 
+a grant, however I saw zcash people already working on these but the PRs are not merged yet, 
+they likely missing human resources to maintain the codebase.
 
 Nov 23
 

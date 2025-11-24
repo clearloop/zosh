@@ -35,7 +35,7 @@ pub fn sign(
         Some(ovk.clone()),
         output_addr,
         NoteValue::from_raw(output_value),
-        None,
+        [0; 512],
     )?;
 
     let (bundle, _) = builder
