@@ -33,11 +33,14 @@ impl App {
     /// Run the application
     pub async fn run(&self) -> anyhow::Result<()> {
         self.init_tracing()?;
-        let config = Config::load(&self.config)?;
+
         match &self.command {
             Command::Dev(dev) => dev.run(&self.config),
             Command::Generate => conf::generate(&self.config),
-            Command::Zcash(zcash) => zcash.run(&self.cache, &config).await,
+            Command::Zcash(zcash) => {
+                let config = Config::load(&self.config.join("config.toml"))?;
+                zcash.run(&self.cache, &config).await
+            }
         }?;
 
         Ok(())
