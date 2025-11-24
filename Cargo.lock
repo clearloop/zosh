@@ -3338,7 +3338,7 @@ dependencies = [
  "pasta_curves",
  "proptest",
  "rand 0.8.5",
- "reddsa 0.5.1 (registry+https://github.com/rust-lang/crates.io-index)",
+ "reddsa",
  "serde",
  "sinsemilla",
  "subtle",
@@ -3899,24 +3899,6 @@ dependencies = [
 [[package]]
 name = "reddsa"
 version = "0.5.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "78a5191930e84973293aa5f532b513404460cd2216c1cfb76d08748c15b40b02"
-dependencies = [
- "blake2b_simd",
- "byteorder",
- "group",
- "hex",
- "jubjub",
- "pasta_curves",
- "rand_core 0.6.4",
- "serde",
- "thiserror 1.0.69",
- "zeroize",
-]
-
-[[package]]
-name = "reddsa"
-version = "0.5.1"
 source = "git+https://github.com/ZcashFoundation/reddsa.git?rev=ed49e9ca0699a6450f6d4a9fe62ff168f5ea1ead#ed49e9ca0699a6450f6d4a9fe62ff168f5ea1ead"
 dependencies = [
  "blake2b_simd",
@@ -3939,7 +3921,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "7a60db2c3bc9c6fd1e8631fee75abc008841d27144be744951d6b9b75f9b569c"
 dependencies = [
  "rand_core 0.6.4",
- "reddsa 0.5.1 (registry+https://github.com/rust-lang/crates.io-index)",
+ "reddsa",
  "serde",
  "thiserror 1.0.69",
  "zeroize",
@@ -8490,7 +8472,7 @@ dependencies = [
  "dirs",
  "hex",
  "rand_core 0.6.4",
- "reddsa 0.5.1 (git+https://github.com/ZcashFoundation/reddsa.git?rev=ed49e9ca0699a6450f6d4a9fe62ff168f5ea1ead)",
+ "reddsa",
  "serde",
  "solana-signer",
  "tokio",
@@ -8513,7 +8495,7 @@ dependencies = [
  "postcard",
  "rand 0.8.5",
  "rand_core 0.6.4",
- "reddsa 0.5.1 (git+https://github.com/ZcashFoundation/reddsa.git?rev=ed49e9ca0699a6450f6d4a9fe62ff168f5ea1ead)",
+ "reddsa",
  "serde",
  "solana-sdk",
  "zcash_keys",
@@ -8557,7 +8539,7 @@ dependencies = [
  "prost",
  "rand 0.8.5",
  "rand_core 0.6.4",
- "reddsa 0.5.1 (git+https://github.com/ZcashFoundation/reddsa.git?rev=ed49e9ca0699a6450f6d4a9fe62ff168f5ea1ead)",
+ "reddsa",
  "rusqlite",
  "serde",
  "tonic",
