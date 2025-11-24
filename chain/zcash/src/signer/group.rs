@@ -7,9 +7,11 @@ use reddsa::frost::redpallas::{
     round1, round2, Identifier, RandomizedParams, Randomizer, Signature, SigningPackage,
     VerifyingKey,
 };
+use serde::{Deserialize, Serialize};
 use std::collections::BTreeMap;
 
 /// Zcash group signers
+#[derive(Serialize, Deserialize)]
 pub struct GroupSigners {
     /// shares of the signers
     pub shares: BTreeMap<Identifier, SecretShare>,

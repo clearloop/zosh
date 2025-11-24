@@ -8468,9 +8468,11 @@ name = "zypher-node"
 version = "0.1.0"
 dependencies = [
  "anyhow",
+ "bs58",
  "clap",
  "dirs",
  "hex",
+ "postcard",
  "rand_core 0.6.4",
  "reddsa",
  "serde",

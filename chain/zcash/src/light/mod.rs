@@ -31,7 +31,7 @@ pub struct Light {
 
 impl Light {
     /// Create a new light client
-    pub async fn new(config: &Config, network: Network) -> Result<Self> {
+    pub async fn new(config: &Config) -> Result<Self> {
         if let Some(parent) = config.cache.parent() {
             fs::create_dir_all(parent)?;
         }
@@ -40,7 +40,7 @@ impl Light {
         let block = BlockDb::for_path(cache)?;
 
         // create the wallet database
-        let mut wallet = WalletDb::for_path(config.wallet.as_path(), network)?;
+        let mut wallet = WalletDb::for_path(config.wallet.as_path(), config.network.clone())?;
 
         // Initialize the wallet database schema (creates all required tables)
         // The seed parameter is None since we're not using a seed for this wallet
@@ -57,7 +57,7 @@ impl Light {
             block,
             wallet,
             client,
-            network,
+            network: config.network.clone(),
         })
     }
 }

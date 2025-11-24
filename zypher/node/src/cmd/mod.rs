@@ -35,9 +35,9 @@ impl App {
         self.init_tracing()?;
         let config = Config::load(&self.config)?;
         match &self.command {
-            Command::Dev(dev) => dev.run(&self.config, config.network),
+            Command::Dev(dev) => dev.run(&self.config),
             Command::Generate => conf::generate(&self.config),
-            Command::Zcash(zcash) => zcash.run(&self.cache, config.network).await,
+            Command::Zcash(zcash) => zcash.run(&self.cache, &config).await,
         }?;
 
         Ok(())

@@ -1,11 +1,14 @@
 //! Zcash tools
 
-use crate::config::Network;
+use crate::Config;
 use anyhow::Result;
 use clap::Parser;
 use std::path::Path;
-use url::Url;
-use zcash::light::{Config, Light};
+use zcash::{
+    light::Light,
+    signer::{GroupSigners, SignerInfo},
+};
+
 /// Zcash tools
 #[derive(Parser)]
 pub enum Zcash {
@@ -24,41 +27,52 @@ pub enum Zcash {
     //     ufvk: String,
     // },
     /// Prints the remote light client status
-    Light { url: Url },
+    Light,
 
     /// Syncs the local wallet with the remote light client
-    Sync { url: Url },
+    Sync,
+
+    /// Prints the signer info
+    Info,
 }
 
 impl Zcash {
     /// Run the zcash command
-    pub async fn run(&self, cache: &Path, network: Network) -> Result<()> {
+    pub async fn run(&self, cache: &Path, config: &Config) -> Result<()> {
+        let cfg = config.zcash(cache);
         match self {
-            Self::Light { url } => self.light(cache, url, network).await,
-            Self::Sync { url } => self.sync(cache, url, network).await,
+            Self::Light => self.light(&cfg).await,
+            Self::Sync => self.sync(&cfg).await,
+            Self::Info => self.info(&config),
         }
     }
 
+    fn info(&self, cfg: &Config) -> Result<()> {
+        let network: zcash::Network = cfg.network.clone().into();
+        let bytes = bs58::decode(&cfg.key.zcash).into_vec()?;
+        let group: GroupSigners = postcard::from_bytes(&bytes)?;
+        println!(
+            "Unifed orchard address: {}",
+            group.unified_address()?.encode(&network)
+        );
+
+        println!(
+            "Unified full viewing key: {}",
+            group.ufvk()?.encode(&network)
+        );
+        Ok(())
+    }
+
     /// Get the light client info
-    async fn light(&self, cache: &Path, url: &Url, network: Network) -> Result<()> {
-        let config = Config {
-            cache: cache.join("chain.db"),
-            wallet: cache.join("wallet.db"),
-            lightwalletd: url.clone(),
-        };
-        let mut light = Light::new(&config, network.into()).await?;
+    async fn light(&self, cfg: &zcash::light::Config) -> Result<()> {
+        let mut light = Light::new(&cfg).await?;
         light.info().await?;
         Ok(())
     }
 
     /// Sync the local wallet with the remote light client
-    async fn sync(&self, cache: &Path, url: &Url, network: Network) -> Result<()> {
-        let config = Config {
-            cache: cache.join("chain.db"),
-            wallet: cache.join("wallet.db"),
-            lightwalletd: url.clone(),
-        };
-        let mut light = Light::new(&config, network.clone().into()).await?;
+    async fn sync(&self, cfg: &zcash::light::Config) -> Result<()> {
+        let mut light = Light::new(&cfg).await?;
         light.sync().await?;
         Ok(())
     }

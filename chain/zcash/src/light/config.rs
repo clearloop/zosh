@@ -1,11 +1,11 @@
 //! Zcash light client configuration
 
-use serde::{Deserialize, Serialize};
+use crate::Network;
 use std::path::PathBuf;
 use url::Url;
 
 /// Zcash light client configuration
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Config {
     /// Cache directory
     pub cache: PathBuf,
@@ -15,4 +15,7 @@ pub struct Config {
 
     /// Lightwalletd URL
     pub lightwalletd: Url,
+
+    /// Network
+    pub network: Network,
 }
