@@ -1,12 +1,13 @@
 //! Configuration command for the zyper bridge
 
 use crate::{
-    config::{Key, Rpc},
+    config::{Key, Network, Rpc},
     Config,
 };
 use anyhow::Result;
 use runtime::signer::Keypair;
 use std::{fs, path::Path};
+use zcash::signer::GroupSigners;
 
 const NOTE: &str = r#"
 # Zyphers Configurations
@@ -24,14 +25,15 @@ pub fn generate(config: &Path) -> Result<()> {
 
     // generate a default configuration file
     let config = Config {
-        sync: Rpc {
+        rpc: Rpc {
             solana: "https://api.mainnet-beta.solana.com".parse()?,
-            zcash: "https://api.zcashexplorer.app".parse()?,
+            lightwalletd: "http://127.0.0.1:9067".parse()?,
         },
         key: Key {
-            zcash: None,
+            zcash: bs58::encode(postcard::to_allocvec(&GroupSigners::new(3, 2)?)?).into_string(),
             solana: Keypair::new().to_base58_string(),
         },
+        network: Network::Testnet,
     };
     fs::write(
         &target,

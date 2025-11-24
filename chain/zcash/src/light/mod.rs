@@ -2,19 +2,15 @@
 
 use anyhow::Result;
 use cache::BlockDb;
-pub use config::{Config, Network};
+pub use config::Config;
 use rusqlite::Connection;
 use std::{fs, path::Path};
 use tonic::transport::Channel;
-use zcash_client_backend::{
-    data_api::{chain::ChainState, AccountBirthday, AccountPurpose, WalletWrite},
-    proto::service::{compact_tx_streamer_client::CompactTxStreamerClient, BlockId, Empty},
-    sync,
-};
+use zcash_client_backend::proto::service::compact_tx_streamer_client::CompactTxStreamerClient;
 use zcash_client_sqlite::{util::SystemClock, wallet, WalletDb};
-use zcash_keys::keys::UnifiedFullViewingKey;
-use zcash_protocol::consensus;
+use zcash_protocol::consensus::Network;
 
+mod api;
 mod cache;
 mod config;
 
@@ -24,10 +20,13 @@ pub struct Light {
     pub block: BlockDb,
 
     /// Wallet database path
-    pub wallet: WalletDb<Connection, consensus::Network, SystemClock, rand_core::OsRng>,
+    pub wallet: WalletDb<Connection, Network, SystemClock, rand_core::OsRng>,
 
     /// Compact transaction streamer client
     pub client: CompactTxStreamerClient<Channel>,
+
+    /// The network of the light client
+    pub network: Network,
 }
 
 impl Light {
@@ -43,7 +42,7 @@ impl Light {
         // create the wallet database
         let mut wallet = WalletDb::for_path(
             config.wallet.as_path(),
-            config.network.clone().into(),
+            config.network,
             SystemClock,
             rand_core::OsRng,
         )?;
@@ -63,54 +62,7 @@ impl Light {
             block,
             wallet,
             client,
+            network: config.network,
         })
-    }
-
-    /// Get the light client info
-    pub async fn info(&mut self) -> Result<()> {
-        let response = self.client.get_lightd_info(Empty {}).await?;
-        let info = response.into_inner();
-        println!("Light client info: {:?}", info);
-        Ok(())
-    }
-
-    /// Sync the wallet
-    pub async fn sync(&mut self) -> Result<()> {
-        sync::run(
-            &mut self.client,
-            &self.wallet.params().clone(),
-            &self.block,
-            &mut self.wallet,
-            100,
-        )
-        .await
-        .map_err(Into::into)
-    }
-
-    /// Import a unified full viewing key
-    pub async fn import(
-        &mut self,
-        name: &str,
-        birth: u32,
-        ufvk: UnifiedFullViewingKey,
-    ) -> Result<()> {
-        let block = self
-            .client
-            .get_block(BlockId {
-                height: birth as u64,
-                hash: Default::default(),
-            })
-            .await?
-            .into_inner();
-
-        let chain_state = ChainState::empty(block.height(), block.hash());
-        self.wallet.import_account_ufvk(
-            name,
-            &ufvk,
-            &AccountBirthday::from_parts(chain_state, None),
-            AccountPurpose::ViewOnly,
-            None,
-        )?;
-        Ok(())
     }
 }
