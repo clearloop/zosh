@@ -50,8 +50,7 @@ impl Dev {
         fs::create_dir_all(&group)?;
         for signer in signers {
             fs::write(
-                group
-                    .join(&bs58::encode(&postcard::to_allocvec(&signer.identifier)?).into_string()),
+                group.join(bs58::encode(&postcard::to_allocvec(&signer.identifier)?).into_string()),
                 toml::to_string(&signer)?,
             )?;
         }

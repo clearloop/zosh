@@ -171,6 +171,8 @@ impl Light {
                 })?;
 
         // 2. make the bundle of the transaction
+        let mut memo = [0; 512];
+        memo[..20].copy_from_slice(b"Bridged via Zyphers.");
         let Some((bundle, _meta)) = builder::bundle::<ZatBalance>(
             rand_core::OsRng,
             anchor,
@@ -182,25 +184,27 @@ impl Light {
                 ufvk.orchard()
                     .ok_or(anyhow::anyhow!("Invalid orchard full viewing key"))?
                     .clone(),
-                note.note().clone(),
+                *note.note(),
                 merkle_path.into(),
             )
             .ok_or(anyhow::anyhow!("Failed to create spend info"))?],
             vec![OutputInfo::new(
                 None,
-                recipient.clone(),
+                *recipient,
                 NoteValue::from_raw(amount),
-                [0; 512],
+                memo,
             )],
         )?
         else {
             return Err(anyhow::anyhow!("Failed to create bundle"));
         };
 
+        // Determine the correct branch ID based on the target height
+        let branch_id = BranchId::for_height(&self.network, BlockHeight::from(target_height));
         let expiry_height = BlockHeight::from(target_height) + 20;
         let utx = TransactionData::<Unauthorized>::from_parts(
-            TxVersion::suggested_for_branch(BranchId::Nu6_1),
-            BranchId::Nu6_1,
+            TxVersion::suggested_for_branch(branch_id),
+            branch_id,
             0,
             expiry_height,
             None,
@@ -212,6 +216,7 @@ impl Light {
         // 3. Create proof and prepare for signing
         let txid_parts = utx.digest(TxIdDigester);
         let sighash = signature_hash(&utx, &SignableInput::Shielded, &txid_parts);
+        tracing::info!("proving ...");
         let proving_key = ProvingKey::build();
         let proven = utx
             .orchard_bundle()
@@ -257,8 +262,8 @@ impl Light {
             .map_err(|_e| anyhow::anyhow!("Failed to finalize"))?;
 
         let tx = TransactionData::<Authorized>::from_parts(
-            TxVersion::suggested_for_branch(BranchId::Nu6),
-            BranchId::Nu6,
+            TxVersion::suggested_for_branch(branch_id),
+            branch_id,
             0,
             expiry_height,
             None,
@@ -268,6 +273,9 @@ impl Light {
         );
 
         let tx = tx.freeze()?;
+        let txid = tx.txid();
+        tracing::info!("Transaction ID: {}", txid);
+
         let mut data = Vec::new();
         tx.write(&mut data)?;
         let resp = self

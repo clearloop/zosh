@@ -66,13 +66,12 @@ impl GroupSigners {
         let signing_package = SigningPackage::new(commitments, message);
         for (identifier, nonce) in nonces {
             let keypkg = &keypkgs[identifier];
-            let share = round2::sign(&signing_package, &nonce, keypkg, randomizer.clone())?;
+            let share = round2::sign(&signing_package, &nonce, keypkg, *randomizer)?;
             signatures.insert(*identifier, share);
         }
 
         // aggregate the signature shares
-        let params =
-            RandomizedParams::from_randomizer(self.package.verifying_key(), randomizer.clone());
+        let params = RandomizedParams::from_randomizer(self.package.verifying_key(), *randomizer);
         let signature =
             redpallas::aggregate(&signing_package, &signatures, &self.package, &params)?;
         Ok((signature, *params.randomized_verifying_key()))

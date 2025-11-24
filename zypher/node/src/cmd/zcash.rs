@@ -66,12 +66,11 @@ impl Zcash {
         match self {
             Self::Light => self.light(&cfg).await,
             Self::Sync => self.sync(&cfg).await,
-            Self::Info => self.info(&config),
+            Self::Info => self.info(config),
             Self::Summary => self.summary(&cfg).await,
             Self::Import { ufvk, name } => self.import(&cfg, ufvk, name).await,
             Self::Send { recipient, amount } => {
-                self.send(&cfg, &config.key.zcash, &recipient, *amount)
-                    .await
+                self.send(&cfg, &config.key.zcash, recipient, *amount).await
             }
         }
     }
@@ -81,7 +80,7 @@ impl Zcash {
         let bytes = bs58::decode(&cfg.key.zcash).into_vec()?;
         let group: GroupSigners = postcard::from_bytes(&bytes)?;
         println!(
-            "Unifed orchard address: {}",
+            "Unified orchard address: {}",
             group.unified_address()?.encode(&network)
         );
 
@@ -94,22 +93,21 @@ impl Zcash {
 
     /// Get the light client info
     async fn light(&self, cfg: &zcash::light::Config) -> Result<()> {
-        let mut light = Light::new(&cfg).await?;
+        let mut light = Light::new(cfg).await?;
         light.info().await?;
         Ok(())
     }
 
     /// Sync the local wallet with the remote light client
     async fn sync(&self, cfg: &zcash::light::Config) -> Result<()> {
-        let mut light = Light::new(&cfg).await?;
+        let mut light = Light::new(cfg).await?;
         light.sync().await?;
         Ok(())
     }
 
     /// Import a unified full viewing key
     async fn import(&self, cfg: &zcash::light::Config, ufvk: &str, name: &str) -> Result<()> {
-        let mut light = Light::new(&cfg).await?;
-
+        let mut light = Light::new(cfg).await?;
         light
             .import(
                 name,
@@ -122,7 +120,7 @@ impl Zcash {
 
     /// Get the wallet summary
     async fn summary(&self, cfg: &zcash::light::Config) -> Result<()> {
-        let light = Light::new(&cfg).await?;
+        let light = Light::new(cfg).await?;
         light.summary()?;
         Ok(())
     }
@@ -135,7 +133,7 @@ impl Zcash {
         recipient: &str,
         amount: f32,
     ) -> Result<()> {
-        let mut light = Light::new(&cfg).await?;
+        let mut light = Light::new(cfg).await?;
         light
             .send(
                 postcard::from_bytes(&bs58::decode(group).into_vec()?)?,

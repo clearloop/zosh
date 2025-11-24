@@ -42,7 +42,7 @@ impl Light {
         // create the wallet database
         let mut wallet = WalletDb::for_path(
             config.wallet.as_path(),
-            config.network.clone(),
+            config.network,
             SystemClock,
             rand_core::OsRng,
         )?;
@@ -62,7 +62,7 @@ impl Light {
             block,
             wallet,
             client,
-            network: config.network.clone(),
+            network: config.network,
         })
     }
 }
