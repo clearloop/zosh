@@ -3,11 +3,14 @@
 use crate::light::Light;
 use anyhow::Result;
 use zcash_client_backend::{
-    data_api::{AccountBirthday, AccountPurpose, WalletWrite},
+    data_api::{
+        wallet::ConfirmationsPolicy, AccountBirthday, AccountPurpose, WalletRead, WalletWrite,
+    },
     proto::service::{BlockId, Empty},
     sync,
 };
 use zcash_keys::keys::UnifiedFullViewingKey;
+use zcash_protocol::consensus::BranchId;
 
 impl Light {
     /// Get the light client info
@@ -32,16 +35,17 @@ impl Light {
     }
 
     /// Import a unified full viewing key
-    pub async fn import(
-        &mut self,
-        name: &str,
-        birth: u32,
-        ufvk: UnifiedFullViewingKey,
-    ) -> Result<()> {
+    pub async fn import(&mut self, name: &str, ufvk: UnifiedFullViewingKey) -> Result<()> {
+        let birth = BranchId::Nu6
+            .height_bounds(&self.network)
+            .ok_or(anyhow::anyhow!("Invalid network"))?
+            .0
+            .into();
+
         let block = self
             .client
             .get_block(BlockId {
-                height: birth as u64,
+                height: birth,
                 hash: Default::default(),
             })
             .await?
@@ -50,7 +54,7 @@ impl Light {
         let tree = self
             .client
             .get_tree_state(BlockId {
-                height: birth as u64,
+                height: birth,
                 hash: block.hash,
             })
             .await?
@@ -64,6 +68,17 @@ impl Light {
             AccountPurpose::ViewOnly,
             None,
         )?;
+        Ok(())
+    }
+
+    /// Get the accounts
+    pub fn summary(&self) -> Result<()> {
+        let summary = self
+            .wallet
+            .get_wallet_summary(ConfirmationsPolicy::new_symmetrical(1.try_into().unwrap()))?
+            .ok_or(anyhow::anyhow!("Failed to get wallet summary"))?;
+
+        println!("Wallet summary: {:?}", summary);
         Ok(())
     }
 }

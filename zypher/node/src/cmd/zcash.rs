@@ -7,6 +7,7 @@ use std::path::Path;
 use zcash::{
     light::Light,
     signer::{GroupSigners, SignerInfo},
+    UnifiedFullViewingKey,
 };
 
 /// Zcash tools
@@ -34,6 +35,18 @@ pub enum Zcash {
 
     /// Prints the signer info
     Info,
+
+    /// Get the wallet summary
+    Summary,
+
+    /// Import a unified full viewing key
+    Import {
+        /// The unified full viewing key to import
+        ufvk: String,
+
+        /// The name of the account
+        name: String,
+    },
 }
 
 impl Zcash {
@@ -44,6 +57,8 @@ impl Zcash {
             Self::Light => self.light(&cfg).await,
             Self::Sync => self.sync(&cfg).await,
             Self::Info => self.info(&config),
+            Self::Summary => self.summary(&cfg).await,
+            Self::Import { ufvk, name } => self.import(&cfg, ufvk, name).await,
         }
     }
 
@@ -74,6 +89,27 @@ impl Zcash {
     async fn sync(&self, cfg: &zcash::light::Config) -> Result<()> {
         let mut light = Light::new(&cfg).await?;
         light.sync().await?;
+        Ok(())
+    }
+
+    /// Import a unified full viewing key
+    async fn import(&self, cfg: &zcash::light::Config, ufvk: &str, name: &str) -> Result<()> {
+        let mut light = Light::new(&cfg).await?;
+
+        light
+            .import(
+                name,
+                UnifiedFullViewingKey::decode(&light.network, ufvk)
+                    .map_err(|e| anyhow::anyhow!(e))?,
+            )
+            .await?;
+        Ok(())
+    }
+
+    /// Get the wallet summary
+    async fn summary(&self, cfg: &zcash::light::Config) -> Result<()> {
+        let light = Light::new(&cfg).await?;
+        light.summary()?;
         Ok(())
     }
 }
