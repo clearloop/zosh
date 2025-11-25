@@ -1,5 +1,5 @@
 [workspace]
-members = ["chain/zcash", "zypher/*", "programs/*"]
+members = ["chain/*", "zypher/*", "programs/*"]
 resolver = "2"
 
 [workspace.package]
@@ -50,6 +50,7 @@ rand_core = "0.6.4"
 reddsa = { version = "0.5.1", features = ["frost", "serde"] }
 rusqlite = "0.37.0"
 serde = "1.0.228"
+solana-client = "2.3.13"
 solana-program = "2.2.0"
 solana-sdk = { version = "2.2.0", features = ["full"] }
 solana-sdk-ids = "^2"
