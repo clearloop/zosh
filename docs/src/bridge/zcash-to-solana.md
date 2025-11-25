@@ -86,7 +86,7 @@ On the solana program side, we verify the following stuffs:
 
 - all of the signatures are valid.
 - validated signatures are over the threshold of the validator set.
-- the nounce mathces the one in the program
+- the nounce matches the one in the program
 
 > The solana program maintains a `nounce` to deduplicate the mint requests, each time
 > a bundle processed, the `nounce` will be incremented.

@@ -30,7 +30,7 @@ struct BridgeBundleToZcash {
     /// The orchard bundle of the requests.
     bundle: OrchardBundle,
 
-    /// The siganture of the randomizer.
+    /// The signature of the randomizer.
     signature: Signature,
 }
 ```
