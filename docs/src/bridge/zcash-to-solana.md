@@ -21,7 +21,7 @@ enum MemoInstruction {
 
 ## 2. Validators identify and pack the transaction
 
-Any validator can submit the transaction to the Zyphers chain with a `bridge` transaction.
+Anyone can submit the transaction to the zyphers chain with a `bridge` transaction.
 
 ```rust
 struct BridgeToSolana {
