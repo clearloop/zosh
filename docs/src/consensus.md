@@ -1,10 +1,7 @@
-# Network
+# Consensus
 
-The consensus is currently based on PoA with an optimized hotstuff
-implementation, which connects offchain data sources to a secure, reliable,
-and unstoppable network.
-
-> We will upgrade zyphers to a PoS network after getting the product market fit.
+The consensus is using [ZorchBFT](#the-zorchbft) which connects offchain data sources
+efficiently to a secure, reliable, and unstoppable network.
 
 ## Data Sources
 
@@ -32,13 +29,18 @@ fast confirmed (1-3), users will get refunded once validators have committed
 mistakes, which will be triggered by the dispute transactions, for large transfer,
 we'd make sure that they get enough confirmations (7-10).
 
-## The Conesnus
+## The ZorchBFT
 
-We are running a PoA network based on threshold signatures, we don't need a fixed
-block time because each of the blocks will have the signatures of validators over
-the threshold, users transactions will get confirmed as soon as possible.
+ZorchBFT is based on PoA with an optimized [hotstuff][hotstuff] implementation,
+shortly:
 
-For the validators rotation and key refreshing, see the [validator chapter](/network/validator.md).
+- No fixed block time
+- VRF for randomizing the leader selection
+- Threshold signatures for the block commitment
+- Timeout conditions for force rotating leaders
+- Key refreshing for the orchard package
+
+> We will upgrade zyphers to a PoS network after getting the product market fit.
 
 ### Dual blocks
 

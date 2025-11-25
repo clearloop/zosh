@@ -2,7 +2,7 @@
 
 Bridging zypZEC from solana to zcash is pretty straightforward here.
 
-## 1. User burn zypZEC with ZEC recipient specified
+## 1. User burns zypZEC with ZEC recipient specified
 
 ```rust
 struct BridgeToZcash {
@@ -25,7 +25,7 @@ need two-round signature aggregation with frost.
 ```rust
 struct BridgeBundleToZcash {
     /// The unbridged requests.
-    txs: Vec<BridgeToZcash>,
+    txs: Vec<(BridgeToZcash, [u8; 32])>,
 
     /// The orchard bundle of the requests.
     bundle: OrchardBundle,
@@ -35,10 +35,11 @@ struct BridgeBundleToZcash {
 }
 ```
 
-1. Select all unbridged solan-to-zcash notes on chain.
-2. Pack the transactions into an orchard bundle.
-3. Do the 2-round signature aggregation with frost via p2p.
-4. Pack the finalized zcash transaction into a new block.
+1. Verify signatures of solana transactions
+2. Select all unbridged solan-to-zcash notes on chain.
+3. Pack the transactions into an orchard bundle.
+4. Do the 2-round signature aggregation with frost via p2p.
+5. Pack the finalized zcash transaction into a new block.
 
 > The selected validator who packs the bundle need also handle the UTXO stuff
 > on the zcash side, unspent funds will transfer back to the bridge's orchard
