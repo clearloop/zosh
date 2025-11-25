@@ -1,13 +1,17 @@
 # Bridge
 
-The page explains how the bridge works for solana and zcash.
+This chapter explains how the bridge works in Zyphers.
 
-## Zcash to Solana
+- [Zcash to Solana](./zcash-to-solana.md)
+- [Solana to Zcash](./solana-to-zcash.md)
 
-### 1. Deposit ZEC to the bridge via the orchard pool
+## v0.1.0 (POC)
 
-User send ZEC to the orchard address of bridge with memo of recipient address
-on solana, if validators can not decode the memo, the ZEC will be returned to
-the user.
+The on-chain addresses of the bridge.
 
-## Solana to Zcash
+| Chain         | Address                                               |
+| ------------- | ----------------------------------------------------- |
+| Solana Devnet | TBA                                                   |
+| Zcash Testnet | [utest1fltxax64jr...dsjxqth3unkqsas0nc][v0-1-0-zcash] |
+
+[v0-1-0-zcash]: https://cipherscan.app/address/utest1fltxax64jr7nu5j4h9kszknm0hg929sxl69y02zlfsh4r8wp6fuxh2mzrlhznedfdz94z2089cdxc7zfd98wqhdsjxqth3unkqsas0nc
