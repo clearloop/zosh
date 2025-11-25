@@ -1,69 +1,28 @@
-# ZypherBridge
+# Zyphers
 
-The privacy bridge for Solana and Zcash.
+The trustless privacy bridge for Solana and Zcash.
 
 ```mermaid
-flowchart TD
-subgraph ZC [Zcash Chain]
-ZA[Shielded Multi-sig<br>Escrow Address]
-ZB[User's Shielded Address]
-end
-
-    subgraph SC [Solana Chain Programs]
-        LC[Zcash Light Client<br>Stores & Validates Headers]
-        VP[State Proof Verifier<br>ZK Proof Verification]
-        BC[Bridge Logic<br>Mint/Burn wZEC]
-        CG[Contract Governance<br>Multi-sig Upgradeable]
-    end
-
-    subgraph GN [Guardian Network TSS/MPC]
-        G1[Guardian 1]
-        G2[Guardian 2]
-        G3[Guardian ...]
-        G4[Guardian N]
-
-        DKG[Distributed Key Generation]
-        PSS[Proactive Secret Sharing]
-        TS[Threshold Signing Protocol]
-    end
-
-    %% Zcash to Solana Flow
-    U1[User: Deposit ZEC to Bridge] --> ZT[Send ZEC to Shielded<br>Escrow Address]
-    ZT --> ZA
-
-    RL[Relayer Network] --> MH[Monitors Zcash &<br>Generates State Proof]
-    MH --> SP[Submits Block Header<br>& State Proof to Solana]
-
-    SP --> LC
-    SP --> VP
-    LC -->|Provides trusted header| VP
-    VP -->|Proof Valid| BC
-    BC --> UM[Mints wZEC to<br>User's Solana Address]
-
-    %% Solana to Zcash Flow
-    U2[User: Redeem ZEC from Bridge] --> BT[Burn wZEC on Solana]
-    BT --> BE[Emit Burn Event]
-
-    BE --> GN
-    GN -->|Observes Event| TS
-    TS -->|M-of-N Signers Collaborate| ST[Create Shielded Tx<br>Spend from Escrow]
-    ST --> ZS[Send ZEC to User's<br>Zcash Address]
-    ZS --> ZB
-
-    %% Guardian Management
-    DKG -.->|Initial Setup| GN
-    PSS -.->|Regular Key Refresh| GN
-    CG -.->|Governs Parameters| GN
+flowchart LR
+    A[Zcash Orchard Pool] --> |Deposit ZEC| C[Zyphers]
+    C --> |Mint zypZEC| B[Solana]
+    B --> |Burn zypZEC| C
+    C --> |Receive ZEC| A
 ```
 
-### Development Links
+## Security
 
-- [zecfaucet][faucet]
-- [zcash testnet][zectestnet]
-- [zcash RPC][rpc]
-- [zcash explorer][explorer]
+The funds in the [bridge](/bridge/README.md) are secured by [the zyphers network](/network/README.md),
+technically:
 
-[explorer]: https://mainnet.zcashexplorer.app/
-[rpc]: https://zcash.github.io/rpc/
-[faucet]: https://testnet.zecfaucet.com/
-[zectestnet]: https://blockexplorer.one/zcash/testnet
+- [frost][frost] to manage our zcash orchard pool.
+- multiple signatures to manage the zypZEC on the solana side.
+
+## Privacy
+
+The privacy is ensured by the orchard pool from zcash.
+
+- On bridging ZEC to SOL, Zyphers doesn't know the depositor of ZEC.
+- On bridging SOL to ZEC, Zyphers sends the funds back to the orchard pool.
+
+[frost]: https://frost.zfnd.org/

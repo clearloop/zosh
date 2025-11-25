@@ -2,7 +2,7 @@
 authors = ["clearloop"]
 language = "en"
 src = "src"
-title = "ZypherBridge"
+title = "Zyphers - The trustless privacy bridge"
 
 [preprocessor]
 
