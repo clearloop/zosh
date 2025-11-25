@@ -16,7 +16,7 @@ The funds in the [bridge](/bridge) are secured by [the Zorch Protocol](/consensu
 
 - No custody wallet, everything on-chain.
 - [frost][frost] to manage the zcash orchard pool.
-- `multi-sig` to manage the zypZEC on the solana side.
+- `multi-sig` to manage the zrcZEC on the solana side.
 
 ## Privacy
 
