@@ -1,1 +1,1 @@
-//! Zyphers Solana utilities
+//! Zorch Solana utilities

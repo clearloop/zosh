@@ -9694,6 +9694,122 @@ dependencies = [
 ]
 
 [[package]]
+name = "zorch"
+version = "0.1.0"
+dependencies = [
+ "anchor-lang",
+ "anchor-spl",
+ "anyhow",
+ "borsh 1.5.7",
+ "mollusk-svm",
+ "solana-sdk",
+ "solana-sdk-ids 2.2.1",
+]
+
+[[package]]
+name = "zorch-core"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "serde",
+]
+
+[[package]]
+name = "zorch-network"
+version = "0.1.0"
+
+[[package]]
+name = "zorch-node"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "bs58",
+ "clap",
+ "dirs",
+ "hex",
+ "postcard",
+ "rand_core 0.6.4",
+ "reddsa",
+ "serde",
+ "solana-signer",
+ "tokio",
+ "toml 0.9.8",
+ "tracing",
+ "tracing-subscriber",
+ "url",
+ "zorch-runtime",
+ "zorch-sync",
+ "zorch-zcash",
+]
+
+[[package]]
+name = "zorch-runtime"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "bs58",
+ "orchard",
+ "postcard",
+ "rand 0.8.5",
+ "rand_core 0.6.4",
+ "reddsa",
+ "serde",
+ "solana-sdk",
+ "zcash_keys",
+ "zcash_primitives",
+ "zorch-zcash",
+]
+
+[[package]]
+name = "zorch-solana"
+version = "0.1.0"
+dependencies = [
+ "anchor-lang",
+ "borsh 1.5.7",
+ "rand 0.8.5",
+ "solana-client",
+ "solana-program",
+ "solana-sdk",
+ "spl-token 9.0.0",
+]
+
+[[package]]
+name = "zorch-sync"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "jsonrpsee-http-client",
+ "serde",
+ "solana-sdk",
+ "tokio",
+ "url",
+]
+
+[[package]]
+name = "zorch-zcash"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "async-trait",
+ "jsonrpsee-http-client",
+ "orchard",
+ "prost",
+ "rand 0.8.5",
+ "rand_core 0.6.4",
+ "reddsa",
+ "rusqlite",
+ "serde",
+ "tonic",
+ "tracing",
+ "url",
+ "zcash_client_backend",
+ "zcash_client_sqlite",
+ "zcash_keys",
+ "zcash_primitives",
+ "zcash_protocol",
+]
+
+[[package]]
 name = "zstd"
 version = "0.13.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -9719,120 +9835,4 @@ checksum = "91e19ebc2adc8f83e43039e79776e3fda8ca919132d68a1fed6a5faca2683748"
 dependencies = [
  "cc",
  "pkg-config",
-]
-
-[[package]]
-name = "zypher-core"
-version = "0.1.0"
-dependencies = [
- "anyhow",
- "serde",
-]
-
-[[package]]
-name = "zypher-network"
-version = "0.1.0"
-
-[[package]]
-name = "zypher-node"
-version = "0.1.0"
-dependencies = [
- "anyhow",
- "bs58",
- "clap",
- "dirs",
- "hex",
- "postcard",
- "rand_core 0.6.4",
- "reddsa",
- "serde",
- "solana-signer",
- "tokio",
- "toml 0.9.8",
- "tracing",
- "tracing-subscriber",
- "url",
- "zypher-runtime",
- "zypher-sync",
- "zyphers-zcash",
-]
-
-[[package]]
-name = "zypher-runtime"
-version = "0.1.0"
-dependencies = [
- "anyhow",
- "bs58",
- "orchard",
- "postcard",
- "rand 0.8.5",
- "rand_core 0.6.4",
- "reddsa",
- "serde",
- "solana-sdk",
- "zcash_keys",
- "zcash_primitives",
- "zyphers-zcash",
-]
-
-[[package]]
-name = "zypher-sync"
-version = "0.1.0"
-dependencies = [
- "anyhow",
- "jsonrpsee-http-client",
- "serde",
- "solana-sdk",
- "tokio",
- "url",
-]
-
-[[package]]
-name = "zyphers"
-version = "0.1.0"
-dependencies = [
- "anchor-lang",
- "anchor-spl",
- "anyhow",
- "borsh 1.5.7",
- "mollusk-svm",
- "solana-sdk",
- "solana-sdk-ids 2.2.1",
-]
-
-[[package]]
-name = "zyphers-solana"
-version = "0.1.0"
-dependencies = [
- "anchor-lang",
- "borsh 1.5.7",
- "rand 0.8.5",
- "solana-client",
- "solana-program",
- "solana-sdk",
- "spl-token 9.0.0",
-]
-
-[[package]]
-name = "zyphers-zcash"
-version = "0.1.0"
-dependencies = [
- "anyhow",
- "async-trait",
- "jsonrpsee-http-client",
- "orchard",
- "prost",
- "rand 0.8.5",
- "rand_core 0.6.4",
- "reddsa",
- "rusqlite",
- "serde",
- "tonic",
- "tracing",
- "url",
- "zcash_client_backend",
- "zcash_client_sqlite",
- "zcash_keys",
- "zcash_primitives",
- "zcash_protocol",
 ]

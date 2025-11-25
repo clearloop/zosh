@@ -1,7 +1,7 @@
 //! Tests for the initialize instruction
 
 use crate::Test;
-use zyphers::api;
+use zorch::api;
 
 #[test]
 fn test_initialize_success() {

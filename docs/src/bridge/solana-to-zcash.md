@@ -1,8 +1,8 @@
 # Solana to Zcash
 
-Bridging zypZEC from solana to zcash is pretty straightforward here.
+Bridging zrcZEC from Solana to Zcash is pretty straightforward here.
 
-## 1. User burns zypZEC with ZEC recipient specified
+## 1. User burns zrcZEC with ZEC recipient specified
 
 ```rust
 struct BridgeToZcash {
@@ -19,7 +19,7 @@ User send the burn instruction to our solana program.
 ## 2. Validators identify and pack the transaction
 
 Same as what we do in the zcash to solana bridging, anyone can submit the
-transaction to zyphers, the difference is that for packing this block, we
+transaction to zorch, the difference is that for packing this block, we
 need two-round signature aggregation with frost.
 
 ```rust

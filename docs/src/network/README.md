@@ -4,7 +4,7 @@ The consensus is currently based on PoA with an optimized hotstuff
 implementation, which connects offchain data sources to a secure, reliable,
 and unstoppable network.
 
-> We will upgrade zyphers to a PoS network after getting the product market fit.
+> We will upgrade zorch to a PoS network after getting the product market fit.
 
 ## Data Sources
 

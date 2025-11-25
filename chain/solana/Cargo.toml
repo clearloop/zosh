@@ -1,5 +1,5 @@
 [package]
-name = "zyphers-solana"
+name = "zorch-solana"
 version.workspace = true
 edition.workspace = true
 

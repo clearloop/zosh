@@ -1,12 +1,12 @@
 [package]
-name = "zyphers"
+name = "zorch"
 version.workspace = true
 edition.workspace = true
-description = "Zyphers solana consensus program"
+description = "Zorch solana consensus program"
 
 [lib]
 crate-type = ["cdylib", "lib"]
-name = "zyphers"
+name = "zorch"
 
 [features]
 default = []

@@ -6,7 +6,7 @@ pub struct BridgeState {
     /// Program authority pubkey
     pub authority: Pubkey,
 
-    /// The validators for the consensus of zyphers
+    /// The validators for the consensus of zorch
     pub validators: Vec<Pubkey>,
 
     /// The threshold for the consensus (e.g., 2 for 2/3)

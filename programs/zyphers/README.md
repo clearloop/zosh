@@ -1,4 +1,4 @@
-# Zyphers: Zcash-Solana Bridge Consensus Program
+# Zorch: Zcash-Solana Bridge Consensus Program
 
 A Solana program implementing threshold signature-based consensus for bridging ZEC tokens between Zcash and Solana networks.
 
@@ -146,7 +146,7 @@ Burns sZEC tokens to initiate bridging back to Zcash. Public action.
 
 ```bash
 # Build Solana program (BPF)
-cargo build-sbf --manifest-path programs/zyphers/Cargo.toml
+cargo build-sbf --manifest-path programs/zorch/Cargo.toml
 
 # Build with Anchor (requires IDL fixes)
 anchor build
@@ -166,7 +166,7 @@ anchor build
 ## File Structure
 
 ```
-programs/zyphers/src/
+programs/zorch/src/
 ├── lib.rs           # Main program and instruction handlers
 ├── errors.rs        # Custom error definitions
 ├── events.rs        # Event definitions

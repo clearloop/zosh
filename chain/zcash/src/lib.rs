@@ -1,4 +1,4 @@
-//! Zcash related stuffs for zyphers
+//! Zcash related stuffs for zorch
 
 pub use {
     orchard::Address,

@@ -27,7 +27,7 @@ pub struct Test {
 impl Test {
     /// Create a new Test instance
     pub fn new() -> Self {
-        let mut mollusk = Mollusk::new(&zyphers::ID, "zyphers");
+        let mut mollusk = Mollusk::new(&zorch::ID, "zorch");
 
         // Add SPL Token program
         mollusk.add_program(

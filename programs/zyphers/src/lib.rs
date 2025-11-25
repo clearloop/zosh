@@ -1,4 +1,4 @@
-//! zyphers consensus program
+//! zorch consensus program
 
 use anchor_lang::prelude::*;
 use anchor_spl::token::{Mint, Token, TokenAccount};
@@ -17,7 +17,7 @@ pub mod state;
 mod utils;
 
 #[program]
-pub mod zyphers {
+pub mod zorch {
     use super::*;
 
     /// Initialize the bridge with initial validator set and create sZEC mint

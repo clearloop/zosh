@@ -1,6 +1,6 @@
 # Bridge
 
-This chapter explains how the bridge works in Zyphers.
+This chapter explains how the bridge works in Zorch.
 
 - [Zcash to Solana](./zcash-to-solana.md)
 - [Solana to Zcash](./solana-to-zcash.md)

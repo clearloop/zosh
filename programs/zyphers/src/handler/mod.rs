@@ -1,4 +1,4 @@
-//! for the handlers of the zyphers program
+//! for the handlers of the zorch program
 
 pub mod external;
 pub mod internal;

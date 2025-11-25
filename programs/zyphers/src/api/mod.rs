@@ -1,4 +1,4 @@
-//! client library for the zyphers program
+//! client library for the zorch program
 #![cfg(not(target_os = "solana"))]
 
 use crate::instruction::Initialize;

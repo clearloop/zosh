@@ -1,4 +1,4 @@
-//! Utility functions for zyphers consensus program
+//! Utility functions for zorch consensus program
 
 use crate::errors::BridgeError;
 use anchor_lang::{

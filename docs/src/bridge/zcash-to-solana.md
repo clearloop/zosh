@@ -6,7 +6,7 @@ make the funds on zcash secure and trustless.
 ## 1. User deposits ZEC to the shielded address
 
 User send ZEC to the shielded address of bridge with `memo` which includes
-a serialized `bridge` instruction of Zyphers network.
+a serialized `bridge` instruction of Zorch network.
 
 ```rust
 enum MemoInstruction {
@@ -21,7 +21,7 @@ enum MemoInstruction {
 
 ## 2. Validators identify and pack the transaction
 
-Anyone can submit the transaction to the zyphers chain with a `bridge` transaction.
+Anyone can submit the transaction to the zorch chain with a `bridge` transaction.
 
 ```rust
 struct BridgeToSolana {
@@ -38,11 +38,11 @@ struct BridgeToSolana {
 
 The transactions will be packed into a block and get validated by all of the validators:
 
-- Fetch spendable notes after the latest zcash height stored on the zyphers chain.
+- Fetch spendable notes after the latest zcash height stored on the zorch chain.
 - Check if the amount and the recipient are matched with the transaction id.
 - Check if the notes have already been bridged.
 
-> All bridged notes will be marked as bridged on the zyphers chain, sort like the UTXO
+> All bridged notes will be marked as bridged on the zorch chain, sort like the UTXO
 > design.
 
 If everything are valid, the block will be committed to the chain.
@@ -76,10 +76,10 @@ struct BridgeBundleToSolana {
 Once this block get committed on chain, all notes inside of it will be transited to
 the bridged status.
 
-## 4. The recipient get zypZEC on Solana
+## 4. The recipient get zrcZEC on Solana
 
 After the commitment of the bundle block, anyone can use the bundled data to mint
-zypZEC on solana, the user itself, a solver, a relayer, or anybody wants to do it,
+zrcZEC on solana, the user itself, a solver, a relayer, or anybody wants to do it,
 we likely need to do sort of incentive mechanism to encourage them to do it.
 
 On the solana program side, we verify the following stuffs:
@@ -91,4 +91,4 @@ On the solana program side, we verify the following stuffs:
 > The solana program maintains a `nounce` to deduplicate the mint requests, each time
 > a bundle processed, the `nounce` will be incremented.
 
-Mint the zypZEC, bumps the nounce.
+Mint the zrcZEC, bumps the nounce.
