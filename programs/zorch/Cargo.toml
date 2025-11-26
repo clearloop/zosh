@@ -33,6 +33,7 @@ solana-sdk.workspace = true
 borsh.workspace = true
 mollusk-svm.workspace = true
 solana-account.workspace = true
+solana-ed25519-program.workspace = true
 solana-sdk.workspace = true
 
 [lints.rust]

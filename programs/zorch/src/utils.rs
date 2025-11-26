@@ -7,29 +7,11 @@ use anchor_lang::{
 };
 use solana_sdk_ids::ed25519_program::ID as ED25519_PROGRAM_ID;
 
-/// Action types for signature verification
-#[derive(Clone, Copy, Debug, PartialEq)]
-pub enum ActionType {
-    Validators,
-    Mint,
-}
-
-impl ActionType {
-    pub fn to_byte(self) -> u8 {
-        match self {
-            ActionType::Validators => 0,
-            ActionType::Mint => 1,
-        }
-    }
-}
-
 /// Verifies threshold signatures using Solana's Ed25519 program.
 ///
 /// Expects Ed25519 verification instructions before this instruction in the transaction.
 pub fn verify_threshold_signatures(
-    action_type: ActionType,
-    nonce: u64,
-    action_data: &[u8],
+    message: &[u8],
     signatures: &[[u8; 64]],
     validators: &[Pubkey],
     threshold: u8,
@@ -41,9 +23,6 @@ pub fn verify_threshold_signatures(
         INSTRUCTIONS_ID,
         BridgeError::InvalidSignature
     );
-
-    // Construct the message that should have been signed
-    let message = construct_message(action_type, nonce, action_data);
 
     let mut valid_signers = Vec::new();
     let current_index =
@@ -79,10 +58,7 @@ pub fn verify_threshold_signatures(
         require_eq!(num_signatures, 1, BridgeError::InvalidSignature);
 
         // Verify the message matches
-        require!(
-            parsed_message.as_slice() == message.as_slice(),
-            BridgeError::InvalidSignature
-        );
+        require!(parsed_message == message, BridgeError::InvalidSignature);
 
         // Verify the signature matches
         require!(
@@ -112,15 +88,6 @@ pub fn verify_threshold_signatures(
     );
 
     Ok(valid_signers)
-}
-
-/// Construct message to be signed
-fn construct_message(action_type: ActionType, nonce: u64, action_data: &[u8]) -> Vec<u8> {
-    let mut message = Vec::new();
-    message.push(action_type.to_byte());
-    message.extend_from_slice(&nonce.to_le_bytes());
-    message.extend_from_slice(action_data);
-    message
 }
 
 /// Parses Ed25519 instruction data.

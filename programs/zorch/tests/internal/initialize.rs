@@ -30,16 +30,10 @@ fn test_initialize_success() {
         .expect("Bridge state account not found");
 
     let bridge_state_data = &bridge_state_account.1.data;
-    // Skip the 8-byte discriminator and deserialize
     let bridge_state =
         BridgeState::deserialize(&mut &bridge_state_data[8..]).expect("Failed to deserialize");
-
-    // Assert state fields
     assert_eq!(bridge_state.authority, test.payer, "Authority mismatch");
-    assert_eq!(
-        bridge_state.validators, vals,
-        "Validators mismatch"
-    );
+    assert_eq!(bridge_state.validators, vals, "Validators mismatch");
     assert_eq!(bridge_state.threshold, threshold, "Threshold mismatch");
     assert_eq!(
         bridge_state.total_validators, 3,

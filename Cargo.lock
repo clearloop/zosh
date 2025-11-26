@@ -9882,6 +9882,7 @@ dependencies = [
  "mollusk-svm",
  "mpl-token-metadata",
  "solana-account",
+ "solana-ed25519-program",
  "solana-sdk",
  "solana-sdk-ids 2.2.1",
 ]

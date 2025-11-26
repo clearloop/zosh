@@ -3,7 +3,7 @@
 use crate::{
     errors::BridgeError,
     events::{MintEvent, ValidatorSetUpdated},
-    utils::{verify_threshold_signatures, ActionType},
+    utils::verify_threshold_signatures,
 };
 use anchor_lang::prelude::*;
 use anchor_spl::token::{self, MintTo, TokenAccount};
@@ -23,24 +23,23 @@ pub fn mint<'info>(
     );
 
     // Validate all amounts and compute total
-    let mut action_data = Vec::new();
+    let nonce = ctx.accounts.bridge_state.nonce;
+    let mut message = nonce.to_le_bytes().to_vec();
     for mint_entry in &mints {
         require!(mint_entry.amount > 0, BridgeError::InvalidAmount);
-        action_data.extend_from_slice(mint_entry.recipient.as_ref());
-        action_data.extend_from_slice(&mint_entry.amount.to_le_bytes());
+        message.extend_from_slice(mint_entry.recipient.as_ref());
+        message.extend_from_slice(&mint_entry.amount.to_le_bytes());
     }
 
     // Get references for verification
-    let nonce = ctx.accounts.bridge_state.nonce;
+
     let validators = ctx.accounts.bridge_state.validators.clone();
     let threshold = ctx.accounts.bridge_state.threshold;
     let bridge_state_bump = ctx.accounts.bridge_state.bump;
 
     // Verify threshold signatures from current validator set
     let _signers = verify_threshold_signatures(
-        ActionType::Mint,
-        nonce,
-        &action_data,
+        &message,
         &signatures,
         &validators,
         threshold,
@@ -111,17 +110,16 @@ pub fn validators(
     require!(new_total > 0, BridgeError::InvalidThreshold);
 
     // Serialize action data for signature verification
-    let mut action_data = Vec::new();
-    action_data.extend_from_slice(&new_threshold.to_le_bytes());
+    let nonce = bridge_state.nonce;
+    let mut message = nonce.to_le_bytes().to_vec();
+    message.extend_from_slice(&new_threshold.to_le_bytes());
     for validator in &new_validators {
-        action_data.extend_from_slice(validator.as_ref());
+        message.extend_from_slice(validator.as_ref());
     }
 
     // Verify threshold signatures from current validator set
     let _signers = verify_threshold_signatures(
-        ActionType::Validators,
-        bridge_state.nonce,
-        &action_data,
+        &message,
         &signatures,
         &bridge_state.validators,
         bridge_state.threshold,

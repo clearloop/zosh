@@ -4,11 +4,12 @@ use mollusk_svm::Mollusk;
 use solana_account::Account;
 use solana_sdk::{
     account::{AccountSharedData, WritableAccount},
+    instruction::Instruction,
     pubkey::Pubkey,
     signature::Keypair,
     signer::Signer,
 };
-use zorch::api;
+use zorch::{api, types::MintEntry};
 
 mod external;
 mod internal;
@@ -182,6 +183,45 @@ impl Test {
                 Test::native_program_account().into(),
             ),
         ]
+    }
+
+    /// Sign the mint instruction
+    pub fn mint_signatures(&self, nonce: u64, mints: Vec<MintEntry>) -> ([u8; 64], Instruction) {
+        let mut message = nonce.to_le_bytes().to_vec();
+        for mint in &mints {
+            message.extend_from_slice(mint.recipient.as_ref());
+            message.extend_from_slice(&mint.amount.to_le_bytes());
+        }
+
+        let signature = self.pair.sign_message(&message);
+        let instruction = solana_ed25519_program::new_ed25519_instruction_with_signature(
+            &message,
+            &signature.as_array(),
+            self.payer.as_array(),
+        );
+        (*signature.as_array(), instruction)
+    }
+
+    /// Sign the mint instruction
+    pub fn validators_signatures(
+        &self,
+        nonce: u64,
+        validators: Vec<Pubkey>,
+        threshold: u8,
+    ) -> ([u8; 64], Instruction) {
+        let mut message = nonce.to_le_bytes().to_vec();
+        message.extend_from_slice(&threshold.to_le_bytes());
+        for validator in &validators {
+            message.extend_from_slice(validator.as_ref());
+        }
+
+        let signature = self.pair.sign_message(&message);
+        let instruction = solana_ed25519_program::new_ed25519_instruction_with_signature(
+            &message,
+            &signature.as_array(),
+            self.payer.as_array(),
+        );
+        (*signature.as_array(), instruction)
     }
 }
 
