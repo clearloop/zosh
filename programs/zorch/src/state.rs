@@ -38,30 +38,3 @@ impl BridgeState {
         1 // bump
     }
 }
-
-/// Action record to prevent replay attacks
-#[account]
-pub struct ActionRecord {
-    /// Hash of the action
-    pub action_hash: [u8; 32],
-
-    /// Whether the action was executed
-    pub executed: bool,
-
-    /// Validators who signed this action
-    pub signers: Vec<Pubkey>,
-
-    /// When the action was submitted
-    pub timestamp: i64,
-}
-
-impl ActionRecord {
-    /// Calculate space needed for the account
-    pub fn space(num_signers: usize) -> usize {
-        8 + // discriminator
-        32 + // action_hash
-        1 + // executed
-        4 + (num_signers * 32) + // signers vec
-        8 // timestamp
-    }
-}

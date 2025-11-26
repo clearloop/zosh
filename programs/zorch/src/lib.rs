@@ -5,7 +5,7 @@ use anchor_spl::token::{Mint, Token, TokenAccount};
 pub use errors::BridgeError;
 pub use events::{BurnEvent, MintEvent, ValidatorSetUpdated};
 use handler::{external, internal, threshold};
-pub use state::{ActionRecord, BridgeState};
+pub use state::BridgeState;
 
 declare_id!("2KwobV7wjmUzGRQfpd3G5HVRfCRUXfry9MoM3Hbks9dz");
 
