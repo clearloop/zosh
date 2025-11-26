@@ -8,7 +8,7 @@ use anchor_spl::token::{self, Burn};
 pub fn burn(ctx: Context<crate::BurnZec>, amount: u64, zec_recipient: String) -> Result<()> {
     require!(amount > 0, BridgeError::InvalidAmount);
     require!(
-        !zec_recipient.is_empty() && zec_recipient.len() >= 26 && zec_recipient.len() <= 95,
+        !zec_recipient.is_empty() && zec_recipient.len() == 110,
         BridgeError::InvalidZcashAddress
     );
 

@@ -5,6 +5,8 @@ use anchor_client::{
     solana_sdk::{commitment_config::CommitmentConfig, pubkey::Pubkey, signature::Keypair},
     Client, Cluster, Program,
 };
+use anchor_lang::AccountDeserialize;
+use anchor_spl::token::TokenAccount;
 use anyhow::Result;
 use mpl_token_metadata::accounts::Metadata;
 use solana_sdk::{signature::Signature, signer::Signer};
@@ -27,13 +29,6 @@ impl ZorchClient {
     /// Create a new ZorchClient
     pub fn new(cluster_url: String, ws_url: String, payer: Keypair) -> Result<Self> {
         let secret = payer.secret_bytes().clone();
-        eprintln!(
-            "[DEBUG] Creating ZorchClient with program ID: {}",
-            crate::ID
-        );
-        eprintln!("[DEBUG] Cluster URL: {}", cluster_url);
-        eprintln!("[DEBUG] Payer: {}", payer.pubkey());
-
         let client = Client::new_with_options(
             Cluster::Custom(cluster_url, ws_url),
             Rc::new(payer),
@@ -41,7 +36,6 @@ impl ZorchClient {
         );
 
         let program = client.program(crate::ID)?;
-        eprintln!("[DEBUG] Program client created successfully");
         Ok(Self {
             program,
             keypair: Keypair::new_from_array(secret),
@@ -74,6 +68,20 @@ impl ZorchClient {
             .await?;
 
         Metadata::from_bytes(&account_data).map_err(Into::into)
+    }
+
+    /// Read the current zec balance for a recipient
+    pub async fn zec_balance(&self, recipient: Pubkey) -> Result<TokenAccount> {
+        let token_account = spl_associated_token_account::get_associated_token_address(
+            &recipient,
+            &pda::zec_mint(),
+        );
+        let account_data = self
+            .program()
+            .rpc()
+            .get_account_data(&token_account)
+            .await?;
+        TokenAccount::try_deserialize(&mut &account_data[..]).map_err(Into::into)
     }
 
     /// Initialize the bridge with initial validator set

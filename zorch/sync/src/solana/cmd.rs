@@ -1,9 +1,11 @@
 //! Solana command line interface
 
+use std::str::FromStr;
+
 use crate::Config;
 use anyhow::Result;
 use clap::Parser;
-use solana_sdk::signature::Keypair;
+use solana_sdk::{pubkey::Pubkey, signature::Keypair};
 use zorch::client::ZorchClient;
 
 /// Solana command line interface
@@ -11,6 +13,24 @@ use zorch::client::ZorchClient;
 pub enum Solana {
     /// Get the current bridge state
     State,
+
+    /// Get the current zec balance for a recipient
+    Balance {
+        /// The address of the recipient
+        #[clap(short, long)]
+        address: Option<String>,
+    },
+
+    /// Burn sZEC to bridge back to Zcash
+    Burn {
+        /// The amount to burn
+        #[clap(short, long)]
+        amount: u64,
+
+        /// The address of the recipient
+        #[clap(short, long)]
+        recipient: String,
+    },
 
     /// Get or update the current metadata
     Metadata {
@@ -44,6 +64,8 @@ impl Solana {
 
         match self {
             Self::State => self.initialize(client).await,
+            Self::Balance { address } => self.balance(client, address.clone()).await,
+            Self::Burn { amount, recipient } => self.burn(client, *amount, recipient.clone()).await,
             Self::Metadata {
                 name,
                 symbol,
@@ -63,6 +85,14 @@ impl Solana {
         let _ = client.initialize(vec![client.payer()], 1).await?;
         let state = client.bridge_state().await?;
         println!("{state:#?}");
+        Ok(())
+    }
+
+    /// Burn sZEC to bridge back to Zcash
+    async fn burn(&self, client: ZorchClient, amount: u64, address: String) -> Result<()> {
+        client.send_burn(amount, address).await?;
+        let balance = client.zec_balance(client.payer()).await?;
+        println!("{balance:#?}");
         Ok(())
     }
 
@@ -87,6 +117,15 @@ impl Solana {
             .await?;
         let metadata = client.metadata().await?;
         println!("{metadata:#?}");
+        Ok(())
+    }
+
+    /// Get the current zec balance for a recipient
+    async fn balance(&self, client: ZorchClient, address: Option<String>) -> Result<()> {
+        let address = address.unwrap_or_else(|| client.payer().to_string());
+        let recipient = Pubkey::from_str(&address)?;
+        let balance = client.zec_balance(recipient).await?;
+        println!("{balance:#?}");
         Ok(())
     }
 }
