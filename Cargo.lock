@@ -8092,6 +8092,7 @@ dependencies = [
  "async-trait",
  "bs58",
  "clap",
+ "dirs",
  "orchard",
  "postcard",
  "prost",
@@ -8110,6 +8111,7 @@ dependencies = [
  "zcash_keys",
  "zcash_primitives",
  "zcash_protocol",
+ "zorch-program",
 ]
 
 [[package]]

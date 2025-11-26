@@ -2,6 +2,7 @@ use anchor_lang::prelude::*;
 
 /// The main bridge state account that stores validator set and configuration
 #[account]
+#[derive(Debug)]
 pub struct BridgeState {
     /// Program authority pubkey
     pub authority: Pubkey,

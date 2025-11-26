@@ -4,7 +4,7 @@ use crate::Config;
 use anyhow::Result;
 use clap::Parser;
 use std::{path::PathBuf, sync::OnceLock};
-use sync::zcash;
+use sync::{solana, zcash};
 use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt, EnvFilter};
 
 mod conf;
@@ -37,6 +37,10 @@ impl App {
         match &self.command {
             Command::Dev(dev) => dev.run(&self.config),
             Command::Generate => conf::generate(&self.config),
+            Command::Solana(solana) => {
+                let config = Config::load(&self.config.join("config.toml"))?;
+                solana.run(&config).await
+            }
             Command::Zcash(zcash) => {
                 let config = Config::load(&self.config.join("config.toml"))?;
                 zcash.run(&self.cache, &config).await
@@ -84,6 +88,10 @@ pub enum Command {
     /// Development command
     #[clap(subcommand)]
     Dev(dev::Dev),
+
+    /// Solana command
+    #[clap(subcommand)]
+    Solana(solana::Solana),
 
     /// Zcash command
     #[clap(subcommand)]

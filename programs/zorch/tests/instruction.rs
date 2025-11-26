@@ -1,10 +1,11 @@
 //! intergration tests
 
-use anyhow::Result;
-use solana_sdk::{signature::Keypair, signer::EncodableKey};
-use zorch::client::ZorchClient;
+use std::rc::Rc;
 
-mod internal;
+use anchor_client::Program;
+use anyhow::Result;
+use solana_sdk::{pubkey::Pubkey, signature::Keypair, signer::EncodableKey};
+use zorch::client::ZorchClient;
 
 /// Test environment
 pub struct Test {
@@ -23,7 +24,18 @@ impl Test {
             "ws://localhost:8900".into(),
             payer,
         )?;
+
         Ok(Self { client })
+    }
+
+    /// Get the payer's public key
+    pub fn payer(&self) -> Pubkey {
+        self.client.program().payer()
+    }
+
+    /// Get the program client
+    pub fn program(&self) -> &Program<Rc<Keypair>> {
+        self.client.program()
     }
 }
 

@@ -7,6 +7,7 @@ use anchor_client::{
 };
 use anyhow::Result;
 pub use instruction::*;
+use solana_sdk::signature::Signature;
 use std::rc::Rc;
 
 mod config;
@@ -33,16 +34,29 @@ impl ZorchClient {
         Ok(Self { program })
     }
 
+    /// Get the payer's public key
+    pub fn payer(&self) -> Pubkey {
+        self.program.payer()
+    }
+
     /// Get the program client
     pub fn program(&self) -> &Program<Rc<Keypair>> {
         &self.program
     }
 
+    /// Read the current bridge state
+    pub async fn bridge_state(&self) -> Result<crate::state::BridgeState> {
+        let bridge_state_pubkey = pda::bridge_state();
+        let bridge_state: crate::state::BridgeState =
+            self.program.account(bridge_state_pubkey).await?;
+        Ok(bridge_state)
+    }
+
     /// Initialize the bridge with initial validator set
-    pub async fn initialize(&self, validators: Vec<Pubkey>, threshold: u8) -> Result<Pubkey> {
+    pub async fn initialize(&self, validators: Vec<Pubkey>, threshold: u8) -> Result<Signature> {
         let bridge_state = pda::bridge_state();
         let zec_mint = pda::zec_mint();
-        let _tx = self
+        let tx = self
             .program
             .request()
             .accounts(crate::accounts::Initialize {
@@ -59,8 +73,7 @@ impl ZorchClient {
             })
             .send()
             .await?;
-
-        Ok(bridge_state)
+        Ok(tx)
     }
 
     /// Update token metadata (authority only)
