@@ -4,10 +4,12 @@ version.workspace = true
 edition.workspace = true
 
 [dependencies]
-solana-client.workspace = true
-solana-sdk.workspace = true
-solana-program.workspace = true
+anchor-client.workspace = true
 anchor-lang.workspace = true
-rand.workspace = true
-borsh.workspace = true
+anyhow.workspace = true
 spl-token.workspace = true
+spl-associated-token-account.workspace = true
+mpl-token-metadata.workspace = true
+
+# Zorch program types
+zorch = { path = "../../programs/zorch" }

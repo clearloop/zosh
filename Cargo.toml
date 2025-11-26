@@ -26,6 +26,7 @@ zcash = { path = "chain/zcash", package = "zorch-zcash" }
 solana = { path = "chain/solana", package = "zorch-solana" }
 
 # crates-io dependencies
+anchor-client = "0.32.1"
 anchor-lang = "0.32.1"
 anchor-spl = "0.32.1"
 anyhow = "1.0.100"
@@ -38,6 +39,7 @@ ed25519-dalek = "2.2.0"
 frost-core = "2.2.0"
 hex = "0.4.3"
 jsonrpsee-http-client = "0.26.0"
+litesvm = "0.7.1"
 mollusk-svm = "~0.4"
 mpl-token-metadata = { version = "5.0.0", features = ["serde"] }
 orchard = { version = "0.11.0", default-features = false, features = [
@@ -61,7 +63,7 @@ solana-signer = "2.2.1"
 spl-associated-token-account = { version = "7.0.0", features = [
     "no-entrypoint",
 ] }
-spl-token = { version = "9.0.0", features = ["no-entrypoint"] }
+spl-token = { version = "8.0.0", features = ["no-entrypoint"] }
 tokio = "1.48.0"
 toml = "0.9.8"
 tonic = "0.14.2"
