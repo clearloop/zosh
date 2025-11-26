@@ -131,10 +131,34 @@ impl ZorchClient {
         signatures: Vec<[u8; 64]>,
     ) -> Result<()> {
         anyhow::ensure!(!mint_entries.is_empty(), "No mint entries provided");
-
-        // create the ed25519 verify instructions
         let mut builder = self.program.request();
         let state = self.bridge_state().await?;
+
+        // create token accounts if not exists
+        for entry in &mint_entries {
+            let token_account = spl_associated_token_account::get_associated_token_address(
+                &entry.recipient,
+                &pda::zec_mint(),
+            );
+            if self
+                .program()
+                .rpc()
+                .get_account_data(&token_account)
+                .await
+                .is_err()
+            {
+                let create_ata_ix =
+                    spl_associated_token_account::instruction::create_associated_token_account(
+                        &self.program().payer(),
+                        &entry.recipient,
+                        &pda::zec_mint(),
+                        &pda::TOKEN_PROGRAM,
+                    );
+                builder = builder.instruction(create_ata_ix);
+            }
+        }
+
+        // create the ed25519 verify instructions
         let message = util::create_mint_message(state.nonce, &mint_entries);
         for signature in &signatures {
             let ed25519_ix = solana_ed25519_program::new_ed25519_instruction_with_signature(
@@ -160,9 +184,7 @@ impl ZorchClient {
             ));
         }
 
-        let _tx = self
-            .program
-            .request()
+        let _tx = builder
             .accounts(crate::accounts::MintZec {
                 payer: self.program.payer(),
                 bridge_state,

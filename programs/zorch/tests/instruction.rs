@@ -10,6 +10,7 @@ use solana_sdk::{
 use std::rc::Rc;
 use zorch::{
     client::{util, ZorchClient},
+    types::MintEntry,
     BridgeState,
 };
 
@@ -32,6 +33,21 @@ async fn test_update_validators() -> Result<()> {
         .client
         .update_validators(vec![test.payer()], 1, vec![signature])
         .await?;
+    Ok(())
+}
+
+#[tokio::test]
+async fn test_mint() -> Result<()> {
+    let test = Test::new().await?;
+    let state = test.bridge_state().await?;
+    let mints = vec![MintEntry {
+        recipient: test.payer(),
+        amount: 42,
+    }];
+    let message = util::create_mint_message(state.nonce, &mints);
+    let signature = test.client.keypair.sign_message(&message);
+    let signature = *signature.as_array();
+    let _ = test.client.send_mint(mints, vec![signature]).await?;
     Ok(())
 }
 
