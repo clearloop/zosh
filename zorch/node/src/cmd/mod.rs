@@ -33,7 +33,7 @@ impl App {
     /// Run the application
     pub async fn run(&self) -> anyhow::Result<()> {
         self.init_tracing()?;
-
+        self.create_dirs()?;
         match &self.command {
             Command::Dev(dev) => dev.run(&self.config),
             Command::Generate => conf::generate(&self.config),
@@ -43,6 +43,12 @@ impl App {
             }
         }?;
 
+        Ok(())
+    }
+
+    fn create_dirs(&self) -> Result<()> {
+        std::fs::create_dir_all(&self.config)?;
+        std::fs::create_dir_all(&self.cache)?;
         Ok(())
     }
 

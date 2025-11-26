@@ -33,23 +33,6 @@ impl ZorchClient {
         Ok(Self { program })
     }
 
-    /// Create a new ZorchClient with custom commitment level
-    pub fn new_with_commitment(
-        cluster_url: String,
-        ws_url: String,
-        payer: Keypair,
-        commitment: CommitmentConfig,
-    ) -> Result<Self> {
-        let client = Client::new_with_options(
-            Cluster::Custom(cluster_url, ws_url),
-            Rc::new(payer),
-            commitment,
-        );
-
-        let program = client.program(crate::ID)?;
-        Ok(Self { program })
-    }
-
     /// Initialize the bridge with initial validator set
     pub async fn initialize(&self, validators: Vec<Pubkey>, threshold: u8) -> Result<Pubkey> {
         let bridge_state = pda::bridge_state();

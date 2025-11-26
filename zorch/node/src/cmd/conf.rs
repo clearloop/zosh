@@ -24,6 +24,7 @@ pub fn generate(config: &Path) -> Result<()> {
     let config = Config {
         rpc: Rpc {
             solana: "https://api.mainnet-beta.solana.com".parse()?,
+            solana_ws: "wss://api.mainnet-beta.solana.com".parse()?,
             lightwalletd: "http://127.0.0.1:9067".parse()?,
         },
         key: Key {

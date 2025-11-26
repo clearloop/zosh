@@ -9,6 +9,9 @@ pub struct Rpc {
     /// solana RPC address
     pub solana: Url,
 
+    /// solana WS address
+    pub solana_ws: Url,
+
     /// zcash RPC address
     pub lightwalletd: Url,
 }
