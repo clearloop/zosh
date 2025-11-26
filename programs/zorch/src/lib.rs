@@ -45,31 +45,13 @@ pub mod zorch {
     }
 
     /// Update the entire validator set (threshold action)
-    pub fn update_validators_full(
-        ctx: Context<UpdateValidatorsFull>,
+    pub fn validators(
+        ctx: Context<Validators>,
         new_validators: Vec<Pubkey>,
         new_threshold: u8,
         signatures: Vec<[u8; 64]>,
     ) -> Result<()> {
-        threshold::update_validators_full(ctx, new_validators, new_threshold, signatures)
-    }
-
-    /// Add a single validator to the set (threshold action)
-    pub fn add_validator(
-        ctx: Context<AddValidator>,
-        validator: Pubkey,
-        signatures: Vec<[u8; 64]>,
-    ) -> Result<()> {
-        threshold::add_validator(ctx, validator, signatures)
-    }
-
-    /// Remove a single validator from the set (threshold action)
-    pub fn remove_validator(
-        ctx: Context<RemoveValidator>,
-        validator: Pubkey,
-        signatures: Vec<[u8; 64]>,
-    ) -> Result<()> {
-        threshold::remove_validator(ctx, validator, signatures)
+        threshold::validators(ctx, new_validators, new_threshold, signatures)
     }
 }
 
@@ -289,7 +271,7 @@ pub struct BurnSzec<'info> {
 /// validators. The payer covers any additional rent required.
 #[derive(Accounts)]
 #[instruction(new_validators: Vec<Pubkey>, new_threshold: u16, signatures: Vec<[u8; 64]>)]
-pub struct UpdateValidatorsFull<'info> {
+pub struct Validators<'info> {
     /// Transaction fee payer and reallocation payer.
     ///
     /// Covers the cost of resizing the bridge_state account.
@@ -306,110 +288,6 @@ pub struct UpdateValidatorsFull<'info> {
         seeds = [b"bridge-state"],
         bump = bridge_state.bump,
         realloc = BridgeState::space(new_validators.len()),
-        realloc::payer = payer,
-        realloc::zero = false
-    )]
-    pub bridge_state: Account<'info, BridgeState>,
-
-    /// System program for account reallocation.
-    pub system_program: Program<'info, System>,
-
-    /// Instructions sysvar for Ed25519 signature verification.
-    ///
-    /// Used to read Ed25519 program verification results.
-    ///
-    /// CHECK: Must be the Instructions sysvar account
-    #[account(address = anchor_lang::solana_program::sysvar::instructions::ID)]
-    pub instructions: UncheckedAccount<'info>,
-}
-
-/// Accounts for adding a single validator to the set.
-///
-/// This is a threshold action that adds one new validator to the existing set.
-/// Requires signatures from the current validators meeting the threshold.
-/// The account is reallocated to accommodate the additional validator.
-///
-/// # Accounts
-/// - `payer`: Transaction and realloc fee payer
-/// - `bridge_state`: Validator is appended, total count incremented
-/// - `system_program`: Required for reallocation
-///
-/// # Reallocation
-/// The bridge_state account grows by one validator's space (32 bytes).
-#[derive(Accounts)]
-#[instruction(validator: Pubkey, signatures: Vec<[u8; 64]>)]
-pub struct AddValidator<'info> {
-    /// Transaction fee payer and reallocation payer.
-    ///
-    /// Covers the cost of growing the bridge_state account.
-    #[account(mut)]
-    pub payer: Signer<'info>,
-
-    /// Bridge state PDA storing validator set.
-    ///
-    /// Reallocated to fit one additional validator.
-    /// New validator is appended to the validators vector.
-    /// Total count is incremented, nonce is incremented.
-    #[account(
-        mut,
-        seeds = [b"bridge-state"],
-        bump = bridge_state.bump,
-        realloc = BridgeState::space(bridge_state.validators.len() + 1),
-        realloc::payer = payer,
-        realloc::zero = false
-    )]
-    pub bridge_state: Account<'info, BridgeState>,
-
-    /// System program for account reallocation.
-    pub system_program: Program<'info, System>,
-
-    /// Instructions sysvar for Ed25519 signature verification.
-    ///
-    /// Used to read Ed25519 program verification results.
-    ///
-    /// CHECK: Must be the Instructions sysvar account
-    #[account(address = anchor_lang::solana_program::sysvar::instructions::ID)]
-    pub instructions: UncheckedAccount<'info>,
-}
-
-/// Accounts for removing a single validator from the set.
-///
-/// This is a threshold action that removes one validator from the existing set.
-/// Requires signatures from the current validators meeting the threshold.
-/// The account is reallocated to the smaller size. Removal is only allowed if
-/// the threshold can still be met after removal.
-///
-/// # Accounts
-/// - `payer`: Transaction and realloc fee payer (may receive rent refund)
-/// - `bridge_state`: Validator is removed, total count decremented
-/// - `system_program`: Required for reallocation
-///
-/// # Reallocation
-/// The bridge_state account shrinks by one validator's space (32 bytes).
-/// The payer may receive a rent refund for the released space.
-///
-/// # Safety
-/// The instruction validates that removal won't violate the threshold requirement
-/// (i.e., threshold <= total_validators - 1).
-#[derive(Accounts)]
-#[instruction(validator: Pubkey, signatures: Vec<[u8; 64]>)]
-pub struct RemoveValidator<'info> {
-    /// Transaction fee payer and reallocation payer.
-    ///
-    /// May receive rent refund from shrinking the account.
-    #[account(mut)]
-    pub payer: Signer<'info>,
-
-    /// Bridge state PDA storing validator set.
-    ///
-    /// Reallocated to fit one fewer validator.
-    /// Specified validator is removed from the validators vector.
-    /// Total count is decremented, nonce is incremented.
-    #[account(
-        mut,
-        seeds = [b"bridge-state"],
-        bump = bridge_state.bump,
-        realloc = BridgeState::space(bridge_state.validators.len().saturating_sub(1)),
         realloc::payer = payer,
         realloc::zero = false
     )]

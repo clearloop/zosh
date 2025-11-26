@@ -10,19 +10,15 @@ use solana_sdk_ids::ed25519_program::ID as ED25519_PROGRAM_ID;
 /// Action types for signature verification
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub enum ActionType {
-    UpdateValidatorsFull,
-    AddValidator,
-    RemoveValidator,
+    Validators,
     Mint,
 }
 
 impl ActionType {
     pub fn to_byte(self) -> u8 {
         match self {
-            ActionType::UpdateValidatorsFull => 0,
-            ActionType::AddValidator => 1,
-            ActionType::RemoveValidator => 2,
-            ActionType::Mint => 3,
+            ActionType::Validators => 0,
+            ActionType::Mint => 1,
         }
     }
 }

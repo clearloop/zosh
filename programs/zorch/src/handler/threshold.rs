@@ -66,8 +66,8 @@ pub fn mint(
 }
 
 /// Updates the entire validator set.
-pub fn update_validators_full(
-    ctx: Context<crate::UpdateValidatorsFull>,
+pub fn validators(
+    ctx: Context<crate::Validators>,
     new_validators: Vec<Pubkey>,
     new_threshold: u8,
     signatures: Vec<[u8; 64]>,
@@ -91,7 +91,7 @@ pub fn update_validators_full(
 
     // Verify threshold signatures from current validator set
     let _signers = verify_threshold_signatures(
-        ActionType::UpdateValidatorsFull,
+        ActionType::Validators,
         bridge_state.nonce,
         &action_data,
         &signatures,
@@ -119,98 +119,5 @@ pub fn update_validators_full(
         new_threshold
     );
 
-    Ok(())
-}
-
-/// Adds a single validator to the set.
-pub fn add_validator(
-    ctx: Context<crate::AddValidator>,
-    validator: Pubkey,
-    signatures: Vec<[u8; 64]>,
-) -> Result<()> {
-    let bridge_state = &mut ctx.accounts.bridge_state;
-
-    // Check if validator already exists
-    require!(
-        !bridge_state.validators.contains(&validator),
-        BridgeError::ValidatorAlreadyExists
-    );
-
-    // Verify threshold signatures from current validator set
-    let _signers = verify_threshold_signatures(
-        ActionType::AddValidator,
-        bridge_state.nonce,
-        validator.as_ref(),
-        &signatures,
-        &bridge_state.validators,
-        bridge_state.threshold,
-        &ctx.accounts.instructions,
-    )?;
-
-    // Add the validator
-    let old_validators = bridge_state.validators.clone();
-    bridge_state.validators.push(validator);
-    bridge_state.total_validators += 1;
-    bridge_state.nonce += 1;
-
-    // Emit event
-    emit!(ValidatorSetUpdated {
-        old_validators,
-        new_validators: bridge_state.validators.clone(),
-        threshold: bridge_state.threshold,
-        nonce: bridge_state.nonce - 1,
-    });
-
-    msg!("Validator added: {}", validator);
-    Ok(())
-}
-
-/// Removes a single validator from the set.
-pub fn remove_validator(
-    ctx: Context<crate::RemoveValidator>,
-    validator: Pubkey,
-    signatures: Vec<[u8; 64]>,
-) -> Result<()> {
-    let bridge_state = &mut ctx.accounts.bridge_state;
-
-    // Check if validator exists
-    require!(
-        bridge_state.validators.contains(&validator),
-        BridgeError::ValidatorNotFound
-    );
-
-    // Check that removing this validator won't violate threshold
-    let new_total = bridge_state.total_validators - 1;
-    require!(
-        bridge_state.threshold <= new_total,
-        BridgeError::CannotRemoveValidator
-    );
-
-    // Verify threshold signatures from current validator set
-    let _signers = verify_threshold_signatures(
-        ActionType::RemoveValidator,
-        bridge_state.nonce,
-        validator.as_ref(),
-        &signatures,
-        &bridge_state.validators,
-        bridge_state.threshold,
-        &ctx.accounts.instructions,
-    )?;
-
-    // Remove the validator
-    let old_validators = bridge_state.validators.clone();
-    bridge_state.validators.retain(|v| v != &validator);
-    bridge_state.total_validators -= 1;
-    bridge_state.nonce += 1;
-
-    // Emit event
-    emit!(ValidatorSetUpdated {
-        old_validators,
-        new_validators: bridge_state.validators.clone(),
-        threshold: bridge_state.threshold,
-        nonce: bridge_state.nonce - 1,
-    });
-
-    msg!("Validator removed: {}", validator);
     Ok(())
 }
