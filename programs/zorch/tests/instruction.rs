@@ -1,19 +1,15 @@
 //! Tests for the instructions
 
 use mollusk_svm::Mollusk;
+use solana_account::Account;
 use solana_sdk::{
     account::{AccountSharedData, WritableAccount},
     pubkey::Pubkey,
+    signature::Keypair,
+    signer::Signer,
 };
-
 mod internal;
-
-/// Generate a vector of unique pubkeys
-pub fn pubkeys(count: u8) -> Vec<Pubkey> {
-    (0..count)
-        .map(|i| Pubkey::new_from_array([i; 32]))
-        .collect::<Vec<_>>()
-}
+use zorch::api;
 
 /// Testing client for the instructions
 pub struct Test {
@@ -22,6 +18,9 @@ pub struct Test {
 
     /// Signer keypair
     pub payer: Pubkey,
+
+    /// Signer keypair
+    pub pair: Keypair,
 }
 
 impl Test {
@@ -36,9 +35,11 @@ impl Test {
             &solana_sdk::bpf_loader_upgradeable::id(),
         );
 
+        let pair = Keypair::new();
         Self {
             mollusk,
-            payer: Pubkey::new_unique(),
+            payer: pair.pubkey(),
+            pair,
         }
     }
 
@@ -66,4 +67,26 @@ impl Test {
         account.set_lamports(1_000_000_000);
         account
     }
+
+    /// Initialize accounts for the initialize instruction
+    pub fn initialize_accounts(&self) -> Vec<(Pubkey, Account)> {
+        vec![
+            (self.payer, Test::account().into()),
+            (api::pda::bridge_state(), Default::default()),
+            (api::pda::zec_mint(), Default::default()),
+            (
+                api::pda::SYSTEM_PROGRAM,
+                Test::native_program_account().into(),
+            ),
+            (api::pda::TOKEN_PROGRAM, Test::bpf_program_account().into()),
+            self.mollusk.sysvars.keyed_account_for_rent_sysvar(),
+        ]
+    }
+}
+
+/// Generate a vector of unique pubkeys
+pub fn pubkeys(count: u8) -> Vec<Pubkey> {
+    (0..count)
+        .map(|i| Pubkey::new_from_array([i; 32]))
+        .collect::<Vec<_>>()
 }

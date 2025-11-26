@@ -1,3 +1,5 @@
+//! PDA functions for the zorch program
+
 use anchor_lang::system_program;
 use anchor_spl::token;
 use solana_sdk::pubkey::Pubkey;

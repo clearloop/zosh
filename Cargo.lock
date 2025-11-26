@@ -9881,6 +9881,7 @@ dependencies = [
  "borsh 1.5.7",
  "mollusk-svm",
  "mpl-token-metadata",
+ "solana-account",
  "solana-sdk",
  "solana-sdk-ids 2.2.1",
 ]
