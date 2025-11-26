@@ -16,7 +16,7 @@ pub fn initialize(payer: Pubkey, validators: Vec<Pubkey>, threshold: u8) -> Inst
     let accounts = vec![
         AccountMeta::new(payer, true),                // payer (signer, mut)
         AccountMeta::new(pda::bridge_state(), false), // bridge_state (mut)
-        AccountMeta::new(pda::szec_mint(), false),    // szec_mint (mut)
+        AccountMeta::new(pda::zec_mint(), false),    // zec_mint (mut)
         AccountMeta::new_readonly(pda::SYSTEM_PROGRAM, false), // system_program
         AccountMeta::new_readonly(pda::TOKEN_PROGRAM, false), // token_program - using anchor_spl::token::ID
         AccountMeta::new_readonly(pda::RENT, false),          // rent sysvar
@@ -48,7 +48,7 @@ pub mod pda {
     }
 
     /// Derive the sZEC mint PDA
-    pub fn szec_mint() -> Pubkey {
-        Pubkey::find_program_address(&[b"szec-mint"], &crate::ID).0
+    pub fn zec_mint() -> Pubkey {
+        Pubkey::find_program_address(&[b"zec-mint"], &crate::ID).0
     }
 }

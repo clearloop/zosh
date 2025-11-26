@@ -43,7 +43,7 @@ pub fn mint(
     let seeds = &[b"bridge-state".as_ref(), &[bridge_state_bump]];
     let signer_seeds = &[&seeds[..]];
     let cpi_accounts = MintTo {
-        mint: ctx.accounts.szec_mint.to_account_info(),
+        mint: ctx.accounts.zec_mint.to_account_info(),
         to: ctx.accounts.recipient_token_account.to_account_info(),
         authority: ctx.accounts.bridge_state.to_account_info(),
     };

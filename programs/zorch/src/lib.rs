@@ -67,7 +67,7 @@ pub mod zorch {
 /// # Accounts
 /// - `payer`: Transaction fee payer and rent payer for new accounts
 /// - `bridge_state`: The main bridge state PDA that stores validator set and configuration
-/// - `szec_mint`: The SPL token mint for sZEC with 8 decimals (matching ZEC)
+/// - `zec_mint`: The SPL token mint for sZEC with 8 decimals (matching ZEC)
 /// - `system_program`: Required for account creation
 /// - `token_program`: Required for mint creation
 /// - `rent`: Rent sysvar for account rent calculations
@@ -98,16 +98,16 @@ pub struct Initialize<'info> {
     /// Initialized with:
     /// - 8 decimals (matching ZEC)
     /// - Mint authority set to bridge_state PDA
-    /// - Seeds `[b"szec-mint"]` for deterministic address
+    /// - Seeds `[b"zec-mint"]` for deterministic address
     #[account(
         init,
         payer = payer,
         mint::decimals = 8,
         mint::authority = bridge_state,
-        seeds = [b"szec-mint"],
+        seeds = [b"zec-mint"],
         bump
     )]
-    pub szec_mint: Account<'info, Mint>,
+    pub zec_mint: Account<'info, Mint>,
 
     /// System program for account creation.
     pub system_program: Program<'info, System>,
@@ -128,7 +128,7 @@ pub struct Initialize<'info> {
 /// # Accounts
 /// - `payer`: Transaction fee payer
 /// - `bridge_state`: Stores validator set and is used as mint authority
-/// - `szec_mint`: The sZEC token mint
+/// - `zec_mint`: The sZEC token mint
 /// - `recipient_token_account`: Recipient's token account to receive minted sZEC
 /// - `token_program`: Required for minting
 /// - `system_program`: Required for various operations
@@ -161,11 +161,11 @@ pub struct MintSzec<'info> {
     /// Must match the mint stored in bridge_state.
     #[account(
         mut,
-        seeds = [b"szec-mint"],
+        seeds = [b"zec-mint"],
         bump,
-        constraint = szec_mint.key() == bridge_state.szec_mint @ BridgeError::InvalidMint
+        constraint = zec_mint.key() == bridge_state.zec_mint @ BridgeError::InvalidMint
     )]
-    pub szec_mint: Account<'info, Mint>,
+    pub zec_mint: Account<'info, Mint>,
 
     /// Recipient's token account to receive minted sZEC.
     ///
@@ -174,7 +174,7 @@ pub struct MintSzec<'info> {
     /// - Owned by the specified recipient pubkey
     #[account(
         mut,
-        constraint = recipient_token_account.mint == szec_mint.key() @ BridgeError::InvalidMint,
+        constraint = recipient_token_account.mint == zec_mint.key() @ BridgeError::InvalidMint,
         constraint = recipient_token_account.owner == recipient @ BridgeError::InvalidRecipient
     )]
     pub recipient_token_account: Account<'info, TokenAccount>,
@@ -204,7 +204,7 @@ pub struct MintSzec<'info> {
 /// # Accounts
 /// - `signer`: User burning their sZEC tokens
 /// - `signer_token_account`: User's token account holding sZEC
-/// - `szec_mint`: The sZEC token mint (supply will decrease)
+/// - `zec_mint`: The sZEC token mint (supply will decrease)
 /// - `bridge_state`: Read-only reference for mint validation
 /// - `token_program`: Required for burn operation
 ///
@@ -228,7 +228,7 @@ pub struct BurnSzec<'info> {
     #[account(
         mut,
         constraint = signer_token_account.owner == signer.key() @ BridgeError::InvalidAmount,
-        constraint = signer_token_account.mint == bridge_state.szec_mint @ BridgeError::InvalidAmount
+        constraint = signer_token_account.mint == bridge_state.zec_mint @ BridgeError::InvalidAmount
     )]
     pub signer_token_account: Account<'info, TokenAccount>,
 
@@ -238,9 +238,9 @@ pub struct BurnSzec<'info> {
     /// Must match the mint stored in bridge_state.
     #[account(
         mut,
-        constraint = szec_mint.key() == bridge_state.szec_mint @ BridgeError::InvalidAmount
+        constraint = zec_mint.key() == bridge_state.zec_mint @ BridgeError::InvalidAmount
     )]
-    pub szec_mint: Account<'info, Mint>,
+    pub zec_mint: Account<'info, Mint>,
 
     /// Bridge state for mint validation.
     ///

@@ -14,7 +14,7 @@ pub fn burn(ctx: Context<crate::BurnSzec>, amount: u64, zec_recipient: String) -
 
     // Burn sZEC tokens from signer's account
     let cpi_accounts = Burn {
-        mint: ctx.accounts.szec_mint.to_account_info(),
+        mint: ctx.accounts.zec_mint.to_account_info(),
         from: ctx.accounts.signer_token_account.to_account_info(),
         authority: ctx.accounts.signer.to_account_info(),
     };

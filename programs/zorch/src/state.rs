@@ -19,7 +19,7 @@ pub struct BridgeState {
     pub nonce: u64,
 
     /// The sZEC SPL token mint
-    pub szec_mint: Pubkey,
+    pub zec_mint: Pubkey,
 
     /// Bump seed for PDA derivation
     pub bump: u8,
@@ -34,7 +34,7 @@ impl BridgeState {
         1 + // threshold
         1 + // total_validators
         8 + // nonce
-        32 + // szec_mint
+        32 + // zec_mint
         1 // bump
     }
 }

@@ -15,7 +15,7 @@ fn test_initialize_success() {
         &[
             (test.payer, Test::account().into()),
             (api::pda::bridge_state(), Default::default()),
-            (api::pda::szec_mint(), Default::default()),
+            (api::pda::zec_mint(), Default::default()),
             (
                 api::pda::SYSTEM_PROGRAM,
                 Test::native_program_account().into(),
