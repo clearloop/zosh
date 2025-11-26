@@ -12,6 +12,7 @@ rand.workspace = true
 rand_core.workspace = true
 reddsa.workspace = true
 serde.workspace = true
+solana-sdk.workspace = true
 rusqlite.workspace = true
 tonic.workspace = true
 tracing.workspace = true

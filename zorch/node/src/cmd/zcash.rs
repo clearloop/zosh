@@ -4,7 +4,8 @@ use crate::Config;
 use anyhow::Result;
 use clap::Parser;
 use std::path::Path;
-use zcash::{
+use sync::zcash::{
+    self,
     light::Light,
     signer::{GroupSigners, SignerInfo},
     AddressCodec, UnifiedAddress, UnifiedFullViewingKey,

@@ -3,7 +3,7 @@
 use anyhow::Result;
 use serde::{Deserialize, Serialize};
 use std::{fs, path::Path};
-pub use {key::Key, network::Network, rpc::Rpc};
+pub use {key::Key, network::Network, rpc::Rpc, sync::zcash};
 
 mod key;
 mod network;

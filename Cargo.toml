@@ -22,12 +22,11 @@ node = { path = "zorch/node", package = "zorch-node" }
 runtime = { path = "zorch/runtime", package = "zorch-runtime" }
 sync = { path = "zorch/sync", package = "zorch-sync" }
 zcore = { path = "zorch/core", package = "zorch-core" }
-zcash = { path = "chain/zcash", package = "zorch-zcash" }
 solana = { path = "chain/solana", package = "zorch-solana" }
 zorch = { path = "programs/zorch", package = "zorch-program" }
 
 # crates-io dependencies
-anchor-client = "0.32.1"
+anchor-client = { version = "0.32.1", features = ["async"] }
 anchor-lang = "0.32.1"
 anchor-spl = "0.32.1"
 anyhow = "1.0.100"

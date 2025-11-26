@@ -51,7 +51,7 @@ impl ZorchClient {
     }
 
     /// Initialize the bridge with initial validator set
-    pub fn initialize(&self, validators: Vec<Pubkey>, threshold: u8) -> Result<Pubkey> {
+    pub async fn initialize(&self, validators: Vec<Pubkey>, threshold: u8) -> Result<Pubkey> {
         let bridge_state = pda::bridge_state();
         let zec_mint = pda::zec_mint();
         let _tx = self
@@ -69,13 +69,14 @@ impl ZorchClient {
                 validators,
                 threshold,
             })
-            .send()?;
+            .send()
+            .await?;
 
         Ok(bridge_state)
     }
 
     /// Update token metadata (authority only)
-    pub fn update_metadata(&self, name: String, symbol: String, uri: String) -> Result<()> {
+    pub async fn update_metadata(&self, name: String, symbol: String, uri: String) -> Result<()> {
         let bridge_state = pda::bridge_state();
         let zec_mint = pda::zec_mint();
         let metadata = pda::metadata();
@@ -93,13 +94,14 @@ impl ZorchClient {
                 rent: pda::RENT,
             })
             .args(crate::instruction::Metadata { name, symbol, uri })
-            .send()?;
+            .send()
+            .await?;
 
         Ok(())
     }
 
     /// Mint sZEC to recipients (threshold action)
-    pub fn send_mint(
+    pub async fn send_mint(
         &self,
         mint_entries: Vec<crate::types::MintEntry>,
         signatures: Vec<[u8; 64]>,
@@ -137,13 +139,14 @@ impl ZorchClient {
                 signatures,
             })
             .accounts(remaining_accounts)
-            .send()?;
+            .send()
+            .await?;
 
         Ok(())
     }
 
     /// Burn sZEC to bridge back to Zcash (public action)
-    pub fn send_burn(&self, amount: u64, zec_recipient: String) -> Result<()> {
+    pub async fn send_burn(&self, amount: u64, zec_recipient: String) -> Result<()> {
         anyhow::ensure!(amount > 0, "Amount must be greater than 0");
         let bridge_state = pda::bridge_state();
         let zec_mint = pda::zec_mint();
@@ -166,13 +169,14 @@ impl ZorchClient {
                 amount,
                 zec_recipient,
             })
-            .send()?;
+            .send()
+            .await?;
 
         Ok(())
     }
 
     /// Update the validator set (threshold action)
-    pub fn update_validators(
+    pub async fn update_validators(
         &self,
         new_validators: Vec<Pubkey>,
         new_threshold: u8,
@@ -199,7 +203,8 @@ impl ZorchClient {
                 new_threshold,
                 signatures,
             })
-            .send()?;
+            .send()
+            .await?;
 
         Ok(())
     }

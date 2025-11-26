@@ -1,6 +1,6 @@
 //! Zcash light client configuration
 
-use crate::Network;
+use crate::zcash::Network;
 use std::path::PathBuf;
 use url::Url;
 

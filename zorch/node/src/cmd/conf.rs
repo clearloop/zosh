@@ -5,9 +5,8 @@ use crate::{
     Config,
 };
 use anyhow::Result;
-use runtime::signer::Keypair;
 use std::{fs, path::Path};
-use zcash::signer::GroupSigners;
+use sync::{solana::Keypair, zcash::signer::GroupSigners};
 
 const NOTE: &str = r#"
 # Zorch Configurations

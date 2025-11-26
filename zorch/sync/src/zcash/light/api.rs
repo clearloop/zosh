@@ -1,6 +1,6 @@
 //! Light client APIs
 
-use crate::{
+use crate::zcash::{
     light::Light,
     signer::{GroupSigners, SignerInfo},
 };
