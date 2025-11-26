@@ -1,11 +1,36 @@
 //! intergration tests
 
-use std::rc::Rc;
-
 use anchor_client::Program;
 use anyhow::Result;
-use solana_sdk::{pubkey::Pubkey, signature::Keypair, signer::EncodableKey};
-use zorch::client::ZorchClient;
+use solana_sdk::{
+    pubkey::Pubkey,
+    signature::Keypair,
+    signer::{EncodableKey, Signer},
+};
+use std::rc::Rc;
+use zorch::client::{util, ZorchClient};
+
+#[tokio::test]
+async fn test_connection() -> Result<()> {
+    let test = Test::new().await?;
+    let _ = test.client.program().rpc().get_latest_blockhash().await?;
+    Ok(())
+}
+
+#[tokio::test]
+async fn test_update_validators() -> Result<()> {
+    let test = Test::new().await?;
+    let validators = vec![test.payer()];
+    let state = test.client.bridge_state().await?;
+    let message = util::create_validators_message(state.nonce, &validators, 1);
+    let signature = test.client.keypair.sign_message(&message);
+    let signature = *signature.as_array();
+    let _ = test
+        .client
+        .update_validators(vec![test.payer()], 1, vec![signature])
+        .await?;
+    Ok(())
+}
 
 /// Test environment
 pub struct Test {
@@ -37,11 +62,4 @@ impl Test {
     pub fn program(&self) -> &Program<Rc<Keypair>> {
         self.client.program()
     }
-}
-
-#[tokio::test]
-async fn test_connection() -> Result<()> {
-    let test = Test::new().await?;
-    let _ = test.client.program().rpc().get_latest_blockhash().await?;
-    Ok(())
 }

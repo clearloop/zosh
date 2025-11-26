@@ -57,11 +57,11 @@ pub mod zorch {
     /// Update the entire validator set (threshold action)
     pub fn validators(
         ctx: Context<Validators>,
-        new_validators: Vec<Pubkey>,
-        new_threshold: u8,
+        validators: Vec<Pubkey>,
+        threshold: u8,
         signatures: Vec<[u8; 64]>,
     ) -> Result<()> {
-        threshold::validators(ctx, new_validators, new_threshold, signatures)
+        threshold::validators(ctx, validators, threshold, signatures)
     }
 }
 
@@ -335,7 +335,7 @@ pub struct BurnZec<'info> {
 /// The bridge_state account is reallocated to accommodate the new number of
 /// validators. The payer covers any additional rent required.
 #[derive(Accounts)]
-#[instruction(new_validators: Vec<Pubkey>, new_threshold: u16, signatures: Vec<[u8; 64]>)]
+#[instruction(validators: Vec<Pubkey>, threshold: u8, signatures: Vec<[u8; 64]>)]
 pub struct Validators<'info> {
     /// Transaction fee payer and reallocation payer.
     ///
@@ -352,7 +352,7 @@ pub struct Validators<'info> {
         mut,
         seeds = [b"bridge-state"],
         bump = bridge_state.bump,
-        realloc = BridgeState::space(new_validators.len()),
+        realloc = BridgeState::space(validators.len()),
         realloc::payer = payer,
         realloc::zero = false
     )]

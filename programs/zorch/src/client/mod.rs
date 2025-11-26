@@ -6,25 +6,27 @@ use anchor_client::{
     Client, Cluster, Program,
 };
 use anyhow::Result;
-pub use instruction::*;
 use mpl_token_metadata::accounts::Metadata;
-use solana_sdk::signature::Signature;
+use solana_sdk::{signature::Signature, signer::Signer};
 use std::rc::Rc;
 
 mod config;
-pub mod instruction;
 pub mod pda;
-mod signatures;
+pub mod util;
 
 /// Main client for interacting with the Zorch program
 pub struct ZorchClient {
     /// Anchor client program instance
     program: Program<Rc<Keypair>>,
+
+    /// Keypair of the payer
+    pub keypair: Keypair,
 }
 
 impl ZorchClient {
     /// Create a new ZorchClient
     pub fn new(cluster_url: String, ws_url: String, payer: Keypair) -> Result<Self> {
+        let secret = payer.secret_bytes().clone();
         let client = Client::new_with_options(
             Cluster::Custom(cluster_url, ws_url),
             Rc::new(payer),
@@ -32,7 +34,10 @@ impl ZorchClient {
         );
 
         let program = client.program(crate::ID)?;
-        Ok(Self { program })
+        Ok(Self {
+            program,
+            keypair: Keypair::new_from_array(secret),
+        })
     }
 
     /// Get the payer's public key
@@ -94,7 +99,6 @@ impl ZorchClient {
         let bridge_state = pda::bridge_state();
         let zec_mint = pda::zec_mint();
         let metadata = pda::metadata();
-
         let _tx = self
             .program
             .request()
@@ -121,10 +125,23 @@ impl ZorchClient {
         signatures: Vec<[u8; 64]>,
     ) -> Result<()> {
         anyhow::ensure!(!mint_entries.is_empty(), "No mint entries provided");
+
+        // create the ed25519 verify instructions
+        let mut builder = self.program.request();
+        let state = self.bridge_state().await?;
+        let message = util::create_mint_message(state.nonce, &mint_entries);
+        for signature in &signatures {
+            let ed25519_ix = solana_ed25519_program::new_ed25519_instruction_with_signature(
+                &message,
+                &signature,
+                &self.keypair.pubkey().to_bytes(),
+            );
+            builder = builder.instruction(ed25519_ix);
+        }
+
+        // create the mint instruction
         let bridge_state = pda::bridge_state();
         let zec_mint = pda::zec_mint();
-
-        // Get recipient token accounts
         let mut remaining_accounts = Vec::new();
         for entry in &mint_entries {
             let token_account = spl_associated_token_account::get_associated_token_address(
@@ -192,19 +209,32 @@ impl ZorchClient {
     /// Update the validator set (threshold action)
     pub async fn update_validators(
         &self,
-        new_validators: Vec<Pubkey>,
-        new_threshold: u8,
+        validators: Vec<Pubkey>,
+        threshold: u8,
         signatures: Vec<[u8; 64]>,
     ) -> Result<()> {
-        anyhow::ensure!(!new_validators.is_empty(), "No validators provided");
+        anyhow::ensure!(!validators.is_empty(), "No validators provided");
         anyhow::ensure!(
-            new_threshold > 0 && new_threshold as usize <= new_validators.len(),
+            threshold > 0 && threshold as usize <= validators.len(),
             "Invalid threshold"
         );
 
+        // Construct the ed25519 verify instruction
+        let mut builder = self.program.request();
+        let state = self.bridge_state().await?;
+        let message = util::create_validators_message(state.nonce, &validators, threshold);
+        for signature in &signatures {
+            let ed25519_ix = solana_ed25519_program::new_ed25519_instruction_with_signature(
+                &message,
+                &signature,
+                &self.keypair.pubkey().to_bytes(),
+            );
+            builder = builder.instruction(ed25519_ix);
+        }
+
+        // create the update instruction
         let bridge_state = pda::bridge_state();
-        let _tx = self
-            .program
+        self.program
             .request()
             .accounts(crate::accounts::Validators {
                 payer: self.program.payer(),
@@ -213,8 +243,8 @@ impl ZorchClient {
                 instructions: pda::INSTRUCTIONS_SYSVAR,
             })
             .args(crate::instruction::Validators {
-                new_validators,
-                new_threshold,
+                validators,
+                threshold,
                 signatures,
             })
             .send()

@@ -8061,6 +8061,7 @@ dependencies = [
  "dirs",
  "mpl-token-metadata",
  "serde",
+ "solana-ed25519-program",
  "solana-sdk",
  "solana-sdk-ids",
  "spl-associated-token-account",

@@ -30,6 +30,7 @@ anchor-client.workspace = true
 anyhow.workspace = true
 dirs.workspace = true
 serde.workspace = true
+solana-ed25519-program.workspace = true
 solana-sdk.workspace = true
 spl-associated-token-account.workspace = true
 tokio.workspace = true
