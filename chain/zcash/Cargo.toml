@@ -1,8 +1,8 @@
 [package]
-name = "zyphers-zcash"
+name = "zorch-zcash"
 version.workspace = true
 edition.workspace = true
-description = "Zcash related stuffs for zyphers"
+description = "Zcash related stuffs for zorch"
 
 [dependencies]
 anyhow.workspace = true

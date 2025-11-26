@@ -1,3 +1,0 @@
-# Clients
-
-## Solana Client

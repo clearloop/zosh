@@ -172,7 +172,7 @@ impl Light {
 
         // 2. make the bundle of the transaction
         let mut memo = [0; 512];
-        memo[..20].copy_from_slice(b"Bridged via Zyphers.");
+        memo[..20].copy_from_slice(b"Bridged via Zorch.");
         let Some((bundle, _meta)) = builder::bundle::<ZatBalance>(
             rand_core::OsRng,
             anchor,

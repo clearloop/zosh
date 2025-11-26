@@ -1,69 +1,47 @@
-# ZypherBridge
+# Zorch
 
-The privacy bridge for Solana and Zcash.
+The trustless privacy bridge for Solana and Zcash.
+
+- **Security**: The funds in the [bridge](/bridge) are secured by [the Zorch Protocol](/consensus.md).
+
+  - No custody wallet, everything on-chain.
+  - [frost][frost] to manage the zcash orchard pool.
+  - `multi-sig` to manage the zrcZEC on the solana side.
+
+- **Privacy**: The privacy is ensured by the [orchard][orchard] pool from zcash.
+  - On bridging ZEC to SOL, Zorch doesn't know the depositor of ZEC.
+  - On bridging SOL to ZEC, Zorch sends the funds back to the orchard pool.
+
+Check out [bridge](/bridge) and [demo](/demo.md) for more details.
+
+## Technical Overview
+
+Zorch is a compact relay protocol in blockchain structure.
+
+Zorch uses a custom consensus algorithm called [zorchBFT](/zorchbft.md) inspired by Hotstuff and
+its successors. Both the algorithm and networking stack are optimized from the ground up to
+support the unique demands of the Bridge.
+
+Zorch state execution is heavily based on external transactions, all confirmed output transactions
+will be committed on chain and finally can be executed by anyone.
 
 ```mermaid
-flowchart TD
-subgraph ZC [Zcash Chain]
-ZA[Shielded Multi-sig<br>Escrow Address]
-ZB[User's Shielded Address]
-end
+flowchart LR
+    A[Zcash]
+    B[Solana]
+    C[ZorshBFT <-> State Machine]
 
-    subgraph SC [Solana Chain Programs]
-        LC[Zcash Light Client<br>Stores & Validates Headers]
-        VP[State Proof Verifier<br>ZK Proof Verification]
-        BC[Bridge Logic<br>Mint/Burn wZEC]
-        CG[Contract Governance<br>Multi-sig Upgradeable]
+    A -.-> |FlyClient| C
+    B -.-> |LightClient| C
+    C --> |Frost| A
+    C --> |Multisig| B
+
+    subgraph The Privacy Bridge
+        direction LR
+        A
+        B
     end
-
-    subgraph GN [Guardian Network TSS/MPC]
-        G1[Guardian 1]
-        G2[Guardian 2]
-        G3[Guardian ...]
-        G4[Guardian N]
-
-        DKG[Distributed Key Generation]
-        PSS[Proactive Secret Sharing]
-        TS[Threshold Signing Protocol]
-    end
-
-    %% Zcash to Solana Flow
-    U1[User: Deposit ZEC to Bridge] --> ZT[Send ZEC to Shielded<br>Escrow Address]
-    ZT --> ZA
-
-    RL[Relayer Network] --> MH[Monitors Zcash &<br>Generates State Proof]
-    MH --> SP[Submits Block Header<br>& State Proof to Solana]
-
-    SP --> LC
-    SP --> VP
-    LC -->|Provides trusted header| VP
-    VP -->|Proof Valid| BC
-    BC --> UM[Mints wZEC to<br>User's Solana Address]
-
-    %% Solana to Zcash Flow
-    U2[User: Redeem ZEC from Bridge] --> BT[Burn wZEC on Solana]
-    BT --> BE[Emit Burn Event]
-
-    BE --> GN
-    GN -->|Observes Event| TS
-    TS -->|M-of-N Signers Collaborate| ST[Create Shielded Tx<br>Spend from Escrow]
-    ST --> ZS[Send ZEC to User's<br>Zcash Address]
-    ZS --> ZB
-
-    %% Guardian Management
-    DKG -.->|Initial Setup| GN
-    PSS -.->|Regular Key Refresh| GN
-    CG -.->|Governs Parameters| GN
 ```
 
-### Development Links
-
-- [zecfaucet][faucet]
-- [zcash testnet][zectestnet]
-- [zcash RPC][rpc]
-- [zcash explorer][explorer]
-
-[explorer]: https://mainnet.zcashexplorer.app/
-[rpc]: https://zcash.github.io/rpc/
-[faucet]: https://testnet.zecfaucet.com/
-[zectestnet]: https://blockexplorer.one/zcash/testnet
+[frost]: https://frost.zfnd.org/
+[orchard]: https://zcash.github.io/orchard/

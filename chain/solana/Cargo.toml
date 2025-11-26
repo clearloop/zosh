@@ -1,9 +1,10 @@
 [package]
-name = "zyphers-solana"
+name = "zorch-solana"
 version.workspace = true
 edition.workspace = true
 
 [dependencies]
+solana-client.workspace = true
 solana-sdk.workspace = true
 solana-program.workspace = true
 anchor-lang.workspace = true

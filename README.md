@@ -1,5 +1,5 @@
-## Zyphers - Privacy Bridge for Solana and Zcash
+## Zorch - Privacy Bridge for Solana and Zcash
 
 - [chain](chain) - light client and utils of chains.
-- [zypher](zypher) - threshold network implementation with block chain structure.
-- [programs/zyphers](programs/zyphers) - Solana side program that implements the consensus
+- [zorch](zorch) - threshold network implementation with block chain structure.
+- [programs/zorch](programs/zorch) - Solana side program that implements the consensus

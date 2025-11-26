@@ -1,6 +1,0 @@
-[package]
-name = "zypher-network"
-version.workspace = true
-edition.workspace = true
-
-[dependencies]
