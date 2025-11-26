@@ -63,9 +63,9 @@ impl ZorchClient {
                 payer: self.program.payer(),
                 bridge_state,
                 zec_mint,
-                system_program: anchor_client::solana_sdk::system_program::ID,
+                system_program: pda::SYSTEM_PROGRAM,
                 token_program: pda::TOKEN_PROGRAM,
-                rent: anchor_client::solana_sdk::sysvar::rent::ID,
+                rent: pda::RENT,
             })
             .args(crate::instruction::Initialize {
                 validators,
@@ -77,11 +77,6 @@ impl ZorchClient {
     }
 
     /// Update token metadata (authority only)
-    ///
-    /// # Arguments
-    /// * `name` - Token name
-    /// * `symbol` - Token symbol
-    /// * `uri` - Metadata URI
     pub fn update_metadata(&self, name: String, symbol: String, uri: String) -> Result<()> {
         let bridge_state = pda::bridge_state();
         let zec_mint = pda::zec_mint();
@@ -95,9 +90,9 @@ impl ZorchClient {
                 bridge_state,
                 zec_mint,
                 metadata,
-                token_metadata_program: mpl_token_metadata::ID,
-                system_program: anchor_client::solana_sdk::system_program::ID,
-                rent: anchor_client::solana_sdk::sysvar::rent::ID,
+                token_metadata_program: pda::TOKEN_METADATA_PROGRAM,
+                system_program: pda::SYSTEM_PROGRAM,
+                rent: pda::RENT,
             })
             .args(crate::instruction::Metadata { name, symbol, uri })
             .send()?;
@@ -106,13 +101,6 @@ impl ZorchClient {
     }
 
     /// Mint sZEC to recipients (threshold action)
-    ///
-    /// # Arguments
-    /// * `mint_entries` - Recipients and amounts to mint
-    /// * `validator_keypairs` - Validator keypairs for signing (must meet threshold)
-    ///
-    /// Note: This requires building Ed25519 verification instructions manually.
-    /// Use the signature helpers in this client to create the required signatures.
     pub fn send_mint(
         &self,
         mint_entries: Vec<crate::types::MintEntry>,
@@ -143,8 +131,8 @@ impl ZorchClient {
                 bridge_state,
                 zec_mint,
                 token_program: pda::TOKEN_PROGRAM,
-                system_program: anchor_client::solana_sdk::system_program::ID,
-                instructions: anchor_client::solana_sdk::sysvar::instructions::ID,
+                system_program: pda::SYSTEM_PROGRAM,
+                instructions: pda::INSTRUCTIONS,
             })
             .args(crate::instruction::Mint {
                 mints: mint_entries,
@@ -157,10 +145,6 @@ impl ZorchClient {
     }
 
     /// Burn sZEC to bridge back to Zcash (public action)
-    ///
-    /// # Arguments
-    /// * `amount` - Amount to burn
-    /// * `zec_recipient` - Zcash address to receive ZEC
     pub fn send_burn(&self, amount: u64, zec_recipient: String) -> Result<()> {
         anyhow::ensure!(amount > 0, "Amount must be greater than 0");
 
@@ -191,14 +175,6 @@ impl ZorchClient {
     }
 
     /// Update the validator set (threshold action)
-    ///
-    /// # Arguments
-    /// * `new_validators` - New validator set
-    /// * `new_threshold` - New threshold requirement
-    /// * `signatures` - Signatures from current validators (must meet current threshold)
-    ///
-    /// Note: This requires building Ed25519 verification instructions manually.
-    /// Use the signature helpers in this client to create the required signatures.
     pub fn update_validators(
         &self,
         new_validators: Vec<Pubkey>,
@@ -212,15 +188,14 @@ impl ZorchClient {
         );
 
         let bridge_state = pda::bridge_state();
-
         let _tx = self
             .program
             .request()
             .accounts(crate::accounts::Validators {
                 payer: self.program.payer(),
                 bridge_state,
-                system_program: anchor_client::solana_sdk::system_program::ID,
-                instructions: anchor_client::solana_sdk::sysvar::instructions::ID,
+                system_program: pda::SYSTEM_PROGRAM,
+                instructions: pda::INSTRUCTIONS,
             })
             .args(crate::instruction::Validators {
                 new_validators,

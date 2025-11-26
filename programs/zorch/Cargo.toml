@@ -32,13 +32,6 @@ serde.workspace = true
 solana-sdk.workspace = true
 spl-associated-token-account.workspace = true
 
-[dev-dependencies]
-borsh.workspace = true
-litesvm.workspace = true
-solana-account.workspace = true
-solana-ed25519-program.workspace = true
-solana-sdk.workspace = true
-
 [lints.rust]
 unexpected_cfgs = { level = "warn", check-cfg = [
     'cfg(target_os, values("solana"))',
