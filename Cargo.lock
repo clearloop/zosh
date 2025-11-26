@@ -8376,11 +8376,22 @@ name = "zorch-sync"
 version = "0.1.0"
 dependencies = [
  "anyhow",
- "jsonrpsee-http-client",
+ "async-trait",
+ "orchard",
+ "prost",
+ "rand 0.8.5",
+ "rand_core 0.6.4",
+ "reddsa",
+ "rusqlite",
  "serde",
- "solana-sdk",
- "tokio",
+ "tonic",
+ "tracing",
  "url",
+ "zcash_client_backend",
+ "zcash_client_sqlite",
+ "zcash_keys",
+ "zcash_primitives",
+ "zcash_protocol",
 ]
 
 [[package]]

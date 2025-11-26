@@ -30,7 +30,6 @@ impl ZorchClient {
         );
 
         let program = client.program(crate::ID)?;
-
         Ok(Self { program })
     }
 
@@ -48,7 +47,6 @@ impl ZorchClient {
         );
 
         let program = client.program(crate::ID)?;
-
         Ok(Self { program })
     }
 
@@ -132,7 +130,7 @@ impl ZorchClient {
                 zec_mint,
                 token_program: pda::TOKEN_PROGRAM,
                 system_program: pda::SYSTEM_PROGRAM,
-                instructions: pda::INSTRUCTIONS,
+                instructions: pda::INSTRUCTIONS_SYSVAR,
             })
             .args(crate::instruction::Mint {
                 mints: mint_entries,
@@ -147,7 +145,6 @@ impl ZorchClient {
     /// Burn sZEC to bridge back to Zcash (public action)
     pub fn send_burn(&self, amount: u64, zec_recipient: String) -> Result<()> {
         anyhow::ensure!(amount > 0, "Amount must be greater than 0");
-
         let bridge_state = pda::bridge_state();
         let zec_mint = pda::zec_mint();
         let signer_token_account = spl_associated_token_account::get_associated_token_address(
@@ -195,7 +192,7 @@ impl ZorchClient {
                 payer: self.program.payer(),
                 bridge_state,
                 system_program: pda::SYSTEM_PROGRAM,
-                instructions: pda::INSTRUCTIONS,
+                instructions: pda::INSTRUCTIONS_SYSVAR,
             })
             .args(crate::instruction::Validators {
                 new_validators,
