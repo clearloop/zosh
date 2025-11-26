@@ -8,7 +8,10 @@ use solana_sdk::{
     signer::{EncodableKey, Signer},
 };
 use std::rc::Rc;
-use zorch::client::{util, ZorchClient};
+use zorch::{
+    client::{util, ZorchClient},
+    BridgeState,
+};
 
 #[tokio::test]
 async fn test_connection() -> Result<()> {
@@ -20,8 +23,8 @@ async fn test_connection() -> Result<()> {
 #[tokio::test]
 async fn test_update_validators() -> Result<()> {
     let test = Test::new().await?;
+    let state = test.bridge_state().await?;
     let validators = vec![test.payer()];
-    let state = test.client.bridge_state().await?;
     let message = util::create_validators_message(state.nonce, &validators, 1);
     let signature = test.client.keypair.sign_message(&message);
     let signature = *signature.as_array();
@@ -51,6 +54,16 @@ impl Test {
         )?;
 
         Ok(Self { client })
+    }
+
+    /// Get the bridge state
+    pub async fn bridge_state(&self) -> Result<BridgeState> {
+        if let Ok(state) = self.client.bridge_state().await {
+            Ok(state)
+        } else {
+            self.client.initialize(vec![self.client.payer()], 1).await?;
+            self.client.bridge_state().await
+        }
     }
 
     /// Get the payer's public key

@@ -27,6 +27,13 @@ impl ZorchClient {
     /// Create a new ZorchClient
     pub fn new(cluster_url: String, ws_url: String, payer: Keypair) -> Result<Self> {
         let secret = payer.secret_bytes().clone();
+        eprintln!(
+            "[DEBUG] Creating ZorchClient with program ID: {}",
+            crate::ID
+        );
+        eprintln!("[DEBUG] Cluster URL: {}", cluster_url);
+        eprintln!("[DEBUG] Payer: {}", payer.pubkey());
+
         let client = Client::new_with_options(
             Cluster::Custom(cluster_url, ws_url),
             Rc::new(payer),
@@ -34,6 +41,7 @@ impl ZorchClient {
         );
 
         let program = client.program(crate::ID)?;
+        eprintln!("[DEBUG] Program client created successfully");
         Ok(Self {
             program,
             keypair: Keypair::new_from_array(secret),
@@ -52,9 +60,7 @@ impl ZorchClient {
 
     /// Read the current bridge state
     pub async fn bridge_state(&self) -> Result<crate::state::BridgeState> {
-        let bridge_state_pubkey = pda::bridge_state();
-        let bridge_state: crate::state::BridgeState =
-            self.program.account(bridge_state_pubkey).await?;
+        let bridge_state = self.program.account(pda::bridge_state()).await?;
         Ok(bridge_state)
     }
 
@@ -220,22 +226,22 @@ impl ZorchClient {
         );
 
         // Construct the ed25519 verify instruction
-        let mut builder = self.program.request();
         let state = self.bridge_state().await?;
         let message = util::create_validators_message(state.nonce, &validators, threshold);
+        let mut builder = self.program.request();
         for signature in &signatures {
+            let signer_pubkey = self.keypair.pubkey();
             let ed25519_ix = solana_ed25519_program::new_ed25519_instruction_with_signature(
                 &message,
                 &signature,
-                &self.keypair.pubkey().to_bytes(),
+                &signer_pubkey.to_bytes(),
             );
             builder = builder.instruction(ed25519_ix);
         }
 
         // create the update instruction
         let bridge_state = pda::bridge_state();
-        self.program
-            .request()
+        builder
             .accounts(crate::accounts::Validators {
                 payer: self.program.payer(),
                 bridge_state,
@@ -250,6 +256,7 @@ impl ZorchClient {
             .send()
             .await?;
 
+        eprintln!("[DEBUG] update_validators transaction sent successfully");
         Ok(())
     }
 }
