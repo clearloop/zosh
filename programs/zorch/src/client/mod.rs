@@ -28,7 +28,7 @@ pub struct ZorchClient {
 impl ZorchClient {
     /// Create a new ZorchClient
     pub fn new(cluster_url: String, ws_url: String, payer: Keypair) -> Result<Self> {
-        let secret = payer.secret_bytes().clone();
+        let secret = *payer.secret_bytes();
         let client = Client::new_with_options(
             Cluster::Custom(cluster_url, ws_url),
             Rc::new(payer),
@@ -171,7 +171,7 @@ impl ZorchClient {
         for signature in &signatures {
             let ed25519_ix = solana_ed25519_program::new_ed25519_instruction_with_signature(
                 &message,
-                &signature,
+                signature,
                 &self.keypair.pubkey().to_bytes(),
             );
             builder = builder.instruction(ed25519_ix);
@@ -263,7 +263,7 @@ impl ZorchClient {
             let signer_pubkey = self.keypair.pubkey();
             let ed25519_ix = solana_ed25519_program::new_ed25519_instruction_with_signature(
                 &message,
-                &signature,
+                signature,
                 &signer_pubkey.to_bytes(),
             );
             builder = builder.instruction(ed25519_ix);

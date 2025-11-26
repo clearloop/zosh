@@ -1,4 +1,4 @@
-//! intergration tests
+//! integration tests
 
 use anchor_client::Program;
 use anyhow::Result;
