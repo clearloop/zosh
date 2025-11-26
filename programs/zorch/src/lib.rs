@@ -180,20 +180,15 @@ pub struct UpdateMetadata<'info> {
 
     /// Metaplex Token Metadata program.
     ///
-    /// CHECK: Validated by constraint
-    #[account(address = mpl_token_metadata::ID)]
+    /// CHECK: Validated during CPI invocation
     pub token_metadata_program: UncheckedAccount<'info>,
 
     /// System program for account creation.
     pub system_program: Program<'info, System>,
 
-    /// Rent sysvar.
-    pub rent: Sysvar<'info, Rent>,
-
     /// Sysvar instructions account required by mpl-token-metadata.
     ///
-    /// CHECK: Required by mpl-token-metadata CreateV1
-    #[account(address = anchor_lang::solana_program::sysvar::instructions::ID)]
+    /// CHECK: Required by mpl-token-metadata CreateV1, validated by mpl-token-metadata program
     pub sysvar_instructions: UncheckedAccount<'info>,
 }
 

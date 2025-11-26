@@ -105,7 +105,6 @@ impl ZorchClient {
                 metadata,
                 token_metadata_program: pda::TOKEN_METADATA_PROGRAM,
                 system_program: pda::SYSTEM_PROGRAM,
-                rent: pda::RENT,
                 sysvar_instructions: pda::INSTRUCTIONS_SYSVAR,
             })
             .args(crate::instruction::Metadata { name, symbol, uri })
