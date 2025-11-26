@@ -70,9 +70,9 @@ impl Solana {
     async fn metadata(
         &self,
         client: ZorchClient,
-        name: &String,
-        symbol: &String,
-        uri: &String,
+        name: &str,
+        symbol: &str,
+        uri: &str,
         update: bool,
     ) -> Result<()> {
         if let Ok(metadata) = client.metadata().await {
@@ -82,8 +82,8 @@ impl Solana {
             }
         }
 
-        let _ = client
-            .update_metadata(name.clone(), symbol.clone(), uri.clone())
+        client
+            .update_metadata(name.to_owned(), symbol.to_owned(), uri.to_owned())
             .await?;
         let metadata = client.metadata().await?;
         println!("{metadata:#?}");
