@@ -1,7 +1,7 @@
 //! Network configuration
 
+use crate::zcash;
 use serde::{Deserialize, Serialize};
-use sync::zcash;
 
 /// Network type wrapper
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]

@@ -1,11 +1,9 @@
 //! Configuration command for the zyper bridge
 
-use crate::{
-    config::{Key, Network, Rpc},
-    Config,
-};
+use crate::Config;
 use anyhow::Result;
 use std::{fs, path::Path};
+use sync::config::{Key, Network, Rpc};
 use sync::{solana::Keypair, zcash::signer::GroupSigners};
 
 const NOTE: &str = r#"

@@ -4,11 +4,11 @@ use crate::Config;
 use anyhow::Result;
 use clap::Parser;
 use std::{path::PathBuf, sync::OnceLock};
+use sync::zcash;
 use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt, EnvFilter};
 
 mod conf;
 mod dev;
-mod zcash;
 
 /// Command line interface for the ZorchBridge node
 #[derive(Parser)]

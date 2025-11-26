@@ -8088,7 +8088,10 @@ version = "0.1.0"
 dependencies = [
  "anyhow",
  "async-trait",
+ "bs58",
+ "clap",
  "orchard",
+ "postcard",
  "prost",
  "rand 0.8.5",
  "rand_core 0.6.4",
@@ -8096,6 +8099,7 @@ dependencies = [
  "rusqlite",
  "serde",
  "solana-sdk",
+ "toml 0.9.8",
  "tonic",
  "tracing",
  "url",
