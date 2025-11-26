@@ -29,14 +29,13 @@ pub mod zorch {
         internal::initialize(ctx, validators, threshold)
     }
 
-    /// Mint sZEC to a recipient (threshold action)
-    pub fn mint(
-        ctx: Context<MintSzec>,
-        recipient: Pubkey,
-        amount: u64,
+    /// Mint sZEC to recipients (threshold action, supports batch)
+    pub fn mint<'info>(
+        ctx: Context<'_, '_, '_, 'info, MintSzec<'info>>,
+        mints: Vec<(Pubkey, u64)>,
         signatures: Vec<[u8; 64]>,
     ) -> Result<()> {
-        threshold::mint(ctx, recipient, amount, signatures)
+        threshold::mint(ctx, mints, signatures)
     }
 
     /// Burn sZEC to bridge back to Zcash (public action)
@@ -125,19 +124,23 @@ pub struct Initialize<'info> {
 /// the threshold requirement. Validators sign off-chain and provide signatures
 /// to authorize the mint operation.
 ///
+/// Supports both single and batch minting. For batch minting, pass multiple
+/// recipient token accounts via remaining_accounts in the same order as the
+/// mints vector.
+///
 /// # Accounts
 /// - `payer`: Transaction fee payer
 /// - `bridge_state`: Stores validator set and is used as mint authority
 /// - `zec_mint`: The sZEC token mint
-/// - `recipient_token_account`: Recipient's token account to receive minted sZEC
 /// - `token_program`: Required for minting
 /// - `system_program`: Required for various operations
+/// - `instructions`: Instructions sysvar for signature verification
 ///
-/// # Constraints
-/// - Recipient token account must be for the sZEC mint
-/// - Recipient token account must be owned by the specified recipient
+/// # Remaining Accounts
+/// - One token account per mint in the mints vector
+/// - Each must be for the sZEC mint and owned by the corresponding recipient
 #[derive(Accounts)]
-#[instruction(recipient: Pubkey, amount: u64, signatures: Vec<[u8; 64]>)]
+#[instruction(mints: Vec<(Pubkey, u64)>, signatures: Vec<[u8; 64]>)]
 pub struct MintSzec<'info> {
     /// Transaction fee payer.
     ///
@@ -166,18 +169,6 @@ pub struct MintSzec<'info> {
         constraint = zec_mint.key() == bridge_state.zec_mint @ BridgeError::InvalidMint
     )]
     pub zec_mint: Account<'info, Mint>,
-
-    /// Recipient's token account to receive minted sZEC.
-    ///
-    /// Must be:
-    /// - For the sZEC mint
-    /// - Owned by the specified recipient pubkey
-    #[account(
-        mut,
-        constraint = recipient_token_account.mint == zec_mint.key() @ BridgeError::InvalidMint,
-        constraint = recipient_token_account.owner == recipient @ BridgeError::InvalidRecipient
-    )]
-    pub recipient_token_account: Account<'info, TokenAccount>,
 
     /// Token program for mint operations.
     pub token_program: Program<'info, Token>,
