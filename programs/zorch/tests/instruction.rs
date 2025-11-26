@@ -173,7 +173,10 @@ impl Test {
     pub fn validators_accounts(&self) -> Vec<(Pubkey, Account)> {
         vec![
             (self.payer, Test::account().into()),
-            (api::pda::bridge_state(), Test::account().into()),
+            (
+                api::pda::bridge_state(),
+                Test::program_owned_account().into(),
+            ),
             (
                 api::pda::SYSTEM_PROGRAM,
                 Test::native_program_account().into(),
