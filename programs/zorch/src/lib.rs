@@ -9,7 +9,7 @@ pub use state::BridgeState;
 
 declare_id!("2KwobV7wjmUzGRQfpd3G5HVRfCRUXfry9MoM3Hbks9dz");
 
-pub mod api;
+pub mod client;
 pub mod errors;
 pub mod events;
 mod handler;

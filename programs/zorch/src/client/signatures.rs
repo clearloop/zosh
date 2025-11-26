@@ -3,12 +3,12 @@
 //! Anchor cannot generate these helpers automatically, so we provide them here.
 
 use super::ZorchClient;
+use crate::types::MintEntry;
 use anchor_client::solana_sdk::{
     ed25519_instruction::new_ed25519_instruction_with_signature, instruction::Instruction,
     pubkey::Pubkey, signature::Keypair, signer::Signer,
 };
 use anyhow::Result;
-use zorch::types::MintEntry;
 
 impl ZorchClient {
     /// Create a message for signing mint action

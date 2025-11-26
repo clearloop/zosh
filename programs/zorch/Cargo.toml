@@ -1,5 +1,5 @@
 [package]
-name = "zorch"
+name = "zorch-program"
 version.workspace = true
 edition.workspace = true
 description = "Zorch solana consensus program"
@@ -9,7 +9,7 @@ crate-type = ["cdylib", "lib"]
 name = "zorch"
 
 [features]
-default = []
+default = ["idl-build"]
 cpi = ["no-entrypoint"]
 no-entrypoint = []
 no-idl = []
@@ -27,11 +27,14 @@ solana-sdk-ids.workspace = true
 mpl-token-metadata.workspace = true
 
 [target.'cfg(not(target_os = "solana"))'.dependencies]
+anchor-client.workspace = true
+serde.workspace = true
 solana-sdk.workspace = true
+spl-associated-token-account.workspace = true
 
 [dev-dependencies]
 borsh.workspace = true
-mollusk-svm.workspace = true
+litesvm.workspace = true
 solana-account.workspace = true
 solana-ed25519-program.workspace = true
 solana-sdk.workspace = true

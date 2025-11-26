@@ -3,7 +3,7 @@
 use anchor_lang::{prelude::AccountMeta, InstructionData};
 use solana_sdk::{instruction::Instruction, pubkey::Pubkey};
 
-use crate::api::pda;
+use crate::client::pda;
 
 /// Build the initialize instruction
 pub fn initialize(payer: Pubkey, validators: Vec<Pubkey>, threshold: u8) -> Instruction {
