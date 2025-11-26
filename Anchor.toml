@@ -1,12 +1,9 @@
-[toolchain]
-package_manager = "yarn"
-
 [features]
 resolution = true
 skip-lint = false
 
 [programs.localnet]
-zorch = "2KwobV7wjmUzGRQfpd3G5HVRfCRUXfry9MoM3Hbks9dz"
+zorch = "5QXepWTdHmsQkroWnitvs55jR6TxWbE8DCf54fQaYcH1"
 
 [registry]
 url = "https://api.apr.dev"
@@ -16,4 +13,4 @@ cluster = "localnet"
 wallet = "~/.config/solana/id.json"
 
 [scripts]
-test = "cargo test"
+test = "cargo test -p zorch-program"

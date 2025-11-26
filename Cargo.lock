@@ -8058,11 +8058,13 @@ dependencies = [
  "anchor-lang",
  "anchor-spl",
  "anyhow",
+ "dirs",
  "mpl-token-metadata",
  "serde",
  "solana-sdk",
  "solana-sdk-ids",
  "spl-associated-token-account",
+ "tokio",
 ]
 
 [[package]]

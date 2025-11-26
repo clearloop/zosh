@@ -7,7 +7,7 @@ pub use events::{BurnEvent, MintEvent, ValidatorSetUpdated};
 use handler::{external, internal, threshold};
 pub use state::BridgeState;
 
-declare_id!("2KwobV7wjmUzGRQfpd3G5HVRfCRUXfry9MoM3Hbks9dz");
+declare_id!("5QXepWTdHmsQkroWnitvs55jR6TxWbE8DCf54fQaYcH1");
 
 pub mod client;
 pub mod errors;

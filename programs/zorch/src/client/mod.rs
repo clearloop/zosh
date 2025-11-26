@@ -33,6 +33,11 @@ impl ZorchClient {
         Ok(Self { program })
     }
 
+    /// Get the program client
+    pub fn program(&self) -> &Program<Rc<Keypair>> {
+        &self.program
+    }
+
     /// Initialize the bridge with initial validator set
     pub async fn initialize(&self, validators: Vec<Pubkey>, threshold: u8) -> Result<Pubkey> {
         let bridge_state = pda::bridge_state();
