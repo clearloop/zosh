@@ -7,6 +7,7 @@ use anchor_client::{
 };
 use anyhow::Result;
 pub use instruction::*;
+use mpl_token_metadata::accounts::Metadata;
 use solana_sdk::signature::Signature;
 use std::rc::Rc;
 
@@ -52,6 +53,18 @@ impl ZorchClient {
         Ok(bridge_state)
     }
 
+    /// Read the current metadata
+    pub async fn metadata(&self) -> Result<Metadata> {
+        let metadata_pubkey = pda::metadata();
+        let account_data = self
+            .program
+            .rpc()
+            .get_account_data(&metadata_pubkey)
+            .await?;
+
+        Metadata::from_bytes(&account_data).map_err(Into::into)
+    }
+
     /// Initialize the bridge with initial validator set
     pub async fn initialize(&self, validators: Vec<Pubkey>, threshold: u8) -> Result<Signature> {
         let bridge_state = pda::bridge_state();
@@ -93,6 +106,7 @@ impl ZorchClient {
                 token_metadata_program: pda::TOKEN_METADATA_PROGRAM,
                 system_program: pda::SYSTEM_PROGRAM,
                 rent: pda::RENT,
+                sysvar_instructions: pda::INSTRUCTIONS_SYSVAR,
             })
             .args(crate::instruction::Metadata { name, symbol, uri })
             .send()

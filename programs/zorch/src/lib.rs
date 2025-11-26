@@ -189,6 +189,12 @@ pub struct UpdateMetadata<'info> {
 
     /// Rent sysvar.
     pub rent: Sysvar<'info, Rent>,
+
+    /// Sysvar instructions account required by mpl-token-metadata.
+    ///
+    /// CHECK: Required by mpl-token-metadata CreateV1
+    #[account(address = anchor_lang::solana_program::sysvar::instructions::ID)]
+    pub sysvar_instructions: UncheckedAccount<'info>,
 }
 
 /// Accounts for minting sZEC tokens.

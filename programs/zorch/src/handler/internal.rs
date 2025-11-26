@@ -66,18 +66,14 @@ pub fn metadata(
 
     // Check if metadata account exists
     let metadata_account_exists = ctx.accounts.metadata.data_len() > 0;
-
     let token_metadata_program = &ctx.accounts.token_metadata_program;
     let metadata_account = &ctx.accounts.metadata;
     let bridge_state_account = ctx.accounts.bridge_state.to_account_info();
     let zec_mint_account = ctx.accounts.zec_mint.to_account_info();
     let authority_account = &ctx.accounts.authority;
     let system_program_account = &ctx.accounts.system_program;
-
+    let sysvar_instructions_account = &ctx.accounts.sysvar_instructions;
     if metadata_account_exists {
-        // Update existing metadata
-        msg!("Updating existing metadata");
-
         let mut builder = UpdateV1CpiBuilder::new(token_metadata_program);
         builder
             .metadata(metadata_account)
@@ -88,9 +84,6 @@ pub fn metadata(
         // Build and invoke with PDA signer
         builder.invoke_signed(&[&[b"bridge-state", &[ctx.accounts.bridge_state.bump]]])?;
     } else {
-        // Create new metadata
-        msg!("Creating new metadata");
-
         let mut builder = CreateV1CpiBuilder::new(token_metadata_program);
         builder
             .metadata(metadata_account)
@@ -99,6 +92,7 @@ pub fn metadata(
             .payer(authority_account)
             .update_authority(&bridge_state_account, true)
             .system_program(system_program_account)
+            .sysvar_instructions(sysvar_instructions_account)
             .name(name)
             .symbol(symbol)
             .uri(uri)

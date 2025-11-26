@@ -11,6 +11,25 @@ use zorch::client::ZorchClient;
 pub enum Solana {
     /// Get the current bridge state
     State,
+
+    /// Get or update the current metadata
+    Metadata {
+        /// The new of our bridged ZEC
+        #[clap(short, long, default_value = "Zorch ZEC")]
+        name: String,
+        /// The new symbol of our bridged ZEC
+        #[clap(short, long, default_value = "zrcZEC")]
+        symbol: String,
+        /// The new URI of our bridged ZEC
+        #[clap(
+            long,
+            default_value = "https://obamyvsl2qpmlutsi2smszmcijjsog7euvnfl4quigts5ie2tlua.arweave.net/cEDMVkvUHsXSckakyWWCQlMnG-SlWlXyFEGnLqCamug"
+        )]
+        uri: String,
+        /// Whether to update the metadata
+        #[clap(short, long, default_value = "false")]
+        update: bool,
+    },
 }
 
 impl Solana {
@@ -25,6 +44,12 @@ impl Solana {
 
         match self {
             Self::State => self.initialize(client).await,
+            Self::Metadata {
+                name,
+                symbol,
+                uri,
+                update,
+            } => self.metadata(client, name, symbol, uri, *update).await,
         }
     }
 
@@ -38,6 +63,30 @@ impl Solana {
         let _ = client.initialize(vec![client.payer()], 1).await?;
         let state = client.bridge_state().await?;
         println!("{state:#?}");
+        Ok(())
+    }
+
+    /// Get the current metadata
+    async fn metadata(
+        &self,
+        client: ZorchClient,
+        name: &String,
+        symbol: &String,
+        uri: &String,
+        update: bool,
+    ) -> Result<()> {
+        if let Ok(metadata) = client.metadata().await {
+            if !update {
+                println!("{metadata:#?}");
+                return Ok(());
+            }
+        }
+
+        let _ = client
+            .update_metadata(name.clone(), symbol.clone(), uri.clone())
+            .await?;
+        let metadata = client.metadata().await?;
+        println!("{metadata:#?}");
         Ok(())
     }
 }
