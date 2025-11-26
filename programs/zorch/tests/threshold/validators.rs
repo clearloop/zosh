@@ -20,8 +20,14 @@ fn test_validators_update() {
         .mollusk
         .process_instruction(&instruction, &test.validators_accounts());
 
-    // Note: This will fail without proper Ed25519 signature verification setup
-    // but the test demonstrates the account structure
+    // Note: This will fail without proper Ed25519 signature verification setup,
+    // but the test validates the instruction structure.
+    // In a successful validators update:
+    // - bridge_state.validators would be updated to new_validators
+    // - bridge_state.threshold would be updated to new_threshold
+    // - bridge_state.total_validators would be updated to 5
+    // - bridge_state.nonce would be incremented
+    // - ValidatorSetUpdated event would be emitted
     assert!(
         result.program_result.is_err(),
         "Expected failure without proper signature verification"

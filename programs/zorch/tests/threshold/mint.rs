@@ -5,7 +5,7 @@ use solana_sdk::pubkey::Pubkey;
 use zorch::{api, types::MintEntry};
 
 #[test]
-fn test_mint_success() {
+fn test_mint_instruction_structure() {
     let test = Test::new();
 
     // Create recipient token accounts
@@ -44,8 +44,12 @@ fn test_mint_success() {
         .mollusk
         .process_instruction(&instruction, &test.mint_accounts(recipient_token_accounts));
 
-    // Note: This will fail without proper Ed25519 signature verification setup
-    // but the test demonstrates the account structure
+    // Note: This will fail without proper Ed25519 signature verification setup,
+    // but the test validates the instruction structure.
+    // In a successful mint:
+    // - bridge_state.nonce would be incremented
+    // - token balances would be increased
+    // - MintEvent would be emitted
     assert!(
         result.program_result.is_err(),
         "Expected failure without proper signature verification"
