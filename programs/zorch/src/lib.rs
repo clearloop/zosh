@@ -14,6 +14,7 @@ pub mod errors;
 pub mod events;
 mod handler;
 pub mod state;
+pub mod types;
 mod utils;
 
 #[program]
@@ -42,7 +43,7 @@ pub mod zorch {
     /// Mint sZEC to recipients (threshold action, supports batch)
     pub fn mint<'info>(
         ctx: Context<'_, '_, '_, 'info, MintZec<'info>>,
-        mints: Vec<(Pubkey, u64)>,
+        mints: Vec<types::MintEntry>,
         signatures: Vec<[u8; 64]>,
     ) -> Result<()> {
         threshold::mint(ctx, mints, signatures)
@@ -212,7 +213,7 @@ pub struct UpdateMetadata<'info> {
 /// - One token account per mint in the mints vector
 /// - Each must be for the sZEC mint and owned by the corresponding recipient
 #[derive(Accounts)]
-#[instruction(mints: Vec<(Pubkey, u64)>, signatures: Vec<[u8; 64]>)]
+#[instruction(mints: Vec<types::MintEntry>, signatures: Vec<[u8; 64]>)]
 pub struct MintZec<'info> {
     /// Transaction fee payer.
     ///

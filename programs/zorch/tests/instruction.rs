@@ -8,8 +8,11 @@ use solana_sdk::{
     signature::Keypair,
     signer::Signer,
 };
-mod internal;
 use zorch::api;
+
+mod external;
+mod internal;
+mod threshold;
 
 /// Testing client for the instructions
 pub struct Test {
@@ -68,6 +71,22 @@ impl Test {
         account
     }
 
+    /// Create an account owned by the zorch program
+    pub fn program_owned_account() -> AccountSharedData {
+        let mut account = AccountSharedData::default();
+        account.set_owner(zorch::ID);
+        account.set_lamports(10_000_000_000);
+        account
+    }
+
+    /// Create a token account owned by the token program
+    pub fn token_account() -> AccountSharedData {
+        let mut account = AccountSharedData::default();
+        account.set_owner(api::pda::TOKEN_PROGRAM);
+        account.set_lamports(10_000_000_000);
+        account
+    }
+
     /// Initialize accounts for the initialize instruction
     pub fn initialize_accounts(&self) -> Vec<(Pubkey, Account)> {
         vec![
@@ -87,7 +106,10 @@ impl Test {
     pub fn metadata_accounts(&self, authority: Pubkey) -> Vec<(Pubkey, Account)> {
         vec![
             (authority, Test::account().into()),
-            (api::pda::bridge_state(), Test::account().into()),
+            (
+                api::pda::bridge_state(),
+                Test::program_owned_account().into(),
+            ),
             (api::pda::zec_mint(), Test::account().into()),
             (api::pda::metadata(), Default::default()),
             (
@@ -136,9 +158,12 @@ impl Test {
     ) -> Vec<(Pubkey, Account)> {
         vec![
             (signer, Test::account().into()),
-            (signer_token_account, Test::account().into()),
+            (signer_token_account, Test::token_account().into()),
             (api::pda::zec_mint(), Test::account().into()),
-            (api::pda::bridge_state(), Test::account().into()),
+            (
+                api::pda::bridge_state(),
+                Test::program_owned_account().into(),
+            ),
             (api::pda::TOKEN_PROGRAM, Test::bpf_program_account().into()),
         ]
     }

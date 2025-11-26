@@ -1,6 +1,5 @@
 //! instructions for the zorch program
 
-use crate::instruction::{Burn, Initialize, Metadata, Mint, Validators};
 use anchor_lang::{prelude::AccountMeta, InstructionData};
 use solana_sdk::{instruction::Instruction, pubkey::Pubkey};
 
@@ -8,7 +7,7 @@ use crate::api::pda;
 
 /// Build the initialize instruction
 pub fn initialize(payer: Pubkey, validators: Vec<Pubkey>, threshold: u8) -> Instruction {
-    let initialize = Initialize {
+    let data = crate::instruction::Initialize {
         validators,
         threshold,
     };
@@ -23,12 +22,12 @@ pub fn initialize(payer: Pubkey, validators: Vec<Pubkey>, threshold: u8) -> Inst
         AccountMeta::new_readonly(pda::RENT, false),  // rent sysvar
     ];
 
-    Instruction::new_with_bytes(crate::ID, &initialize.data(), accounts)
+    Instruction::new_with_bytes(crate::ID, &data.data(), accounts)
 }
 
 /// Build the metadata instruction
 pub fn metadata(authority: Pubkey, name: String, symbol: String, uri: String) -> Instruction {
-    let metadata_ix = Metadata { name, symbol, uri };
+    let data = crate::instruction::Metadata { name, symbol, uri };
 
     // build the instruction accounts
     let accounts = vec![
@@ -41,17 +40,17 @@ pub fn metadata(authority: Pubkey, name: String, symbol: String, uri: String) ->
         AccountMeta::new_readonly(pda::RENT, false), // rent sysvar
     ];
 
-    Instruction::new_with_bytes(crate::ID, &metadata_ix.data(), accounts)
+    Instruction::new_with_bytes(crate::ID, &data.data(), accounts)
 }
 
 /// Build the mint instruction
 pub fn mint(
     payer: Pubkey,
     recipient_token_accounts: Vec<Pubkey>,
-    mints: Vec<(Pubkey, u64)>,
+    mints: Vec<crate::types::MintEntry>,
     signatures: Vec<[u8; 64]>,
 ) -> Instruction {
-    let mint_ix = Mint { mints, signatures };
+    let data = crate::instruction::Mint { mints, signatures };
 
     // build the instruction accounts
     let mut accounts = vec![
@@ -68,7 +67,7 @@ pub fn mint(
         accounts.push(AccountMeta::new(token_account, false));
     }
 
-    Instruction::new_with_bytes(crate::ID, &mint_ix.data(), accounts)
+    Instruction::new_with_bytes(crate::ID, &data.data(), accounts)
 }
 
 /// Build the burn instruction
@@ -78,7 +77,7 @@ pub fn burn(
     amount: u64,
     zec_recipient: String,
 ) -> Instruction {
-    let burn_ix = Burn {
+    let data = crate::instruction::Burn {
         amount,
         zec_recipient,
     };
@@ -92,7 +91,7 @@ pub fn burn(
         AccountMeta::new_readonly(pda::TOKEN_PROGRAM, false), // token_program
     ];
 
-    Instruction::new_with_bytes(crate::ID, &burn_ix.data(), accounts)
+    Instruction::new_with_bytes(crate::ID, &data.data(), accounts)
 }
 
 /// Build the validators instruction
@@ -102,7 +101,7 @@ pub fn validators(
     new_threshold: u8,
     signatures: Vec<[u8; 64]>,
 ) -> Instruction {
-    let validators_ix = Validators {
+    let data = crate::instruction::Validators {
         new_validators,
         new_threshold,
         signatures,
@@ -116,5 +115,5 @@ pub fn validators(
         AccountMeta::new_readonly(pda::INSTRUCTIONS_SYSVAR, false), // instructions sysvar
     ];
 
-    Instruction::new_with_bytes(crate::ID, &validators_ix.data(), accounts)
+    Instruction::new_with_bytes(crate::ID, &data.data(), accounts)
 }
