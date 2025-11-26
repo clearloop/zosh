@@ -2,6 +2,10 @@
 
 use crate::errors::BridgeError;
 use anchor_lang::prelude::*;
+use mpl_token_metadata::{
+    instructions::{CreateV1CpiBuilder, UpdateV1CpiBuilder},
+    types::{PrintSupply, TokenStandard},
+};
 
 /// Initialize the bridge with initial validator set
 ///
@@ -32,5 +36,79 @@ pub fn initialize(
         threshold
     );
 
+    Ok(())
+}
+
+/// Update or create token metadata for the sZEC mint
+pub fn metadata(
+    ctx: Context<crate::UpdateMetadata>,
+    name: String,
+    symbol: String,
+    uri: String,
+) -> Result<()> {
+    msg!("Updating token metadata: {} ({})", name, symbol);
+
+    // Derive the metadata PDA
+    let zec_mint_key = ctx.accounts.zec_mint.key();
+    let metadata_seeds = &[
+        b"metadata",
+        mpl_token_metadata::ID.as_ref(),
+        zec_mint_key.as_ref(),
+    ];
+    let (metadata_pda, _bump) =
+        Pubkey::find_program_address(metadata_seeds, &mpl_token_metadata::ID);
+
+    // Verify the provided metadata account matches the derived PDA
+    require!(
+        ctx.accounts.metadata.key() == metadata_pda,
+        BridgeError::InvalidRecipient
+    );
+
+    // Check if metadata account exists
+    let metadata_account_exists = ctx.accounts.metadata.data_len() > 0;
+
+    let token_metadata_program = &ctx.accounts.token_metadata_program;
+    let metadata_account = &ctx.accounts.metadata;
+    let bridge_state_account = ctx.accounts.bridge_state.to_account_info();
+    let zec_mint_account = ctx.accounts.zec_mint.to_account_info();
+    let authority_account = &ctx.accounts.authority;
+    let system_program_account = &ctx.accounts.system_program;
+
+    if metadata_account_exists {
+        // Update existing metadata
+        msg!("Updating existing metadata");
+
+        let mut builder = UpdateV1CpiBuilder::new(token_metadata_program);
+        builder
+            .metadata(metadata_account)
+            .authority(&bridge_state_account)
+            .payer(authority_account)
+            .system_program(system_program_account);
+
+        // Build and invoke with PDA signer
+        builder.invoke_signed(&[&[b"bridge-state", &[ctx.accounts.bridge_state.bump]]])?;
+    } else {
+        // Create new metadata
+        msg!("Creating new metadata");
+
+        let mut builder = CreateV1CpiBuilder::new(token_metadata_program);
+        builder
+            .metadata(metadata_account)
+            .mint(&zec_mint_account, false)
+            .authority(&bridge_state_account)
+            .payer(authority_account)
+            .update_authority(&bridge_state_account, true)
+            .system_program(system_program_account)
+            .name(name)
+            .symbol(symbol)
+            .uri(uri)
+            .seller_fee_basis_points(0)
+            .token_standard(TokenStandard::Fungible)
+            .print_supply(PrintSupply::Zero);
+
+        builder.invoke_signed(&[&[b"bridge-state", &[ctx.accounts.bridge_state.bump]]])?;
+    }
+
+    msg!("Token metadata updated successfully");
     Ok(())
 }

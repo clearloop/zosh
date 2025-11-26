@@ -29,9 +29,19 @@ pub mod zorch {
         internal::initialize(ctx, validators, threshold)
     }
 
+    /// Update token metadata (internal action, authority only)
+    pub fn metadata(
+        ctx: Context<UpdateMetadata>,
+        name: String,
+        symbol: String,
+        uri: String,
+    ) -> Result<()> {
+        internal::metadata(ctx, name, symbol, uri)
+    }
+
     /// Mint sZEC to recipients (threshold action, supports batch)
     pub fn mint<'info>(
-        ctx: Context<'_, '_, '_, 'info, MintSzec<'info>>,
+        ctx: Context<'_, '_, '_, 'info, MintZec<'info>>,
         mints: Vec<(Pubkey, u64)>,
         signatures: Vec<[u8; 64]>,
     ) -> Result<()> {
@@ -39,7 +49,7 @@ pub mod zorch {
     }
 
     /// Burn sZEC to bridge back to Zcash (public action)
-    pub fn burn(ctx: Context<BurnSzec>, amount: u64, zec_recipient: String) -> Result<()> {
+    pub fn burn(ctx: Context<BurnZec>, amount: u64, zec_recipient: String) -> Result<()> {
         external::burn(ctx, amount, zec_recipient)
     }
 
@@ -118,6 +128,68 @@ pub struct Initialize<'info> {
     pub rent: Sysvar<'info, Rent>,
 }
 
+/// Accounts for updating token metadata.
+///
+/// This is an internal action that can only be called by the bridge authority.
+/// It creates or updates the Metaplex token metadata for the sZEC mint.
+///
+/// # Accounts
+/// - `authority`: Bridge authority (must match bridge_state.authority)
+/// - `bridge_state`: Read-only reference for authority validation
+/// - `zec_mint`: The sZEC token mint
+/// - `metadata`: Metaplex metadata account (PDA derived from mint)
+/// - `token_metadata_program`: Metaplex Token Metadata program
+/// - `system_program`: Required for account creation
+/// - `rent`: Rent sysvar
+#[derive(Accounts)]
+pub struct UpdateMetadata<'info> {
+    /// Bridge authority that can update metadata.
+    ///
+    /// Must match the authority stored in bridge_state.
+    #[account(
+        mut,
+        constraint = authority.key() == bridge_state.authority @ BridgeError::InvalidRecipient
+    )]
+    pub authority: Signer<'info>,
+
+    /// Bridge state for authority validation.
+    #[account(
+        seeds = [b"bridge-state"],
+        bump = bridge_state.bump
+    )]
+    pub bridge_state: Account<'info, BridgeState>,
+
+    /// The sZEC token mint.
+    #[account(
+        mut,
+        seeds = [b"zec-mint"],
+        bump,
+        constraint = zec_mint.key() == bridge_state.zec_mint @ BridgeError::InvalidMint
+    )]
+    pub zec_mint: Account<'info, Mint>,
+
+    /// Metaplex metadata account for the mint.
+    ///
+    /// This is a PDA derived from the mint address.
+    /// Will be created if it doesn't exist, or updated if it does.
+    ///
+    /// CHECK: Validated by Metaplex program
+    #[account(mut)]
+    pub metadata: UncheckedAccount<'info>,
+
+    /// Metaplex Token Metadata program.
+    ///
+    /// CHECK: Validated by constraint
+    #[account(address = mpl_token_metadata::ID)]
+    pub token_metadata_program: UncheckedAccount<'info>,
+
+    /// System program for account creation.
+    pub system_program: Program<'info, System>,
+
+    /// Rent sysvar.
+    pub rent: Sysvar<'info, Rent>,
+}
+
 /// Accounts for minting sZEC tokens.
 ///
 /// This is a threshold action that requires signatures from validators meeting
@@ -141,7 +213,7 @@ pub struct Initialize<'info> {
 /// - Each must be for the sZEC mint and owned by the corresponding recipient
 #[derive(Accounts)]
 #[instruction(mints: Vec<(Pubkey, u64)>, signatures: Vec<[u8; 64]>)]
-pub struct MintSzec<'info> {
+pub struct MintZec<'info> {
     /// Transaction fee payer.
     ///
     /// Must sign the transaction.
@@ -204,7 +276,7 @@ pub struct MintSzec<'info> {
 /// - Token account must hold sZEC tokens
 /// - Mint must match bridge state's recorded mint
 #[derive(Accounts)]
-pub struct BurnSzec<'info> {
+pub struct BurnZec<'info> {
     /// User burning their sZEC tokens.
     ///
     /// Must sign the transaction and own the token account.

@@ -13,7 +13,7 @@ pub const MAX_BATCH_SIZE: usize = 10;
 
 /// Mints sZEC tokens to recipients (supports batch).
 pub fn mint<'info>(
-    ctx: Context<'_, '_, '_, 'info, crate::MintSzec<'info>>,
+    ctx: Context<'_, '_, '_, 'info, crate::MintZec<'info>>,
     mints: Vec<(Pubkey, u64)>,
     signatures: Vec<[u8; 64]>,
 ) -> Result<()> {

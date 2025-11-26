@@ -24,6 +24,7 @@ anchor-lang.workspace = true
 anchor-spl.workspace = true
 anyhow.workspace = true
 solana-sdk-ids.workspace = true
+mpl-token-metadata.workspace = true
 
 [target.'cfg(not(target_os = "solana"))'.dependencies]
 anyhow.workspace = true
