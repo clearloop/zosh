@@ -82,6 +82,82 @@ impl Test {
             self.mollusk.sysvars.keyed_account_for_rent_sysvar(),
         ]
     }
+
+    /// Build accounts for the metadata instruction
+    pub fn metadata_accounts(&self, authority: Pubkey) -> Vec<(Pubkey, Account)> {
+        vec![
+            (authority, Test::account().into()),
+            (api::pda::bridge_state(), Test::account().into()),
+            (api::pda::zec_mint(), Test::account().into()),
+            (api::pda::metadata(), Default::default()),
+            (
+                api::pda::TOKEN_METADATA_PROGRAM,
+                Test::bpf_program_account().into(),
+            ),
+            (
+                api::pda::SYSTEM_PROGRAM,
+                Test::native_program_account().into(),
+            ),
+            self.mollusk.sysvars.keyed_account_for_rent_sysvar(),
+        ]
+    }
+
+    /// Build accounts for the mint instruction (threshold action)
+    pub fn mint_accounts(
+        &self,
+        recipient_token_accounts: Vec<(Pubkey, Account)>,
+    ) -> Vec<(Pubkey, Account)> {
+        let mut accounts = vec![
+            (self.payer, Test::account().into()),
+            (api::pda::bridge_state(), Test::account().into()),
+            (api::pda::zec_mint(), Test::account().into()),
+            (api::pda::TOKEN_PROGRAM, Test::bpf_program_account().into()),
+            (
+                api::pda::SYSTEM_PROGRAM,
+                Test::native_program_account().into(),
+            ),
+            (
+                api::pda::INSTRUCTIONS_SYSVAR,
+                Test::native_program_account().into(),
+            ),
+        ];
+
+        // Add recipient token accounts as remaining accounts
+        accounts.extend(recipient_token_accounts);
+
+        accounts
+    }
+
+    /// Build accounts for the burn instruction
+    pub fn burn_accounts(
+        &self,
+        signer: Pubkey,
+        signer_token_account: Pubkey,
+    ) -> Vec<(Pubkey, Account)> {
+        vec![
+            (signer, Test::account().into()),
+            (signer_token_account, Test::account().into()),
+            (api::pda::zec_mint(), Test::account().into()),
+            (api::pda::bridge_state(), Test::account().into()),
+            (api::pda::TOKEN_PROGRAM, Test::bpf_program_account().into()),
+        ]
+    }
+
+    /// Build accounts for the validators instruction (threshold action)
+    pub fn validators_accounts(&self) -> Vec<(Pubkey, Account)> {
+        vec![
+            (self.payer, Test::account().into()),
+            (api::pda::bridge_state(), Test::account().into()),
+            (
+                api::pda::SYSTEM_PROGRAM,
+                Test::native_program_account().into(),
+            ),
+            (
+                api::pda::INSTRUCTIONS_SYSVAR,
+                Test::native_program_account().into(),
+            ),
+        ]
+    }
 }
 
 /// Generate a vector of unique pubkeys
