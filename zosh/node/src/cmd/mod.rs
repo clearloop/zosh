@@ -7,7 +7,6 @@ use std::{path::PathBuf, sync::OnceLock};
 use sync::{solana, zcash};
 use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt, EnvFilter};
 
-mod conf;
 mod dev;
 mod poc;
 
@@ -37,22 +36,15 @@ impl App {
         self.create_dirs()?;
         match &self.command {
             Command::Dev(dev) => dev.run(&self.config),
-            Command::Generate => conf::generate(&self.config),
             Command::Solana(solana) => {
-                let config = Config::load(&self.config.join("config.toml"))?;
+                let config = Config::load(&self.config)?;
                 solana.run(&config).await
             }
             Command::Zcash(zcash) => {
-                let config = Config::load(&self.config.join("config.toml"))?;
+                let config = Config::load(&self.config)?;
                 zcash.run(&self.cache, &config).await
             }
-            Command::POC => {
-                poc::run(
-                    &self.cache,
-                    &Config::load(&self.config.join("config.toml"))?,
-                )
-                .await
-            }
+            Command::POC => poc::run(&self.cache, &Config::load(&self.config)?).await,
         }?;
 
         Ok(())
@@ -107,17 +99,15 @@ pub enum Command {
 
     /// Run the POC service
     POC,
-
-    /// Generate configuration file
-    Generate,
 }
 
 fn default_config_dir() -> &'static str {
     static CONFIG_DIR: OnceLock<String> = OnceLock::new();
     CONFIG_DIR.get_or_init(|| {
-        dirs::config_dir()
+        dirs::home_dir()
             .unwrap()
-            .join("zorch")
+            .join(".config")
+            .join("zosh")
             .to_string_lossy()
             .into_owned()
     })
@@ -126,9 +116,10 @@ fn default_config_dir() -> &'static str {
 fn default_cache_dir() -> &'static str {
     static CACHE_DIR: OnceLock<String> = OnceLock::new();
     CACHE_DIR.get_or_init(|| {
-        dirs::cache_dir()
+        dirs::home_dir()
             .unwrap()
-            .join("zorch")
+            .join(".cache")
+            .join("zosh")
             .to_string_lossy()
             .into_owned()
     })

@@ -3,8 +3,8 @@
 use crate::zcash::{GroupSigners, SignerInfo};
 use anyhow::Result;
 use serde::{Deserialize, Serialize};
+use solana_sdk::signature::Keypair;
 use std::{fs, path::Path};
-
 pub use {crate::zcash, key::Key, network::Network, rpc::Rpc};
 
 mod key;
@@ -27,7 +27,11 @@ pub struct Config {
 impl Config {
     /// Load the configuration from a file
     pub fn load(path: &Path) -> Result<Self> {
-        let file = fs::read_to_string(path)?;
+        let config = path.join("config.toml");
+        if !config.exists() {
+            return Self::generate(path);
+        }
+        let file = fs::read_to_string(path.join("config.toml"))?;
         Ok(toml::from_str(&file)?)
     }
 
@@ -43,5 +47,24 @@ impl Config {
             network: self.network.clone().into(),
             ufvk,
         })
+    }
+
+    /// Generate a default configuration file
+    pub fn generate(target: &Path) -> Result<Self> {
+        let config = Config {
+            rpc: Rpc {
+                solana: "https://api.mainnet-beta.solana.com".parse()?,
+                solana_ws: "wss://api.mainnet-beta.solana.com".parse()?,
+                lightwalletd: "http://127.0.0.1:9067".parse()?,
+            },
+            key: Key {
+                zcash: bs58::encode(postcard::to_allocvec(&GroupSigners::new(3, 2)?)?)
+                    .into_string(),
+                solana: Keypair::new().to_base58_string(),
+            },
+            network: Network::Testnet,
+        };
+        fs::write(&target, toml::to_string_pretty(&config)?)?;
+        Ok(config)
     }
 }
