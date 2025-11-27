@@ -30,8 +30,8 @@ impl Config {
     }
 
     /// Get the zcash light client configuration
-    pub fn zcash(&self, cache: &Path) -> zcash::light::Config {
-        zcash::light::Config {
+    pub fn zcash(&self, cache: &Path) -> zcash::Config {
+        zcash::Config {
             cache: cache.join("chain.db"),
             wallet: cache.join("wallet.db"),
             lightwalletd: self.rpc.lightwalletd.clone(),

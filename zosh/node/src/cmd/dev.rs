@@ -4,7 +4,7 @@ use anyhow::Result;
 use clap::Parser;
 use reddsa::frost::redpallas::keys;
 use std::{fs, path::Path};
-use sync::zcash::signer::ShareSigner;
+use sync::zcash::ShareSigner;
 
 /// Development command for the zyper bridge
 #[derive(Parser)]

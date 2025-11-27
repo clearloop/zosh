@@ -1,34 +1,39 @@
 //! The bridge transaction structure
 
+use crate::tx::Chain;
+use serde::{Deserialize, Serialize};
+
 /// The transaction structure of zorch
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Bridge {
     /// The recipient address
-    pub recipient: Address,
+    pub recipient: Vec<u8>,
 
     /// The amount of the transaction
     pub amount: u64,
 
     /// The source of the transaction
-    pub source: Source,
+    pub source: Chain,
+
+    /// The target chain of the transaction
+    pub target: Chain,
+
+    /// The signature of the transaction
+    pub signature: Vec<u8>,
 }
 
-/// The target chain address
-pub enum Address {
-    /// Solana address
-    Solana([u8; 32]),
+/// The confirmation of the bridge transaction
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct Receipt {
+    /// The anchor signature of the source transaction
+    pub anchor: Vec<u8>,
 
-    /// Zcash orchard address
-    ZcashO([u8; 43]),
+    /// The signature of the confirmation transaction
+    pub signature: Vec<u8>,
 
-    /// Zcash transparent address
-    ZcashT([u8; 20]),
-}
+    /// The source chain of the transaction
+    pub source: Chain,
 
-/// The transaction source
-pub enum Source {
-    /// Solana transaction signature
-    Solana([u8; 64]),
-
-    /// Zcash transaction id
-    Zcash([u8; 32]),
+    /// The target chain of the transaction
+    pub target: Chain,
 }

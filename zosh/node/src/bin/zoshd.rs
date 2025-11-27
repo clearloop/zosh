@@ -1,7 +1,7 @@
 //! ZorchBridge node
 
 use clap::Parser;
-use zorch_node::cmd::App;
+use zosh_node::cmd::App;
 
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {

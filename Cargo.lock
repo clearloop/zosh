@@ -8016,7 +8016,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "zorch-core"
+name = "zosh-core"
 version = "0.1.0"
 dependencies = [
  "anyhow",
@@ -8024,11 +8024,11 @@ dependencies = [
 ]
 
 [[package]]
-name = "zorch-network"
+name = "zosh-network"
 version = "0.1.0"
 
 [[package]]
-name = "zorch-node"
+name = "zosh-node"
 version = "0.1.0"
 dependencies = [
  "anyhow",
@@ -8046,12 +8046,12 @@ dependencies = [
  "tracing",
  "tracing-subscriber",
  "url",
- "zorch-runtime",
- "zorch-sync",
+ "zosh-runtime",
+ "zosh-sync",
 ]
 
 [[package]]
-name = "zorch-program"
+name = "zosh-program"
 version = "0.1.0"
 dependencies = [
  "anchor-client",
@@ -8069,7 +8069,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "zorch-runtime"
+name = "zosh-runtime"
 version = "0.1.0"
 dependencies = [
  "anyhow",
@@ -8086,7 +8086,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "zorch-sync"
+name = "zosh-sync"
 version = "0.1.0"
 dependencies = [
  "anyhow",
@@ -8103,6 +8103,7 @@ dependencies = [
  "rusqlite",
  "serde",
  "solana-sdk",
+ "tokio",
  "toml 0.9.8",
  "tonic",
  "tracing",
@@ -8112,7 +8113,8 @@ dependencies = [
  "zcash_keys",
  "zcash_primitives",
  "zcash_protocol",
- "zorch-program",
+ "zosh-core",
+ "zosh-program",
 ]
 
 [[package]]

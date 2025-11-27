@@ -6,4 +6,4 @@ pub use {
 };
 
 mod block;
-mod tx;
+pub mod tx;

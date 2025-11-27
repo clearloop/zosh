@@ -1,12 +1,11 @@
 //! Solana command line interface
 
-use std::str::FromStr;
-
 use crate::Config;
 use anyhow::Result;
 use clap::Parser;
 use solana_sdk::{pubkey::Pubkey, signature::Keypair};
-use zorch::client::ZorchClient;
+use std::str::FromStr;
+use zosh::client::ZoshClient;
 
 /// Solana command line interface
 #[derive(Parser)]
@@ -56,7 +55,7 @@ impl Solana {
     /// Run the Solana command
     pub async fn run(&self, config: &Config) -> Result<()> {
         let keypair = Keypair::from_base58_string(&config.key.solana);
-        let client = ZorchClient::new(
+        let client = ZoshClient::new(
             config.rpc.solana.to_string(),
             config.rpc.solana_ws.to_string(),
             keypair,
@@ -76,7 +75,7 @@ impl Solana {
     }
 
     /// Initialize the bridge
-    async fn initialize(&self, client: ZorchClient) -> Result<()> {
+    async fn initialize(&self, client: ZoshClient) -> Result<()> {
         if let Ok(state) = client.bridge_state().await {
             println!("{state:#?}");
             return Ok(());
@@ -89,7 +88,7 @@ impl Solana {
     }
 
     /// Burn sZEC to bridge back to Zcash
-    async fn burn(&self, client: ZorchClient, amount: u64, address: String) -> Result<()> {
+    async fn burn(&self, client: ZoshClient, amount: u64, address: String) -> Result<()> {
         client.send_burn(amount, address).await?;
         let balance = client.zec_balance(client.payer()).await?;
         println!("{balance:#?}");
@@ -99,7 +98,7 @@ impl Solana {
     /// Get the current metadata
     async fn metadata(
         &self,
-        client: ZorchClient,
+        client: ZoshClient,
         name: &str,
         symbol: &str,
         uri: &str,
@@ -121,7 +120,7 @@ impl Solana {
     }
 
     /// Get the current zec balance for a recipient
-    async fn balance(&self, client: ZorchClient, address: Option<String>) -> Result<()> {
+    async fn balance(&self, client: ZoshClient, address: Option<String>) -> Result<()> {
         let address = address.unwrap_or_else(|| client.payer().to_string());
         let recipient = Pubkey::from_str(&address)?;
         let balance = client.zec_balance(recipient).await?;

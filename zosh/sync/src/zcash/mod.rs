@@ -2,12 +2,14 @@
 
 pub use {
     cmd::Zcash,
+    light::{Config, Light},
     orchard::Address,
+    signer::{GroupSigners, ShareSigner},
     zcash_keys::{address::UnifiedAddress, encoding::AddressCodec, keys::UnifiedFullViewingKey},
     zcash_primitives::consensus::Network,
     zcash_protocol::consensus::BranchId,
 };
 
 mod cmd;
-pub mod light;
-pub mod signer;
+mod light;
+mod signer;

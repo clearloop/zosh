@@ -4,7 +4,7 @@ use crate::Config;
 use anyhow::Result;
 use std::{fs, path::Path};
 use sync::config::{Key, Network, Rpc};
-use sync::{solana::Keypair, zcash::signer::GroupSigners};
+use sync::{solana::Keypair, zcash::GroupSigners};
 
 const NOTE: &str = r#"
 # Zorch Configurations
