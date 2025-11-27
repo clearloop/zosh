@@ -76,19 +76,19 @@ struct BridgeBundleToSolana {
 Once this block get committed on chain, all notes inside of it will be transited to
 the bridged status.
 
-## 4. The recipient get zrcZEC on Solana
+## 4. The recipient get zoZEC on Solana
 
 After the commitment of the bundle block, anyone can use the bundled data to mint
-zrcZEC on solana, the user itself, a solver, a relayer, or anybody wants to do it,
+zoZEC on solana, the user itself, a solver, a relayer, or anybody wants to do it,
 we likely need to do sort of incentive mechanism to encourage them to do it.
 
 On the solana program side, we verify the following stuffs:
 
 - all of the signatures are valid.
 - validated signatures are over the threshold of the validator set.
-- the nounce matches the one in the program
+- the nonce matches the one in the program
 
-> The solana program maintains a `nounce` to deduplicate the mint requests, each time
-> a bundle processed, the `nounce` will be incremented.
+> The solana program maintains a `nonce` to deduplicate the mint requests, each time
+> a bundle processed, the `nonce` will be incremented.
 
-Mint the zrcZEC, bumps the nounce.
+Mint the zoZEC, bumps the nonce.

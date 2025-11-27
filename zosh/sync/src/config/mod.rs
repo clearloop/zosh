@@ -39,7 +39,7 @@ impl Config {
         Ok(zcash::Config {
             cache: cache.join("chain.db"),
             wallet: cache.join("wallet.db"),
-            lightwalletd: self.rpc.lightwalletd.clone().into(),
+            lightwalletd: self.rpc.lightwalletd.clone(),
             network: self.network.clone().into(),
             ufvk,
         })

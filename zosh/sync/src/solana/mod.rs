@@ -30,7 +30,7 @@ impl SolanaClient {
             keypair,
         )?;
 
-        let sub = PubsubClient::new(&config.rpc.solana_ws.to_string()).await?;
+        let sub = PubsubClient::new(config.rpc.solana_ws.as_ref()).await?;
         Ok(Self { tx: solana, sub })
     }
 }

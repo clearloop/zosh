@@ -63,11 +63,7 @@ impl Light {
                     continue;
                 }
 
-                let note_id = NoteId::new(
-                    txid.clone(),
-                    ShieldedProtocol::Orchard,
-                    note.output_index() as u16,
-                );
+                let note_id = NoteId::new(*txid, ShieldedProtocol::Orchard, note.output_index());
                 let Some(Memo::Text(text)) = self.wallet.get_memo(note_id)? else {
                     // TODO: raise a refund event to the node.
                     tracing::warn!("Memo is not found for note of {}", &txid);

@@ -6,6 +6,7 @@ use anchor_client::{
     Client, Cluster, Program,
 };
 use anchor_lang::AccountDeserialize;
+pub use anchor_lang::{AnchorDeserialize, Discriminator};
 use anchor_spl::token::TokenAccount;
 use anyhow::Result;
 use mpl_token_metadata::accounts::Metadata;
