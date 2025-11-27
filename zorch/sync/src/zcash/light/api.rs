@@ -1,6 +1,6 @@
 //! Light client APIs
 
-use crate::{
+use crate::zcash::{
     light::Light,
     signer::{GroupSigners, SignerInfo},
 };
@@ -19,7 +19,7 @@ use zcash_client_backend::{
         wallet::ConfirmationsPolicy, Account, AccountBirthday, AccountPurpose, InputSource,
         TargetValue, WalletCommitmentTrees, WalletRead, WalletWrite,
     },
-    proto::service::{BlockId, Empty, RawTransaction},
+    proto::service::{BlockId, RawTransaction},
     sync,
 };
 use zcash_keys::{address::UnifiedAddress, keys::UnifiedFullViewingKey};
@@ -35,14 +35,6 @@ use zcash_protocol::{
 };
 
 impl Light {
-    /// Get the light client info
-    pub async fn info(&mut self) -> Result<()> {
-        let response = self.client.get_lightd_info(Empty {}).await?;
-        let info = response.into_inner();
-        println!("Light client info: {:?}", info);
-        Ok(())
-    }
-
     /// Sync the wallet
     pub async fn sync(&mut self) -> Result<()> {
         sync::run(
@@ -90,17 +82,6 @@ impl Light {
             AccountPurpose::ViewOnly,
             None,
         )?;
-        Ok(())
-    }
-
-    /// Get the accounts
-    pub fn summary(&self) -> Result<()> {
-        let summary = self
-            .wallet
-            .get_wallet_summary(ConfirmationsPolicy::new_symmetrical(1.try_into().unwrap()))?
-            .ok_or(anyhow::anyhow!("Failed to get wallet summary"))?;
-
-        println!("Wallet summary: {:?}", summary);
         Ok(())
     }
 

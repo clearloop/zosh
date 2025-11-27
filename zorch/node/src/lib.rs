@@ -1,6 +1,5 @@
 //! Zorch Node Implementation
 
-pub use config::Config;
+pub use sync::Config;
 
 pub mod cmd;
-mod config;

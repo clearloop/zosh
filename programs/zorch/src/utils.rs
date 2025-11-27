@@ -7,47 +7,23 @@ use anchor_lang::{
 };
 use solana_sdk_ids::ed25519_program::ID as ED25519_PROGRAM_ID;
 
-/// Action types for signature verification
-#[derive(Clone, Copy, Debug, PartialEq)]
-pub enum ActionType {
-    UpdateValidatorsFull,
-    AddValidator,
-    RemoveValidator,
-    Mint,
-}
-
-impl ActionType {
-    pub fn to_byte(self) -> u8 {
-        match self {
-            ActionType::UpdateValidatorsFull => 0,
-            ActionType::AddValidator => 1,
-            ActionType::RemoveValidator => 2,
-            ActionType::Mint => 3,
-        }
-    }
-}
+const DATA_START: usize = 16;
 
 /// Verifies threshold signatures using Solana's Ed25519 program.
 ///
 /// Expects Ed25519 verification instructions before this instruction in the transaction.
 pub fn verify_threshold_signatures(
-    action_type: ActionType,
-    nonce: u64,
-    action_data: &[u8],
+    message: &[u8],
     signatures: &[[u8; 64]],
     validators: &[Pubkey],
     threshold: u8,
     instructions_sysvar: &AccountInfo,
 ) -> Result<Vec<Pubkey>> {
-    // Verify we have the instructions sysvar
     require_keys_eq!(
         *instructions_sysvar.key,
         INSTRUCTIONS_ID,
         BridgeError::InvalidSignature
     );
-
-    // Construct the message that should have been signed
-    let message = construct_message(action_type, nonce, action_data);
 
     let mut valid_signers = Vec::new();
     let current_index =
@@ -57,8 +33,6 @@ pub fn verify_threshold_signatures(
 
     // Check each signature by looking for corresponding Ed25519 instructions
     for (sig_index, signature) in signatures.iter().enumerate() {
-        // Ed25519 instructions should come before the current instruction
-        // We expect them at indices: current_index - signatures.len() + sig_index
         let ed25519_ix_index = (current_index as usize)
             .checked_sub(signatures.len())
             .and_then(|base| base.checked_add(sig_index))
@@ -78,17 +52,8 @@ pub fn verify_threshold_signatures(
         // Parse and verify the Ed25519 instruction data
         let (num_signatures, parsed_pubkey, parsed_signature, parsed_message) =
             parse_ed25519_instruction(&ed25519_ix.data)?;
-
-        // Verify the instruction contains exactly one signature
-        require_eq!(num_signatures, 1, BridgeError::InvalidSignature);
-
-        // Verify the message matches
-        require!(
-            parsed_message.as_slice() == message.as_slice(),
-            BridgeError::InvalidSignature
-        );
-
-        // Verify the signature matches
+        require!(num_signatures == 1, BridgeError::InvalidSignature);
+        require!(parsed_message == message, BridgeError::InvalidSignature);
         require!(
             parsed_signature == *signature,
             BridgeError::InvalidSignature
@@ -118,32 +83,64 @@ pub fn verify_threshold_signatures(
     Ok(valid_signers)
 }
 
-/// Construct message to be signed
-fn construct_message(action_type: ActionType, nonce: u64, action_data: &[u8]) -> Vec<u8> {
-    let mut message = Vec::new();
-    message.push(action_type.to_byte());
-    message.extend_from_slice(&nonce.to_le_bytes());
-    message.extend_from_slice(action_data);
-    message
-}
-
-/// Parses Ed25519 instruction data.
+/// Parses Ed25519 instruction data according to solana-ed25519-program format.
+///
+/// Format (from solana-ed25519-program crate):
+/// - Bytes 0-1: [num_signatures: u8, padding: u8]
+/// - Bytes 2-15: Ed25519SignatureOffsets struct (14 bytes):
+///   - signature_offset: u16 (2 bytes)
+///   - signature_instruction_index: u16 (2 bytes)
+///   - public_key_offset: u16 (2 bytes)
+///   - public_key_instruction_index: u16 (2 bytes)
+///   - message_data_offset: u16 (2 bytes)
+///   - message_data_size: u16 (2 bytes)
+///   - message_instruction_index: u16 (2 bytes)
+/// - Bytes 16+: actual data (pubkey, signature, message)
+///
+/// Constants from solana-ed25519-program:
+/// - SIGNATURE_OFFSETS_START = 2
+/// - SIGNATURE_OFFSETS_SERIALIZED_SIZE = 14
+/// - DATA_START = 16
+/// - PUBKEY_SERIALIZED_SIZE = 32
+/// - SIGNATURE_SERIALIZED_SIZE = 64
 ///
 /// Returns: (num_signatures, pubkey, signature, message)
 #[allow(clippy::type_complexity)]
 fn parse_ed25519_instruction(data: &[u8]) -> Result<(u8, [u8; 32], [u8; 64], Vec<u8>)> {
-    require!(data.len() >= 113, BridgeError::InvalidSignature);
+    require!(data.len() >= DATA_START, BridgeError::InvalidSignature);
     let num_signatures = data[0];
+    require!(num_signatures == 1, BridgeError::InvalidSignature);
 
-    // For single signature (our case), offsets are at fixed positions
-    // Signature offset: bytes 1-2 (u16)
-    // Public key offset: bytes 5-6 (u16)
-    // Message offset: bytes 9-10 (u16)
-    // Message size: bytes 11-12 (u16)
-    let sig_offset = u16::from_le_bytes([data[1], data[2]]) as usize;
-    let pubkey_offset = u16::from_le_bytes([data[5], data[6]]) as usize;
-    let msg_offset = u16::from_le_bytes([data[9], data[10]]) as usize;
-    let msg_size = u16::from_le_bytes([data[11], data[12]]) as usize;
+    // Parse Ed25519SignatureOffsets struct from bytes 2-15
+    // The struct layout (14 bytes, all u16 little-endian):
+    // - Bytes 2-3: signature_offset
+    // - Bytes 4-5: signature_instruction_index
+    // - Bytes 6-7: public_key_offset
+    // - Bytes 8-9: public_key_instruction_index
+    // - Bytes 10-11: message_data_offset
+    // - Bytes 12-13: message_data_size
+    // - Bytes 14-15: message_instruction_index
+    let signature_offset = u16::from_le_bytes([data[2], data[3]]) as usize;
+    let signature_instruction_index = u16::from_le_bytes([data[4], data[5]]);
+    let public_key_offset = u16::from_le_bytes([data[6], data[7]]) as usize;
+    let public_key_instruction_index = u16::from_le_bytes([data[8], data[9]]);
+    let message_data_offset = u16::from_le_bytes([data[10], data[11]]) as usize;
+    let message_data_size = u16::from_le_bytes([data[12], data[13]]) as usize;
+    let message_instruction_index = u16::from_le_bytes([data[14], data[15]]);
+
+    // Verify instruction indices are u16::MAX (meaning data is in this instruction)
+    require!(
+        signature_instruction_index == u16::MAX
+            && public_key_instruction_index == u16::MAX
+            && message_instruction_index == u16::MAX,
+        BridgeError::InvalidSignature
+    );
+
+    // Use the parsed offsets
+    let sig_offset = signature_offset;
+    let pubkey_offset = public_key_offset;
+    let msg_offset = message_data_offset;
+    let msg_size = message_data_size;
 
     // Extract public key (32 bytes)
     require!(
@@ -158,7 +155,7 @@ fn parse_ed25519_instruction(data: &[u8]) -> Result<(u8, [u8; 32], [u8; 64], Vec
     let mut signature = [0u8; 64];
     signature.copy_from_slice(&data[sig_offset..sig_offset + 64]);
 
-    // Extract message
+    // Extract message using parsed offset and size
     require!(
         data.len() >= msg_offset + msg_size,
         BridgeError::InvalidSignature

@@ -3,71 +3,98 @@
 use crate::{
     errors::BridgeError,
     events::{MintEvent, ValidatorSetUpdated},
-    utils::{verify_threshold_signatures, ActionType},
+    utils::verify_threshold_signatures,
 };
 use anchor_lang::prelude::*;
-use anchor_spl::token::{self, MintTo};
+use anchor_spl::token::{self, MintTo, TokenAccount};
 
-/// Mints sZEC tokens to a recipient.
-pub fn mint(
-    ctx: Context<crate::MintSzec>,
-    recipient: Pubkey,
-    amount: u64,
+/// Maximum number of mints allowed in a single batch
+pub const MAX_BATCH_SIZE: usize = 10;
+
+/// Mints sZEC tokens to recipients (supports batch).
+pub fn mint<'info>(
+    ctx: Context<'_, '_, '_, 'info, crate::MintZec<'info>>,
+    mints: Vec<crate::types::MintEntry>,
     signatures: Vec<[u8; 64]>,
 ) -> Result<()> {
-    require!(amount > 0, BridgeError::InvalidAmount);
+    require!(
+        !mints.is_empty() && mints.len() <= MAX_BATCH_SIZE,
+        BridgeError::InvalidBatchSize
+    );
 
-    // Serialize action data for signature verification
-    let mut action_data = Vec::new();
-    action_data.extend_from_slice(recipient.as_ref());
-    action_data.extend_from_slice(&amount.to_le_bytes());
+    // Validate all amounts and compute total
+    let nonce = ctx.accounts.bridge_state.nonce;
+    let mut message = nonce.to_le_bytes().to_vec();
+    for mint_entry in &mints {
+        require!(mint_entry.amount > 0, BridgeError::InvalidAmount);
+        message.extend_from_slice(mint_entry.recipient.as_ref());
+        message.extend_from_slice(&mint_entry.amount.to_le_bytes());
+    }
 
     // Get references for verification
-    let nonce = ctx.accounts.bridge_state.nonce;
+
     let validators = ctx.accounts.bridge_state.validators.clone();
     let threshold = ctx.accounts.bridge_state.threshold;
     let bridge_state_bump = ctx.accounts.bridge_state.bump;
 
     // Verify threshold signatures from current validator set
     let _signers = verify_threshold_signatures(
-        ActionType::Mint,
-        nonce,
-        &action_data,
+        &message,
         &signatures,
         &validators,
         threshold,
         &ctx.accounts.instructions,
     )?;
 
-    // Mint sZEC tokens
+    // Verify we have the correct number of remaining accounts
+    require!(
+        ctx.remaining_accounts.len() == mints.len(),
+        BridgeError::InvalidAccountCount
+    );
+
+    // Process each mint in the batch
+    let mut mint_tuples = Vec::with_capacity(mints.len());
+    let zec_mint_key = ctx.accounts.zec_mint.key();
     let seeds = &[b"bridge-state".as_ref(), &[bridge_state_bump]];
     let signer_seeds = &[&seeds[..]];
-    let cpi_accounts = MintTo {
-        mint: ctx.accounts.szec_mint.to_account_info(),
-        to: ctx.accounts.recipient_token_account.to_account_info(),
-        authority: ctx.accounts.bridge_state.to_account_info(),
-    };
-    let cpi_program = ctx.accounts.token_program.to_account_info();
-    let cpi_ctx = CpiContext::new_with_signer(cpi_program, cpi_accounts, signer_seeds);
-    token::mint_to(cpi_ctx, amount)?;
+    for (i, mint_entry) in mints.iter().enumerate() {
+        let recipient_token_account_info = &ctx.remaining_accounts[i];
+        let token_account_data = recipient_token_account_info.try_borrow_data()?;
+        let token_account = TokenAccount::try_deserialize(&mut &token_account_data[..])?;
+        require!(token_account.mint == zec_mint_key, BridgeError::InvalidMint);
+        require!(
+            token_account.owner == mint_entry.recipient,
+            BridgeError::InvalidRecipient
+        );
 
-    // Emit event
+        // Mint tokens to this recipient
+        drop(token_account_data);
+        let cpi_accounts = MintTo {
+            mint: ctx.accounts.zec_mint.to_account_info(),
+            to: recipient_token_account_info.to_account_info(),
+            authority: ctx.accounts.bridge_state.to_account_info(),
+        };
+        let cpi_program = ctx.accounts.token_program.to_account_info();
+        let cpi_ctx = CpiContext::new_with_signer(cpi_program, cpi_accounts, signer_seeds);
+        token::mint_to(cpi_ctx, mint_entry.amount)?;
+        mint_tuples.push((mint_entry.recipient, mint_entry.amount));
+    }
+
+    // Emit batch event
     emit!(MintEvent {
-        recipient,
-        amount,
+        mints: mint_tuples,
         nonce,
         timestamp: Clock::get()?.unix_timestamp,
     });
 
-    // Increment nonce
+    // Increment nonce once for entire batch
     ctx.accounts.bridge_state.nonce += 1;
-    msg!("Minted {} sZEC to {}", amount, recipient);
     Ok(())
 }
 
 /// Updates the entire validator set.
-pub fn update_validators_full(
-    ctx: Context<crate::UpdateValidatorsFull>,
+pub fn validators(
+    ctx: Context<crate::Validators>,
     new_validators: Vec<Pubkey>,
     new_threshold: u8,
     signatures: Vec<[u8; 64]>,
@@ -83,17 +110,16 @@ pub fn update_validators_full(
     require!(new_total > 0, BridgeError::InvalidThreshold);
 
     // Serialize action data for signature verification
-    let mut action_data = Vec::new();
-    action_data.extend_from_slice(&new_threshold.to_le_bytes());
+    let nonce = bridge_state.nonce;
+    let mut message = nonce.to_le_bytes().to_vec();
+    message.extend_from_slice(&new_threshold.to_le_bytes());
     for validator in &new_validators {
-        action_data.extend_from_slice(validator.as_ref());
+        message.extend_from_slice(validator.as_ref());
     }
 
     // Verify threshold signatures from current validator set
     let _signers = verify_threshold_signatures(
-        ActionType::UpdateValidatorsFull,
-        bridge_state.nonce,
-        &action_data,
+        &message,
         &signatures,
         &bridge_state.validators,
         bridge_state.threshold,
@@ -119,98 +145,5 @@ pub fn update_validators_full(
         new_threshold
     );
 
-    Ok(())
-}
-
-/// Adds a single validator to the set.
-pub fn add_validator(
-    ctx: Context<crate::AddValidator>,
-    validator: Pubkey,
-    signatures: Vec<[u8; 64]>,
-) -> Result<()> {
-    let bridge_state = &mut ctx.accounts.bridge_state;
-
-    // Check if validator already exists
-    require!(
-        !bridge_state.validators.contains(&validator),
-        BridgeError::ValidatorAlreadyExists
-    );
-
-    // Verify threshold signatures from current validator set
-    let _signers = verify_threshold_signatures(
-        ActionType::AddValidator,
-        bridge_state.nonce,
-        validator.as_ref(),
-        &signatures,
-        &bridge_state.validators,
-        bridge_state.threshold,
-        &ctx.accounts.instructions,
-    )?;
-
-    // Add the validator
-    let old_validators = bridge_state.validators.clone();
-    bridge_state.validators.push(validator);
-    bridge_state.total_validators += 1;
-    bridge_state.nonce += 1;
-
-    // Emit event
-    emit!(ValidatorSetUpdated {
-        old_validators,
-        new_validators: bridge_state.validators.clone(),
-        threshold: bridge_state.threshold,
-        nonce: bridge_state.nonce - 1,
-    });
-
-    msg!("Validator added: {}", validator);
-    Ok(())
-}
-
-/// Removes a single validator from the set.
-pub fn remove_validator(
-    ctx: Context<crate::RemoveValidator>,
-    validator: Pubkey,
-    signatures: Vec<[u8; 64]>,
-) -> Result<()> {
-    let bridge_state = &mut ctx.accounts.bridge_state;
-
-    // Check if validator exists
-    require!(
-        bridge_state.validators.contains(&validator),
-        BridgeError::ValidatorNotFound
-    );
-
-    // Check that removing this validator won't violate threshold
-    let new_total = bridge_state.total_validators - 1;
-    require!(
-        bridge_state.threshold <= new_total,
-        BridgeError::CannotRemoveValidator
-    );
-
-    // Verify threshold signatures from current validator set
-    let _signers = verify_threshold_signatures(
-        ActionType::RemoveValidator,
-        bridge_state.nonce,
-        validator.as_ref(),
-        &signatures,
-        &bridge_state.validators,
-        bridge_state.threshold,
-        &ctx.accounts.instructions,
-    )?;
-
-    // Remove the validator
-    let old_validators = bridge_state.validators.clone();
-    bridge_state.validators.retain(|v| v != &validator);
-    bridge_state.total_validators -= 1;
-    bridge_state.nonce += 1;
-
-    // Emit event
-    emit!(ValidatorSetUpdated {
-        old_validators,
-        new_validators: bridge_state.validators.clone(),
-        threshold: bridge_state.threshold,
-        nonce: bridge_state.nonce - 1,
-    });
-
-    msg!("Validator removed: {}", validator);
     Ok(())
 }

@@ -1,14 +1,18 @@
 //! Zcash tools
 
-use crate::Config;
-use anyhow::Result;
-use clap::Parser;
-use std::path::Path;
-use zcash::{
+use crate::config::Config;
+use crate::zcash::{
+    self,
     light::Light,
     signer::{GroupSigners, SignerInfo},
     AddressCodec, UnifiedAddress, UnifiedFullViewingKey,
 };
+use anyhow::Result;
+use clap::Parser;
+use std::path::Path;
+use zcash_client_backend::data_api::wallet::ConfirmationsPolicy;
+use zcash_client_backend::data_api::WalletRead;
+use zcash_client_backend::proto::service::Empty;
 
 /// Zcash tools
 #[derive(Parser)]
@@ -94,7 +98,8 @@ impl Zcash {
     /// Get the light client info
     async fn light(&self, cfg: &zcash::light::Config) -> Result<()> {
         let mut light = Light::new(cfg).await?;
-        light.info().await?;
+        let info = light.client.get_lightd_info(Empty {}).await?;
+        println!("Light client info: {:?}", info);
         Ok(())
     }
 
@@ -121,7 +126,12 @@ impl Zcash {
     /// Get the wallet summary
     async fn summary(&self, cfg: &zcash::light::Config) -> Result<()> {
         let light = Light::new(cfg).await?;
-        light.summary()?;
+        let summary = light
+            .wallet
+            .get_wallet_summary(ConfirmationsPolicy::new_symmetrical(1.try_into().unwrap()))?
+            .ok_or(anyhow::anyhow!("Failed to get wallet summary"))?;
+
+        println!("Wallet summary: {:?}", summary);
         Ok(())
     }
 

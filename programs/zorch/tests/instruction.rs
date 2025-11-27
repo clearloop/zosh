@@ -1,69 +1,94 @@
-//! Tests for the instructions
+//! integration tests
 
-use mollusk_svm::Mollusk;
+use anchor_client::Program;
+use anyhow::Result;
 use solana_sdk::{
-    account::{AccountSharedData, WritableAccount},
     pubkey::Pubkey,
+    signature::Keypair,
+    signer::{EncodableKey, Signer},
+};
+use std::rc::Rc;
+use zorch::{
+    client::{util, ZorchClient},
+    types::MintEntry,
+    BridgeState,
 };
 
-mod internal;
-
-/// Generate a vector of unique pubkeys
-pub fn pubkeys(count: u8) -> Vec<Pubkey> {
-    (0..count)
-        .map(|i| Pubkey::new_from_array([i; 32]))
-        .collect::<Vec<_>>()
+#[tokio::test]
+async fn test_connection() -> Result<()> {
+    let test = Test::new().await?;
+    let _ = test.client.program().rpc().get_latest_blockhash().await?;
+    Ok(())
 }
 
-/// Testing client for the instructions
-pub struct Test {
-    /// Mollusk VM client
-    pub mollusk: Mollusk,
+#[tokio::test]
+async fn test_update_validators() -> Result<()> {
+    let test = Test::new().await?;
+    let state = test.bridge_state().await?;
+    let validators = vec![test.payer()];
+    let message = util::create_validators_message(state.nonce, &validators, 1);
+    let signature = test.client.keypair.sign_message(&message);
+    let signature = *signature.as_array();
+    let _ = test
+        .client
+        .update_validators(vec![test.payer()], 1, vec![signature])
+        .await?;
+    Ok(())
+}
 
-    /// Signer keypair
-    pub payer: Pubkey,
+#[tokio::test]
+async fn test_mint() -> Result<()> {
+    let test = Test::new().await?;
+    let state = test.bridge_state().await?;
+    let mints = vec![MintEntry {
+        recipient: test.payer(),
+        amount: 42,
+    }];
+    let message = util::create_mint_message(state.nonce, &mints);
+    let signature = test.client.keypair.sign_message(&message);
+    let signature = *signature.as_array();
+    let _ = test.client.send_mint(mints, vec![signature]).await?;
+    Ok(())
+}
+
+/// Test environment
+pub struct Test {
+    /// Anchor client
+    pub client: ZorchClient,
 }
 
 impl Test {
-    /// Create a new Test instance
-    pub fn new() -> Self {
-        let mut mollusk = Mollusk::new(&zorch::ID, "zorch");
+    /// Create a new test environment
+    pub async fn new() -> Result<Self> {
+        let home = dirs::home_dir().ok_or(anyhow::anyhow!("Home directory not found"))?;
+        let payer = Keypair::read_from_file(home.join(".config/solana/id.json"))
+            .map_err(|e| anyhow::anyhow!("Error reading `~/.config/solana/id.json`: {}", e))?;
+        let client = ZorchClient::new(
+            "http://localhost:8899".into(),
+            "ws://localhost:8900".into(),
+            payer,
+        )?;
 
-        // Add SPL Token program
-        mollusk.add_program(
-            &solana_sdk::pubkey!("TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"),
-            "spl_token",
-            &solana_sdk::bpf_loader_upgradeable::id(),
-        );
+        Ok(Self { client })
+    }
 
-        Self {
-            mollusk,
-            payer: Pubkey::new_unique(),
+    /// Get the bridge state
+    pub async fn bridge_state(&self) -> Result<BridgeState> {
+        if let Ok(state) = self.client.bridge_state().await {
+            Ok(state)
+        } else {
+            self.client.initialize(vec![self.client.payer()], 1).await?;
+            self.client.bridge_state().await
         }
     }
 
-    /// Create a new account
-    pub fn account() -> AccountSharedData {
-        let mut account = AccountSharedData::default();
-        account.set_lamports(10_000_000_000);
-        account
+    /// Get the payer's public key
+    pub fn payer(&self) -> Pubkey {
+        self.client.program().payer()
     }
 
-    /// Create a native program account (for system program, etc.)
-    pub fn native_program_account() -> AccountSharedData {
-        let mut account = AccountSharedData::default();
-        account.set_executable(true);
-        account.set_owner(solana_sdk::native_loader::id());
-        account.set_lamports(1_000_000_000);
-        account
-    }
-
-    /// Create a BPF program account (for token program, etc.)
-    pub fn bpf_program_account() -> AccountSharedData {
-        let mut account = AccountSharedData::default();
-        account.set_executable(true);
-        account.set_owner(solana_sdk::bpf_loader_upgradeable::id());
-        account.set_lamports(1_000_000_000);
-        account
+    /// Get the program client
+    pub fn program(&self) -> &Program<Rc<Keypair>> {
+        self.client.program()
     }
 }

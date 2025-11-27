@@ -5,15 +5,16 @@ use anchor_spl::token::{Mint, Token, TokenAccount};
 pub use errors::BridgeError;
 pub use events::{BurnEvent, MintEvent, ValidatorSetUpdated};
 use handler::{external, internal, threshold};
-pub use state::{ActionRecord, BridgeState};
+pub use state::BridgeState;
 
-declare_id!("2KwobV7wjmUzGRQfpd3G5HVRfCRUXfry9MoM3Hbks9dz");
+declare_id!("5QXepWTdHmsQkroWnitvs55jR6TxWbE8DCf54fQaYcH1");
 
-pub mod api;
+pub mod client;
 pub mod errors;
 pub mod events;
 mod handler;
 pub mod state;
+pub mod types;
 mod utils;
 
 #[program]
@@ -29,47 +30,38 @@ pub mod zorch {
         internal::initialize(ctx, validators, threshold)
     }
 
-    /// Mint sZEC to a recipient (threshold action)
-    pub fn mint(
-        ctx: Context<MintSzec>,
-        recipient: Pubkey,
-        amount: u64,
+    /// Update token metadata (internal action, authority only)
+    pub fn metadata(
+        ctx: Context<UpdateMetadata>,
+        name: String,
+        symbol: String,
+        uri: String,
+    ) -> Result<()> {
+        internal::metadata(ctx, name, symbol, uri)
+    }
+
+    /// Mint sZEC to recipients (threshold action, supports batch)
+    pub fn mint<'info>(
+        ctx: Context<'_, '_, '_, 'info, MintZec<'info>>,
+        mints: Vec<types::MintEntry>,
         signatures: Vec<[u8; 64]>,
     ) -> Result<()> {
-        threshold::mint(ctx, recipient, amount, signatures)
+        threshold::mint(ctx, mints, signatures)
     }
 
     /// Burn sZEC to bridge back to Zcash (public action)
-    pub fn burn(ctx: Context<BurnSzec>, amount: u64, zec_recipient: String) -> Result<()> {
+    pub fn burn(ctx: Context<BurnZec>, amount: u64, zec_recipient: String) -> Result<()> {
         external::burn(ctx, amount, zec_recipient)
     }
 
     /// Update the entire validator set (threshold action)
-    pub fn update_validators_full(
-        ctx: Context<UpdateValidatorsFull>,
-        new_validators: Vec<Pubkey>,
-        new_threshold: u8,
+    pub fn validators(
+        ctx: Context<Validators>,
+        validators: Vec<Pubkey>,
+        threshold: u8,
         signatures: Vec<[u8; 64]>,
     ) -> Result<()> {
-        threshold::update_validators_full(ctx, new_validators, new_threshold, signatures)
-    }
-
-    /// Add a single validator to the set (threshold action)
-    pub fn add_validator(
-        ctx: Context<AddValidator>,
-        validator: Pubkey,
-        signatures: Vec<[u8; 64]>,
-    ) -> Result<()> {
-        threshold::add_validator(ctx, validator, signatures)
-    }
-
-    /// Remove a single validator from the set (threshold action)
-    pub fn remove_validator(
-        ctx: Context<RemoveValidator>,
-        validator: Pubkey,
-        signatures: Vec<[u8; 64]>,
-    ) -> Result<()> {
-        threshold::remove_validator(ctx, validator, signatures)
+        threshold::validators(ctx, validators, threshold, signatures)
     }
 }
 
@@ -85,7 +77,7 @@ pub mod zorch {
 /// # Accounts
 /// - `payer`: Transaction fee payer and rent payer for new accounts
 /// - `bridge_state`: The main bridge state PDA that stores validator set and configuration
-/// - `szec_mint`: The SPL token mint for sZEC with 8 decimals (matching ZEC)
+/// - `zec_mint`: The SPL token mint for sZEC with 8 decimals (matching ZEC)
 /// - `system_program`: Required for account creation
 /// - `token_program`: Required for mint creation
 /// - `rent`: Rent sysvar for account rent calculations
@@ -116,16 +108,16 @@ pub struct Initialize<'info> {
     /// Initialized with:
     /// - 8 decimals (matching ZEC)
     /// - Mint authority set to bridge_state PDA
-    /// - Seeds `[b"szec-mint"]` for deterministic address
+    /// - Seeds `[b"zec-mint"]` for deterministic address
     #[account(
         init,
         payer = payer,
         mint::decimals = 8,
         mint::authority = bridge_state,
-        seeds = [b"szec-mint"],
+        seeds = [b"zec-mint"],
         bump
     )]
-    pub szec_mint: Account<'info, Mint>,
+    pub zec_mint: Account<'info, Mint>,
 
     /// System program for account creation.
     pub system_program: Program<'info, System>,
@@ -137,26 +129,93 @@ pub struct Initialize<'info> {
     pub rent: Sysvar<'info, Rent>,
 }
 
+/// Accounts for updating token metadata.
+///
+/// This is an internal action that can only be called by the bridge authority.
+/// It creates or updates the Metaplex token metadata for the sZEC mint.
+///
+/// # Accounts
+/// - `authority`: Bridge authority (must match bridge_state.authority)
+/// - `bridge_state`: Read-only reference for authority validation
+/// - `zec_mint`: The sZEC token mint
+/// - `metadata`: Metaplex metadata account (PDA derived from mint)
+/// - `token_metadata_program`: Metaplex Token Metadata program
+/// - `system_program`: Required for account creation
+/// - `rent`: Rent sysvar
+#[derive(Accounts)]
+pub struct UpdateMetadata<'info> {
+    /// Bridge authority that can update metadata.
+    ///
+    /// Must match the authority stored in bridge_state.
+    #[account(
+        mut,
+        constraint = authority.key() == bridge_state.authority @ BridgeError::InvalidRecipient
+    )]
+    pub authority: Signer<'info>,
+
+    /// Bridge state for authority validation.
+    #[account(
+        seeds = [b"bridge-state"],
+        bump = bridge_state.bump
+    )]
+    pub bridge_state: Account<'info, BridgeState>,
+
+    /// The sZEC token mint.
+    #[account(
+        mut,
+        seeds = [b"zec-mint"],
+        bump,
+        constraint = zec_mint.key() == bridge_state.zec_mint @ BridgeError::InvalidMint
+    )]
+    pub zec_mint: Account<'info, Mint>,
+
+    /// Metaplex metadata account for the mint.
+    ///
+    /// This is a PDA derived from the mint address.
+    /// Will be created if it doesn't exist, or updated if it does.
+    ///
+    /// CHECK: Validated by Metaplex program
+    #[account(mut)]
+    pub metadata: UncheckedAccount<'info>,
+
+    /// Metaplex Token Metadata program.
+    ///
+    /// CHECK: Validated during CPI invocation
+    pub token_metadata_program: UncheckedAccount<'info>,
+
+    /// System program for account creation.
+    pub system_program: Program<'info, System>,
+
+    /// Sysvar instructions account required by mpl-token-metadata.
+    ///
+    /// CHECK: Required by mpl-token-metadata CreateV1, validated by mpl-token-metadata program
+    pub sysvar_instructions: UncheckedAccount<'info>,
+}
+
 /// Accounts for minting sZEC tokens.
 ///
 /// This is a threshold action that requires signatures from validators meeting
 /// the threshold requirement. Validators sign off-chain and provide signatures
 /// to authorize the mint operation.
 ///
+/// Supports both single and batch minting. For batch minting, pass multiple
+/// recipient token accounts via remaining_accounts in the same order as the
+/// mints vector.
+///
 /// # Accounts
 /// - `payer`: Transaction fee payer
 /// - `bridge_state`: Stores validator set and is used as mint authority
-/// - `szec_mint`: The sZEC token mint
-/// - `recipient_token_account`: Recipient's token account to receive minted sZEC
+/// - `zec_mint`: The sZEC token mint
 /// - `token_program`: Required for minting
 /// - `system_program`: Required for various operations
+/// - `instructions`: Instructions sysvar for signature verification
 ///
-/// # Constraints
-/// - Recipient token account must be for the sZEC mint
-/// - Recipient token account must be owned by the specified recipient
+/// # Remaining Accounts
+/// - One token account per mint in the mints vector
+/// - Each must be for the sZEC mint and owned by the corresponding recipient
 #[derive(Accounts)]
-#[instruction(recipient: Pubkey, amount: u64, signatures: Vec<[u8; 64]>)]
-pub struct MintSzec<'info> {
+#[instruction(mints: Vec<types::MintEntry>, signatures: Vec<[u8; 64]>)]
+pub struct MintZec<'info> {
     /// Transaction fee payer.
     ///
     /// Must sign the transaction.
@@ -179,23 +238,11 @@ pub struct MintSzec<'info> {
     /// Must match the mint stored in bridge_state.
     #[account(
         mut,
-        seeds = [b"szec-mint"],
+        seeds = [b"zec-mint"],
         bump,
-        constraint = szec_mint.key() == bridge_state.szec_mint @ BridgeError::InvalidMint
+        constraint = zec_mint.key() == bridge_state.zec_mint @ BridgeError::InvalidMint
     )]
-    pub szec_mint: Account<'info, Mint>,
-
-    /// Recipient's token account to receive minted sZEC.
-    ///
-    /// Must be:
-    /// - For the sZEC mint
-    /// - Owned by the specified recipient pubkey
-    #[account(
-        mut,
-        constraint = recipient_token_account.mint == szec_mint.key() @ BridgeError::InvalidMint,
-        constraint = recipient_token_account.owner == recipient @ BridgeError::InvalidRecipient
-    )]
-    pub recipient_token_account: Account<'info, TokenAccount>,
+    pub zec_mint: Account<'info, Mint>,
 
     /// Token program for mint operations.
     pub token_program: Program<'info, Token>,
@@ -222,7 +269,7 @@ pub struct MintSzec<'info> {
 /// # Accounts
 /// - `signer`: User burning their sZEC tokens
 /// - `signer_token_account`: User's token account holding sZEC
-/// - `szec_mint`: The sZEC token mint (supply will decrease)
+/// - `zec_mint`: The sZEC token mint (supply will decrease)
 /// - `bridge_state`: Read-only reference for mint validation
 /// - `token_program`: Required for burn operation
 ///
@@ -231,7 +278,7 @@ pub struct MintSzec<'info> {
 /// - Token account must hold sZEC tokens
 /// - Mint must match bridge state's recorded mint
 #[derive(Accounts)]
-pub struct BurnSzec<'info> {
+pub struct BurnZec<'info> {
     /// User burning their sZEC tokens.
     ///
     /// Must sign the transaction and own the token account.
@@ -246,7 +293,7 @@ pub struct BurnSzec<'info> {
     #[account(
         mut,
         constraint = signer_token_account.owner == signer.key() @ BridgeError::InvalidAmount,
-        constraint = signer_token_account.mint == bridge_state.szec_mint @ BridgeError::InvalidAmount
+        constraint = signer_token_account.mint == bridge_state.zec_mint @ BridgeError::InvalidAmount
     )]
     pub signer_token_account: Account<'info, TokenAccount>,
 
@@ -256,9 +303,9 @@ pub struct BurnSzec<'info> {
     /// Must match the mint stored in bridge_state.
     #[account(
         mut,
-        constraint = szec_mint.key() == bridge_state.szec_mint @ BridgeError::InvalidAmount
+        constraint = zec_mint.key() == bridge_state.zec_mint @ BridgeError::InvalidAmount
     )]
-    pub szec_mint: Account<'info, Mint>,
+    pub zec_mint: Account<'info, Mint>,
 
     /// Bridge state for mint validation.
     ///
@@ -288,8 +335,8 @@ pub struct BurnSzec<'info> {
 /// The bridge_state account is reallocated to accommodate the new number of
 /// validators. The payer covers any additional rent required.
 #[derive(Accounts)]
-#[instruction(new_validators: Vec<Pubkey>, new_threshold: u16, signatures: Vec<[u8; 64]>)]
-pub struct UpdateValidatorsFull<'info> {
+#[instruction(validators: Vec<Pubkey>, threshold: u8, signatures: Vec<[u8; 64]>)]
+pub struct Validators<'info> {
     /// Transaction fee payer and reallocation payer.
     ///
     /// Covers the cost of resizing the bridge_state account.
@@ -305,111 +352,7 @@ pub struct UpdateValidatorsFull<'info> {
         mut,
         seeds = [b"bridge-state"],
         bump = bridge_state.bump,
-        realloc = BridgeState::space(new_validators.len()),
-        realloc::payer = payer,
-        realloc::zero = false
-    )]
-    pub bridge_state: Account<'info, BridgeState>,
-
-    /// System program for account reallocation.
-    pub system_program: Program<'info, System>,
-
-    /// Instructions sysvar for Ed25519 signature verification.
-    ///
-    /// Used to read Ed25519 program verification results.
-    ///
-    /// CHECK: Must be the Instructions sysvar account
-    #[account(address = anchor_lang::solana_program::sysvar::instructions::ID)]
-    pub instructions: UncheckedAccount<'info>,
-}
-
-/// Accounts for adding a single validator to the set.
-///
-/// This is a threshold action that adds one new validator to the existing set.
-/// Requires signatures from the current validators meeting the threshold.
-/// The account is reallocated to accommodate the additional validator.
-///
-/// # Accounts
-/// - `payer`: Transaction and realloc fee payer
-/// - `bridge_state`: Validator is appended, total count incremented
-/// - `system_program`: Required for reallocation
-///
-/// # Reallocation
-/// The bridge_state account grows by one validator's space (32 bytes).
-#[derive(Accounts)]
-#[instruction(validator: Pubkey, signatures: Vec<[u8; 64]>)]
-pub struct AddValidator<'info> {
-    /// Transaction fee payer and reallocation payer.
-    ///
-    /// Covers the cost of growing the bridge_state account.
-    #[account(mut)]
-    pub payer: Signer<'info>,
-
-    /// Bridge state PDA storing validator set.
-    ///
-    /// Reallocated to fit one additional validator.
-    /// New validator is appended to the validators vector.
-    /// Total count is incremented, nonce is incremented.
-    #[account(
-        mut,
-        seeds = [b"bridge-state"],
-        bump = bridge_state.bump,
-        realloc = BridgeState::space(bridge_state.validators.len() + 1),
-        realloc::payer = payer,
-        realloc::zero = false
-    )]
-    pub bridge_state: Account<'info, BridgeState>,
-
-    /// System program for account reallocation.
-    pub system_program: Program<'info, System>,
-
-    /// Instructions sysvar for Ed25519 signature verification.
-    ///
-    /// Used to read Ed25519 program verification results.
-    ///
-    /// CHECK: Must be the Instructions sysvar account
-    #[account(address = anchor_lang::solana_program::sysvar::instructions::ID)]
-    pub instructions: UncheckedAccount<'info>,
-}
-
-/// Accounts for removing a single validator from the set.
-///
-/// This is a threshold action that removes one validator from the existing set.
-/// Requires signatures from the current validators meeting the threshold.
-/// The account is reallocated to the smaller size. Removal is only allowed if
-/// the threshold can still be met after removal.
-///
-/// # Accounts
-/// - `payer`: Transaction and realloc fee payer (may receive rent refund)
-/// - `bridge_state`: Validator is removed, total count decremented
-/// - `system_program`: Required for reallocation
-///
-/// # Reallocation
-/// The bridge_state account shrinks by one validator's space (32 bytes).
-/// The payer may receive a rent refund for the released space.
-///
-/// # Safety
-/// The instruction validates that removal won't violate the threshold requirement
-/// (i.e., threshold <= total_validators - 1).
-#[derive(Accounts)]
-#[instruction(validator: Pubkey, signatures: Vec<[u8; 64]>)]
-pub struct RemoveValidator<'info> {
-    /// Transaction fee payer and reallocation payer.
-    ///
-    /// May receive rent refund from shrinking the account.
-    #[account(mut)]
-    pub payer: Signer<'info>,
-
-    /// Bridge state PDA storing validator set.
-    ///
-    /// Reallocated to fit one fewer validator.
-    /// Specified validator is removed from the validators vector.
-    /// Total count is decremented, nonce is incremented.
-    #[account(
-        mut,
-        seeds = [b"bridge-state"],
-        bump = bridge_state.bump,
-        realloc = BridgeState::space(bridge_state.validators.len().saturating_sub(1)),
+        realloc = BridgeState::space(validators.len()),
         realloc::payer = payer,
         realloc::zero = false
     )]

@@ -43,4 +43,10 @@ pub enum BridgeError {
 
     #[msg("Maximum validators limit reached")]
     MaxValidatorsReached,
+
+    #[msg("Invalid batch size: batch must contain at least 1 mint and not exceed the maximum")]
+    InvalidBatchSize,
+
+    #[msg("Invalid account count: number of accounts must match number of mints")]
+    InvalidAccountCount,
 }

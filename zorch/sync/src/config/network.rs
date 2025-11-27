@@ -1,5 +1,6 @@
 //! Network configuration
 
+use crate::zcash;
 use serde::{Deserialize, Serialize};
 
 /// Network type wrapper

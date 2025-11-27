@@ -2,11 +2,8 @@ use anchor_lang::prelude::*;
 
 #[event]
 pub struct MintEvent {
-    /// Recipient of the minted sZEC
-    pub recipient: Pubkey,
-
-    /// Amount minted
-    pub amount: u64,
+    /// Mints to be minted
+    pub mints: Vec<(Pubkey, u64)>,
 
     /// Nonce at time of minting
     pub nonce: u64,

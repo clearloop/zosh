@@ -2,6 +2,7 @@ use anchor_lang::prelude::*;
 
 /// The main bridge state account that stores validator set and configuration
 #[account]
+#[derive(Debug)]
 pub struct BridgeState {
     /// Program authority pubkey
     pub authority: Pubkey,
@@ -19,7 +20,7 @@ pub struct BridgeState {
     pub nonce: u64,
 
     /// The sZEC SPL token mint
-    pub szec_mint: Pubkey,
+    pub zec_mint: Pubkey,
 
     /// Bump seed for PDA derivation
     pub bump: u8,
@@ -34,34 +35,7 @@ impl BridgeState {
         1 + // threshold
         1 + // total_validators
         8 + // nonce
-        32 + // szec_mint
+        32 + // zec_mint
         1 // bump
-    }
-}
-
-/// Action record to prevent replay attacks
-#[account]
-pub struct ActionRecord {
-    /// Hash of the action
-    pub action_hash: [u8; 32],
-
-    /// Whether the action was executed
-    pub executed: bool,
-
-    /// Validators who signed this action
-    pub signers: Vec<Pubkey>,
-
-    /// When the action was submitted
-    pub timestamp: i64,
-}
-
-impl ActionRecord {
-    /// Calculate space needed for the account
-    pub fn space(num_signers: usize) -> usize {
-        8 + // discriminator
-        32 + // action_hash
-        1 + // executed
-        4 + (num_signers * 32) + // signers vec
-        8 // timestamp
     }
 }

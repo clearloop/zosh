@@ -15,4 +15,3 @@ serde.workspace = true
 solana-sdk.workspace = true
 zcash_keys.workspace = true
 zcash_primitives.workspace = true
-zcash.workspace = true

@@ -4,11 +4,11 @@ use crate::Config;
 use anyhow::Result;
 use clap::Parser;
 use std::{path::PathBuf, sync::OnceLock};
+use sync::{solana, zcash};
 use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt, EnvFilter};
 
 mod conf;
 mod dev;
-mod zcash;
 
 /// Command line interface for the ZorchBridge node
 #[derive(Parser)]
@@ -33,16 +33,26 @@ impl App {
     /// Run the application
     pub async fn run(&self) -> anyhow::Result<()> {
         self.init_tracing()?;
-
+        self.create_dirs()?;
         match &self.command {
             Command::Dev(dev) => dev.run(&self.config),
             Command::Generate => conf::generate(&self.config),
+            Command::Solana(solana) => {
+                let config = Config::load(&self.config.join("config.toml"))?;
+                solana.run(&config).await
+            }
             Command::Zcash(zcash) => {
                 let config = Config::load(&self.config.join("config.toml"))?;
                 zcash.run(&self.cache, &config).await
             }
         }?;
 
+        Ok(())
+    }
+
+    fn create_dirs(&self) -> Result<()> {
+        std::fs::create_dir_all(&self.config)?;
+        std::fs::create_dir_all(&self.cache)?;
         Ok(())
     }
 
@@ -78,6 +88,10 @@ pub enum Command {
     /// Development command
     #[clap(subcommand)]
     Dev(dev::Dev),
+
+    /// Solana command
+    #[clap(subcommand)]
+    Solana(solana::Solana),
 
     /// Zcash command
     #[clap(subcommand)]
