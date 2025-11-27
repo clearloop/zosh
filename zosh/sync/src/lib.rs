@@ -7,7 +7,6 @@ use tokio::sync::mpsc;
 pub use {config::Config, event::Event, solana::ZoshClient, zcash::Light};
 
 pub mod config;
-mod dev;
 mod event;
 pub mod solana;
 pub mod zcash;
@@ -31,7 +30,7 @@ impl Sync {
     }
 
     /// Start the sync
-    pub async fn start(&self, tx: mpsc::Sender<Event>) -> Result<()> {
+    pub async fn start(&mut self, tx: mpsc::Sender<Event>) -> Result<()> {
         let mut zsync = self.zcash.duplicate().await?;
         tokio::select! {
             r = zsync.sync_forever() => r,

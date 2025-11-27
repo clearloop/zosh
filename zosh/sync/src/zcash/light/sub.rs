@@ -2,14 +2,21 @@
 
 use crate::{zcash::Light, Event};
 use anyhow::Result;
+use orchard::keys::Scope;
 use std::time::Duration;
 use tokio::{sync::mpsc, time};
 use zcash_client_backend::{
     data_api::{wallet::ConfirmationsPolicy, Account, InputSource, TargetValue, WalletRead},
     fees::orchard::InputView,
-    wallet::NoteId,
+    proto::service::{BlockId, TxFilter},
 };
-use zcash_protocol::{consensus::BlockHeight, memo::Memo, value::Zatoshis, ShieldedProtocol};
+use zcash_primitives::transaction::Transaction;
+use zcash_protocol::{
+    consensus::{BlockHeight, BranchId},
+    memo::{Memo, MemoBytes},
+    value::Zatoshis,
+    ShieldedProtocol, TxId,
+};
 use zcore::tx::{Bridge, Chain};
 
 /// The block time of zcash in seconds
@@ -20,7 +27,7 @@ impl Light {
     ///
     /// FIXME: write new query of the walletdb to fetch the
     /// latest transactions efficiently.
-    pub async fn subscribe(&self, tx: mpsc::Sender<Event>) -> Result<()> {
+    pub async fn subscribe(&mut self, tx: mpsc::Sender<Event>) -> Result<()> {
         // TODO: we should get the latest height from the global on-chain state.
         let mut last_height = BlockHeight::from(0);
 
@@ -65,8 +72,13 @@ impl Light {
                     continue;
                 }
 
-                let note_id = NoteId::new(*txid, ShieldedProtocol::Orchard, note.output_index());
-                let Some(Memo::Text(text)) = self.wallet.get_memo(note_id)? else {
+                let Ok(Memo::Text(text)) = self
+                    .fetch_memo(mined_height, *txid, note.output_index() as u32)
+                    .await
+                    .inspect_err(|e| {
+                        tracing::warn!("Failed to fetch memo for note of {}: {:?}", &txid, e);
+                    })
+                else {
                     // TODO: raise a refund event to the node.
                     tracing::warn!("Memo is not found for note of {}", &txid);
                     continue;
@@ -97,5 +109,64 @@ impl Light {
             last_height = target.into();
             time::sleep(Duration::from_secs(30)).await;
         }
+    }
+
+    /// TODO: introduce memory cache for this or flush it to
+    /// the walletdb.
+    async fn fetch_memo(
+        &mut self,
+        height: BlockHeight,
+        txid: TxId,
+        output_index: u32,
+    ) -> Result<Memo> {
+        let block = self
+            .client
+            .get_block(BlockId {
+                height: height.into(),
+                hash: Default::default(),
+            })
+            .await?
+            .into_inner();
+        let mut index = 0;
+        for (idx, tx) in block.vtx.iter().enumerate() {
+            if tx.txid() == txid {
+                index = idx;
+                break;
+            }
+        }
+
+        let rawtx = self
+            .client
+            .get_transaction(TxFilter {
+                block: Some(BlockId {
+                    height: height.into(),
+                    hash: Default::default(),
+                }),
+                index: index as u64,
+                hash: txid.as_ref().to_vec(),
+            })
+            .await?
+            .into_inner();
+        let tx = Transaction::read(
+            rawtx.data.as_slice(),
+            BranchId::for_height(&self.network, height),
+        )?;
+
+        let memo = tx
+            .orchard_bundle()
+            .ok_or(anyhow::anyhow!("Failed to get orchard bundle"))?
+            .decrypt_output_with_key(
+                output_index as usize,
+                &self
+                    .ufvk
+                    .orchard()
+                    .ok_or(anyhow::anyhow!("Failed to get orchard full viewing key"))?
+                    .to_ivk(Scope::External),
+            )
+            .ok_or(anyhow::anyhow!("Failed to decrypt output"))?
+            .2;
+
+        let memo = MemoBytes::from_bytes(&memo)?;
+        Ok(Memo::try_from(memo)?)
     }
 }

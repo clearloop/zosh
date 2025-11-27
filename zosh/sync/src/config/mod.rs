@@ -64,7 +64,7 @@ impl Config {
             },
             network: Network::Testnet,
         };
-        fs::write(&target, toml::to_string_pretty(&config)?)?;
+        fs::write(target, toml::to_string_pretty(&config)?)?;
         Ok(config)
     }
 }

@@ -8,7 +8,7 @@ use zcore::tx::Chain;
 
 /// Run the POC service
 pub async fn run(cache: &Path, config: &Config) -> Result<()> {
-    let sync = Sync::new(cache, config).await?;
+    let mut sync = Sync::new(cache, config).await?;
     let (tx, rx) = mpsc::channel::<Event>(512);
 
     tokio::select! {
@@ -33,7 +33,9 @@ async fn handle(mut rx: mpsc::Receiver<Event>) -> Result<()> {
                         bridge.amount as f32 / 100_000_000.0
                     );
                 }
-                _ => {}
+                _ => {
+                    // TODO: futures handling for other events
+                }
             }
         }
     }

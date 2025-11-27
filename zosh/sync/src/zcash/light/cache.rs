@@ -38,6 +38,20 @@ impl BlockDb {
             block: Arc::new(Mutex::new(connection)),
         })
     }
+
+    /// Get a compact block from the cache
+    pub fn get(&self, height: u32) -> Result<CompactBlock, SqliteClientError> {
+        let source = self.block.lock().unwrap();
+        let mut stmt = source.prepare("SELECT data FROM compactblocks WHERE height = ?")?;
+        let mut rows = stmt.query(params![height])?;
+        let Some(row) = rows.next()? else {
+            return Err(SqliteClientError::CacheMiss(BlockHeight::from_u32(height)));
+        };
+
+        let data: Vec<u8> = row.get(0)?;
+        let block = CompactBlock::decode(&data[..])?;
+        Ok(block)
+    }
 }
 
 impl BlockSource for BlockDb {
