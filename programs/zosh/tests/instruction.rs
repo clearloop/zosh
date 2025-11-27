@@ -2,11 +2,7 @@
 
 use anchor_client::Program;
 use anyhow::Result;
-use solana_sdk::{
-    pubkey::Pubkey,
-    signature::Keypair,
-    signer::{EncodableKey, Signer},
-};
+use solana_sdk::{pubkey::Pubkey, signature::Keypair, signer::EncodableKey};
 use std::rc::Rc;
 use zosh::{
     client::{util, ZoshClient},
@@ -27,7 +23,7 @@ async fn test_update_validators() -> Result<()> {
     let state = test.bridge_state().await?;
     let validators = vec![test.payer()];
     let message = util::create_validators_message(state.nonce, &validators, 1);
-    let signature = test.client.keypair.sign_message(&message);
+    let signature = test.client.sign_message(&message)?;
     let signature = *signature.as_array();
     let _ = test
         .client
@@ -45,7 +41,7 @@ async fn test_mint() -> Result<()> {
         amount: 42,
     }];
     let message = util::create_mint_message(state.nonce, &mints);
-    let signature = test.client.keypair.sign_message(&message);
+    let signature = test.client.sign_message(&message)?;
     let signature = *signature.as_array();
     let _ = test.client.send_mint(mints, vec![signature]).await?;
     Ok(())

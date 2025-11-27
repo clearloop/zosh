@@ -8102,6 +8102,8 @@ dependencies = [
  "reddsa",
  "rusqlite",
  "serde",
+ "solana-pubsub-client",
+ "solana-rpc-client-types",
  "solana-sdk",
  "tokio",
  "toml 0.9.8",

@@ -12,7 +12,6 @@ use mpl_token_metadata::accounts::Metadata;
 use solana_sdk::{signature::Signature, signer::Signer};
 use std::rc::Rc;
 
-mod config;
 pub mod pda;
 pub mod util;
 
@@ -22,7 +21,7 @@ pub struct ZoshClient {
     program: Program<Rc<Keypair>>,
 
     /// Keypair of the payer
-    pub keypair: Keypair,
+    keypair: Keypair,
 }
 
 impl ZoshClient {
@@ -50,6 +49,12 @@ impl ZoshClient {
     /// Get the program client
     pub fn program(&self) -> &Program<Rc<Keypair>> {
         &self.program
+    }
+
+    /// Sign a message with the payer's keypair
+    pub fn sign_message(&self, message: &[u8]) -> Result<Signature> {
+        let signature = self.keypair.sign_message(message);
+        Ok(signature)
     }
 
     /// Read the current bridge state

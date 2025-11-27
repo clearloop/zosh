@@ -22,7 +22,6 @@ pub struct Sync {
 }
 
 /// The type of the sync transaction
-
 pub enum Operation {
     /// Archive historical data of the target chain at the specified height
     Archive,
