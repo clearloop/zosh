@@ -103,7 +103,7 @@ impl Light {
 
         // Get target and anchor heights using the wallet's built-in method
         // This ensures we use a valid checkpoint that exists in the tree
-        let confirmations_policy = ConfirmationsPolicy::new_symmetrical(1.try_into().unwrap());
+        let confirmations_policy = ConfirmationsPolicy::default();
         let (target_height, anchor_height) = self
             .wallet
             .get_target_and_anchor_heights(confirmations_policy.trusted())
@@ -153,7 +153,7 @@ impl Light {
 
         // 2. make the bundle of the transaction
         let mut memo = [0; 512];
-        memo[..20].copy_from_slice(b"Bridged via Zorch.");
+        memo[..20].copy_from_slice(b"Bridged via Zosh.");
         let Some((bundle, _meta)) = builder::bundle::<ZatBalance>(
             rand_core::OsRng,
             anchor,
@@ -197,7 +197,6 @@ impl Light {
         // 3. Create proof and prepare for signing
         let txid_parts = utx.digest(TxIdDigester);
         let sighash = signature_hash(&utx, &SignableInput::Shielded, &txid_parts);
-        tracing::info!("proving ...");
         let proving_key = ProvingKey::build();
         let proven = utx
             .orchard_bundle()

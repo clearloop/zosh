@@ -66,7 +66,7 @@ pub enum Zcash {
 impl Zcash {
     /// Run the zcash command
     pub async fn run(&self, cache: &Path, config: &Config) -> Result<()> {
-        let cfg = config.zcash(cache);
+        let cfg = config.zcash(cache)?;
         match self {
             Self::Light => self.light(&cfg).await,
             Self::Sync => self.sync(&cfg).await,

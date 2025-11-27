@@ -1,8 +1,10 @@
 //! Configuration for the zorch node
 
+use crate::zcash::{GroupSigners, SignerInfo};
 use anyhow::Result;
 use serde::{Deserialize, Serialize};
 use std::{fs, path::Path};
+
 pub use {crate::zcash, key::Key, network::Network, rpc::Rpc};
 
 mod key;
@@ -30,12 +32,16 @@ impl Config {
     }
 
     /// Get the zcash light client configuration
-    pub fn zcash(&self, cache: &Path) -> zcash::Config {
-        zcash::Config {
+    pub fn zcash(&self, cache: &Path) -> Result<zcash::Config> {
+        let group: GroupSigners =
+            postcard::from_bytes(&bs58::decode(self.key.zcash.as_str()).into_vec()?)?;
+        let ufvk = group.ufvk()?;
+        Ok(zcash::Config {
             cache: cache.join("chain.db"),
             wallet: cache.join("wallet.db"),
-            lightwalletd: self.rpc.lightwalletd.clone(),
+            lightwalletd: self.rpc.lightwalletd.clone().into(),
             network: self.network.clone().into(),
-        }
+            ufvk,
+        })
     }
 }

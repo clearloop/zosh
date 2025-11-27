@@ -1,14 +1,21 @@
 //! The transaction structure of zorch
 
-pub use bridge::{Bridge, Receipt};
 use serde::{Deserialize, Serialize};
+pub use {
+    bridge::{Bridge, Receipt, Refund},
+    sync::Sync,
+};
 
 mod bridge;
+mod sync;
 
-/// The transaction structure of zorch
+/// The transactions inside of a block
 pub struct Transaction {
-    /// The quotes of the transaction
+    /// The bridges of the transaction
     pub bridge: Vec<Bridge>,
+
+    /// The sync of the transaction
+    pub sync: Option<Sync>,
 }
 
 /// The supported chain

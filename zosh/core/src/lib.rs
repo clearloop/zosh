@@ -6,4 +6,5 @@ pub use {
 };
 
 mod block;
+mod intent;
 pub mod tx;

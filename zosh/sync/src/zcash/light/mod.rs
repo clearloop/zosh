@@ -8,11 +8,13 @@ use std::{fs, path::Path};
 use tonic::transport::Channel;
 use zcash_client_backend::proto::service::compact_tx_streamer_client::CompactTxStreamerClient;
 use zcash_client_sqlite::{util::SystemClock, wallet, WalletDb};
+use zcash_keys::keys::UnifiedFullViewingKey;
 use zcash_protocol::consensus::Network;
 
 mod api;
 mod cache;
 mod config;
+mod sub;
 
 /// Zcash light client
 pub struct Light {
@@ -27,6 +29,9 @@ pub struct Light {
 
     /// The network of the light client
     pub network: Network,
+
+    /// The unified full viewing key of the light client
+    pub ufvk: UnifiedFullViewingKey,
 }
 
 impl Light {
@@ -50,8 +55,6 @@ impl Light {
         // Initialize the wallet database schema (creates all required tables)
         // The seed parameter is None since we're not using a seed for this wallet
         wallet::init::init_wallet_db(&mut wallet, None)?;
-
-        // setup the lightwalletd client
         let channel = Channel::from_shared(config.lightwalletd.to_string())?
             .connect()
             .await?;
@@ -63,6 +66,7 @@ impl Light {
             wallet,
             client,
             network: config.network,
+            ufvk: config.ufvk.clone(),
         })
     }
 }
