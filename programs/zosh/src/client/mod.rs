@@ -1,4 +1,4 @@
-//! client library for the zorch program
+//! client library for the zosh program
 #![cfg(not(target_os = "solana"))]
 
 use anchor_client::{
@@ -16,8 +16,8 @@ mod config;
 pub mod pda;
 pub mod util;
 
-/// Main client for interacting with the Zorch program
-pub struct ZorchClient {
+/// Main client for interacting with the Zosh program
+pub struct ZoshClient {
     /// Anchor client program instance
     program: Program<Rc<Keypair>>,
 
@@ -25,8 +25,8 @@ pub struct ZorchClient {
     pub keypair: Keypair,
 }
 
-impl ZorchClient {
-    /// Create a new ZorchClient
+impl ZoshClient {
+    /// Create a new ZoshClient
     pub fn new(cluster_url: String, ws_url: String, payer: Keypair) -> Result<Self> {
         let secret = *payer.secret_bytes();
         let client = Client::new_with_options(

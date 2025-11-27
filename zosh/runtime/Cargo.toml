@@ -1,5 +1,5 @@
 [package]
-name = "zorch-runtime"
+name = "zosh-runtime"
 version.workspace = true
 edition.workspace = true
 

@@ -1,5 +1,5 @@
 [workspace]
-members = ["zorch/*", "programs/*"]
+members = ["zosh/*", "programs/*"]
 resolver = "2"
 
 [workspace.package]
@@ -17,13 +17,13 @@ incremental = false
 codegen-units = 1
 
 [workspace.dependencies]
-network = { path = "zorch/network", package = "zorch-network" }
-node = { path = "zorch/node", package = "zorch-node" }
-runtime = { path = "zorch/runtime", package = "zorch-runtime" }
-sync = { path = "zorch/sync", package = "zorch-sync" }
-zcore = { path = "zorch/core", package = "zorch-core" }
-solana = { path = "chain/solana", package = "zorch-solana" }
-zorch = { path = "programs/zorch", package = "zorch-program" }
+network = { path = "zosh/network", package = "zosh-network" }
+node = { path = "zosh/node", package = "zosh-node" }
+runtime = { path = "zosh/runtime", package = "zosh-runtime" }
+sync = { path = "zosh/sync", package = "zosh-sync" }
+zcore = { path = "zosh/core", package = "zosh-core" }
+solana = { path = "chain/solana", package = "zosh-solana" }
+zosh = { path = "programs/zosh", package = "zosh-program" }
 
 # crates-io dependencies
 anchor-client = { version = "0.32.1", features = ["async"] }

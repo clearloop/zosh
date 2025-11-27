@@ -1,4 +1,4 @@
-//! for the handlers of the zorch program
+//! for the handlers of the zosh program
 
 pub mod external;
 pub mod internal;

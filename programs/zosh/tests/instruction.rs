@@ -8,8 +8,8 @@ use solana_sdk::{
     signer::{EncodableKey, Signer},
 };
 use std::rc::Rc;
-use zorch::{
-    client::{util, ZorchClient},
+use zosh::{
+    client::{util, ZoshClient},
     types::MintEntry,
     BridgeState,
 };
@@ -54,7 +54,7 @@ async fn test_mint() -> Result<()> {
 /// Test environment
 pub struct Test {
     /// Anchor client
-    pub client: ZorchClient,
+    pub client: ZoshClient,
 }
 
 impl Test {
@@ -63,7 +63,7 @@ impl Test {
         let home = dirs::home_dir().ok_or(anyhow::anyhow!("Home directory not found"))?;
         let payer = Keypair::read_from_file(home.join(".config/solana/id.json"))
             .map_err(|e| anyhow::anyhow!("Error reading `~/.config/solana/id.json`: {}", e))?;
-        let client = ZorchClient::new(
+        let client = ZoshClient::new(
             "http://localhost:8899".into(),
             "ws://localhost:8900".into(),
             payer,

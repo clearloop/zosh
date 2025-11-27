@@ -1,4 +1,4 @@
-//! for the internal handlers of the zorch program
+//! for the internal handlers of the zosh program
 
 use crate::errors::BridgeError;
 use anchor_lang::prelude::*;

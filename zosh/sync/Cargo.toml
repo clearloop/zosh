@@ -1,5 +1,5 @@
 [package]
-name = "zorch-sync"
+name = "zosh-sync"
 version.workspace = true
 edition.workspace = true
 
@@ -27,4 +27,4 @@ zcash_client_sqlite.workspace = true
 zcash_keys.workspace = true
 zcash_primitives.workspace = true
 zcash_protocol.workspace = true
-zorch.workspace = true
+zosh.workspace = true

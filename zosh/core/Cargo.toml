@@ -1,5 +1,5 @@
 [package]
-name = "zorch-core"
+name = "zosh-core"
 version.workspace = true
 edition.workspace = true
 

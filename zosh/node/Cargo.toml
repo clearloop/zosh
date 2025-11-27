@@ -1,5 +1,5 @@
 [package]
-name = "zorch-node"
+name = "zosh-node"
 version.workspace = true
 edition.workspace = true
 

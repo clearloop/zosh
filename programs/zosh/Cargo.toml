@@ -1,12 +1,12 @@
 [package]
-name = "zorch-program"
+name = "zosh-program"
 version.workspace = true
 edition.workspace = true
-description = "Zorch solana consensus program"
+description = "Zosh solana consensus program"
 
 [lib]
 crate-type = ["cdylib", "lib"]
-name = "zorch"
+name = "zosh"
 
 [features]
 default = []

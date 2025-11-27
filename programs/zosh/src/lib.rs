@@ -1,4 +1,4 @@
-//! zorch consensus program
+//! zosh consensus program
 
 use anchor_lang::prelude::*;
 use anchor_spl::token::{Mint, Token, TokenAccount};
@@ -18,7 +18,7 @@ pub mod types;
 mod utils;
 
 #[program]
-pub mod zorch {
+pub mod zosh {
     use super::*;
 
     /// Initialize the bridge with initial validator set and create sZEC mint

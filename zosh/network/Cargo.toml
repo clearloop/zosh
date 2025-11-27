@@ -1,5 +1,5 @@
 [package]
-name = "zorch-network"
+name = "zosh-network"
 version.workspace = true
 edition.workspace = true
 

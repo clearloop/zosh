@@ -1,4 +1,4 @@
-//! PDA functions for the zorch program
+//! PDA functions for the zosh program
 
 use anchor_lang::system_program;
 use anchor_spl::token;
