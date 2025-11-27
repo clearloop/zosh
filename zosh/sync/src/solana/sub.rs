@@ -67,6 +67,11 @@ async fn handle_event(tx: mpsc::Sender<Event>, log: &str, signature: String) -> 
     match &bytes[..8] {
         BurnEvent::DISCRIMINATOR => {
             let burn = BurnEvent::deserialize(data)?;
+            tracing::debug!(
+                "Received bridge request target={}, amount={}",
+                burn.zec_recipient,
+                burn.amount
+            );
             tx.send(Event::Bridge(Bridge {
                 recipient: burn.zec_recipient.into(),
                 amount: burn.amount,

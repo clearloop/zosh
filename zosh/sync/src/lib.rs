@@ -3,6 +3,7 @@
 use crate::solana::SolanaClient;
 use anyhow::Result;
 use std::path::Path;
+use tokio::sync::mpsc;
 pub use {config::Config, event::Event, solana::ZoshClient, zcash::Light};
 
 pub mod config;
@@ -23,9 +24,20 @@ pub struct Sync {
 impl Sync {
     /// Create a new sync instance
     pub async fn new(cache: &Path, config: &Config) -> Result<Self> {
-        let zcash = config.zcash(cache)?;
-        let zcash = Light::new(&zcash).await?;
+        let zconf = config.zcash(cache)?;
+        let zcash = Light::new(&zconf).await?;
         let solana = SolanaClient::new(config).await?;
         Ok(Self { zcash, solana })
+    }
+
+    /// Start the sync
+    pub async fn start(&self, tx: mpsc::Sender<Event>) -> Result<()> {
+        let mut zsync = self.zcash.duplicate().await?;
+        tokio::select! {
+            _ = zsync.sync() => {}
+            _ = self.zcash.subscribe(tx.clone()) => {}
+            _ = self.solana.subscribe(tx.clone()) => {}
+        }
+        Ok(())
     }
 }

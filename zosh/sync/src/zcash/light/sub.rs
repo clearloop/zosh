@@ -23,7 +23,9 @@ impl Light {
     pub async fn subscribe(&self, tx: mpsc::Sender<Event>) -> Result<()> {
         // TODO: we should get the latest height from the global on-chain state.
         let mut last_height = BlockHeight::from(0);
-        let confirmations = ConfirmationsPolicy::default();
+
+        // FIXME: should not be MIN in production!
+        let confirmations = ConfirmationsPolicy::MIN;
         loop {
             let Some((target, _anchor)) = self
                 .wallet
@@ -75,6 +77,11 @@ impl Light {
                 // TODO: check the address length is valid, if not, introduce
                 // a refund transaction to the node, since we'll recheck it
                 // on sending the transaction, not doing it here for now.
+                tracing::debug!(
+                    "Received bridge memo={}, amount={}",
+                    &text.to_string().trim(),
+                    note.value().into_u64() as f32 / 100_000_000.0
+                );
                 let recipient = bs58::decode(text.trim()).into_vec()?;
                 tx.send(Event::Bridge(Bridge {
                     recipient,

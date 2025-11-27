@@ -9,6 +9,7 @@ use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt, EnvFilte
 
 mod conf;
 mod dev;
+mod poc;
 
 /// Command line interface for the ZorchBridge node
 #[derive(Parser)]
@@ -44,6 +45,13 @@ impl App {
             Command::Zcash(zcash) => {
                 let config = Config::load(&self.config.join("config.toml"))?;
                 zcash.run(&self.cache, &config).await
+            }
+            Command::POC => {
+                poc::run(
+                    &self.cache,
+                    &Config::load(&self.config.join("config.toml"))?,
+                )
+                .await
             }
         }?;
 
@@ -96,6 +104,9 @@ pub enum Command {
     /// Zcash command
     #[clap(subcommand)]
     Zcash(zcash::Zcash),
+
+    /// Run the POC service
+    POC,
 
     /// Generate configuration file
     Generate,

@@ -23,3 +23,4 @@ toml.workspace = true
 tracing.workspace = true
 tracing-subscriber.workspace = true
 url.workspace = true
+zcore.workspace = true

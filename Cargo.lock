@@ -3803,6 +3803,10 @@ dependencies = [
 ]
 
 [[package]]
+name = "rpc"
+version = "0.1.0"
+
+[[package]]
 name = "rusqlite"
 version = "0.37.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -8046,6 +8050,7 @@ dependencies = [
  "tracing",
  "tracing-subscriber",
  "url",
+ "zosh-core",
  "zosh-runtime",
  "zosh-sync",
 ]

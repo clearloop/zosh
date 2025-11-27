@@ -14,6 +14,7 @@ use orchard::{
     value::NoteValue,
 };
 use reddsa::frost::redpallas::Randomizer;
+use std::time::Duration;
 use zcash_client_backend::{
     data_api::{
         wallet::ConfirmationsPolicy, Account, AccountBirthday, AccountPurpose, InputSource,
@@ -37,15 +38,18 @@ use zcash_protocol::{
 impl Light {
     /// Sync the wallet
     pub async fn sync(&mut self) -> Result<()> {
-        sync::run(
-            &mut self.client,
-            &self.network,
-            &self.block,
-            &mut self.wallet,
-            100,
-        )
-        .await
-        .map_err(Into::into)
+        loop {
+            sync::run(
+                &mut self.client,
+                &self.network,
+                &self.block,
+                &mut self.wallet,
+                100,
+            )
+            .await?;
+
+            tokio::time::sleep(Duration::from_secs(60)).await;
+        }
     }
 
     /// Import a unified full viewing key
