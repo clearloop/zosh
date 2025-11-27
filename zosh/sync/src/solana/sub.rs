@@ -39,8 +39,10 @@ impl SolanaClient {
             //
             // TODO: shall we embed slot in the event as well?
             for entry in &logs {
-                if let Err(e) = handle_event(tx.clone(), entry, signature.clone()).await {
-                    tracing::error!("Failed to handle event: {}", e);
+                if handle_event(tx.clone(), entry, signature.clone())
+                    .await
+                    .is_err()
+                {
                     continue;
                 }
             }

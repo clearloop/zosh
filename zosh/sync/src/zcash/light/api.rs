@@ -38,16 +38,21 @@ use zcash_protocol::{
 impl Light {
     /// Sync the wallet
     pub async fn sync(&mut self) -> Result<()> {
-        loop {
-            sync::run(
-                &mut self.client,
-                &self.network,
-                &self.block,
-                &mut self.wallet,
-                100,
-            )
-            .await?;
+        sync::run(
+            &mut self.client,
+            &self.network,
+            &self.block,
+            &mut self.wallet,
+            100,
+        )
+        .await
+        .map_err(Into::into)
+    }
 
+    /// Sync the wallet
+    pub async fn sync_forever(&mut self) -> Result<()> {
+        loop {
+            self.sync().await?;
             tokio::time::sleep(Duration::from_secs(60)).await;
         }
     }

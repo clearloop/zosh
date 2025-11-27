@@ -34,10 +34,9 @@ impl Sync {
     pub async fn start(&self, tx: mpsc::Sender<Event>) -> Result<()> {
         let mut zsync = self.zcash.duplicate().await?;
         tokio::select! {
-            _ = zsync.sync() => {}
-            _ = self.zcash.subscribe(tx.clone()) => {}
-            _ = self.solana.subscribe(tx.clone()) => {}
+            r = zsync.sync_forever() => r,
+            r = self.zcash.subscribe(tx.clone()) => r,
+            r = self.solana.subscribe(tx.clone()) => r
         }
-        Ok(())
     }
 }

@@ -6,7 +6,9 @@ pub use config::Config;
 use rusqlite::Connection;
 use std::{fs, path::Path};
 use tonic::transport::Channel;
-use zcash_client_backend::proto::service::compact_tx_streamer_client::CompactTxStreamerClient;
+use zcash_client_backend::{
+    data_api::WalletRead, proto::service::compact_tx_streamer_client::CompactTxStreamerClient,
+};
 use zcash_client_sqlite::{util::SystemClock, wallet, WalletDb};
 use zcash_keys::keys::UnifiedFullViewingKey;
 use zcash_protocol::consensus::Network;
@@ -62,16 +64,22 @@ impl Light {
             .connect()
             .await?;
         let client = CompactTxStreamerClient::new(channel);
-
-        // wrap to the light client
-        Ok(Self {
+        let mut this = Self {
             block,
             wallet,
             client,
             network: config.network,
             ufvk: config.ufvk.clone(),
             config: config.clone(),
-        })
+        };
+
+        // import the account if it doesn't exist
+        if this.wallet.get_account_for_ufvk(&config.ufvk)?.is_none() {
+            this.import("zosh", config.ufvk.clone()).await?;
+        }
+
+        // wrap to the light client
+        Ok(this)
     }
 
     /// Clone the light client
