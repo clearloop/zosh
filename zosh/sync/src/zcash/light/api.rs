@@ -97,7 +97,7 @@ impl Light {
     /// Send a fund to a orchard address
     pub async fn send(
         &mut self,
-        signer: GroupSigners,
+        signer: &GroupSigners,
         recipient: UnifiedAddress,
         amount: f32,
     ) -> Result<()> {
@@ -162,7 +162,7 @@ impl Light {
 
         // 2. make the bundle of the transaction
         let mut memo = [0; 512];
-        memo[..20].copy_from_slice(b"Bridged via Zosh.");
+        memo[..17].copy_from_slice(b"Bridged via Zosh.");
         let Some((bundle, _meta)) = builder::bundle::<ZatBalance>(
             rand_core::OsRng,
             anchor,

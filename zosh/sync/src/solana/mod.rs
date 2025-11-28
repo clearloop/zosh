@@ -4,7 +4,7 @@ use crate::Config;
 use anyhow::Result;
 pub use cmd::Solana;
 use solana_pubsub_client::nonblocking::pubsub_client::PubsubClient;
-pub use solana_sdk::signer::keypair::Keypair;
+pub use solana_sdk::{pubkey::Pubkey, signer::keypair::Keypair};
 use std::ops::Deref;
 pub use zosh::client::ZoshClient;
 

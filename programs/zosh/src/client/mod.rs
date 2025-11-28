@@ -13,6 +13,8 @@ use mpl_token_metadata::accounts::Metadata;
 use solana_sdk::{signature::Signature, signer::Signer};
 use std::rc::Rc;
 
+use crate::types::MintEntry;
+
 pub mod pda;
 pub mod util;
 
@@ -136,6 +138,16 @@ impl ZoshClient {
             .await?;
 
         Ok(())
+    }
+
+    /// Mint sZEC to a recipient (development action)
+    pub async fn dev_send_mint(&self, recipient: Pubkey, amount: u64) -> Result<()> {
+        let state = self.bridge_state().await?;
+        let mints = vec![MintEntry { recipient, amount }];
+        let message = util::create_mint_message(state.nonce, &mints);
+        let signature = self.sign_message(&message)?;
+        let signature = *signature.as_array();
+        self.send_mint(mints, vec![signature]).await
     }
 
     /// Mint sZEC to recipients (threshold action)

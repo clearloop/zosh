@@ -146,7 +146,7 @@ impl Zcash {
         let mut light = Light::new(cfg).await?;
         light
             .send(
-                postcard::from_bytes(&bs58::decode(group).into_vec()?)?,
+                &postcard::from_bytes(&bs58::decode(group).into_vec()?)?,
                 UnifiedAddress::decode(&light.network, recipient)
                     .map_err(|e| anyhow::anyhow!(e))?,
                 amount,

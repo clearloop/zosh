@@ -2,41 +2,65 @@
 
 use anyhow::Result;
 use std::path::Path;
-use sync::{Config, Event, Sync};
+use sync::{
+    solana::Pubkey,
+    zcash::{AddressCodec, GroupSigners, UnifiedAddress},
+    Config, Event, Sync,
+};
 use tokio::sync::mpsc;
 use zcore::tx::Chain;
 
 /// Run the POC service
 pub async fn run(cache: &Path, config: &Config) -> Result<()> {
     let mut sync = Sync::new(cache, config).await?;
+    let sync2 = Sync::new(cache, config).await?;
+    let signer: GroupSigners =
+        postcard::from_bytes(&bs58::decode(config.key.zcash.as_str()).into_vec()?)?;
     let (tx, rx) = mpsc::channel::<Event>(512);
 
     tokio::select! {
         _ = tokio::signal::ctrl_c() => Ok(()),
         r = sync.start(tx.clone()) => r,
-        r = handle(rx) => r,
+        r = handle(signer, sync2, rx) => r,
     }
 }
 
-async fn handle(mut rx: mpsc::Receiver<Event>) -> Result<()> {
-    loop {
-        while let Some(event) = rx.recv().await {
-            match event {
-                Event::Bridge(bridge) => {
-                    tracing::info!(
-                        "Received bridge request: target={:?}, recipient={}, amount={}",
-                        bridge.target,
-                        match bridge.target {
-                            Chain::Solana => bs58::encode(bridge.recipient).into_string(),
-                            Chain::Zcash => String::from_utf8(bridge.recipient).unwrap(),
-                        },
-                        bridge.amount as f32 / 100_000_000.0
-                    );
-                }
-                _ => {
-                    // TODO: futures handling for other events
-                }
+async fn handle(signer: GroupSigners, mut sync: Sync, mut rx: mpsc::Receiver<Event>) -> Result<()> {
+    while let Some(event) = rx.recv().await {
+        let Event::Bridge(bridge) = event else {
+            continue;
+        };
+
+        tracing::info!(
+            "Received bridge request: target={:?}, recipient={}, amount={}",
+            bridge.target,
+            match bridge.target {
+                Chain::Solana => bs58::encode(&bridge.recipient).into_string(),
+                Chain::Zcash => String::from_utf8(bridge.recipient.clone()).unwrap(),
+            },
+            bridge.amount as f32 / 100_000_000.0
+        );
+
+        match bridge.target {
+            Chain::Solana => {
+                let mut pubkey = [0; 32];
+                pubkey.copy_from_slice(bridge.recipient.as_slice());
+                sync.solana
+                    .dev_send_mint(Pubkey::new_from_array(pubkey), bridge.amount)
+                    .await?;
+            }
+            Chain::Zcash => {
+                let address = UnifiedAddress::decode(
+                    &sync.zcash.network,
+                    &String::from_utf8(bridge.recipient)?,
+                )
+                .map_err(|e| anyhow::anyhow!(e))?;
+                sync.zcash
+                    .send(&signer, address, bridge.amount as f32 / 100_000_000.0)
+                    .await?;
             }
         }
     }
+
+    Ok(())
 }

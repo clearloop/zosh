@@ -86,7 +86,14 @@ async fn handle_event(tx: mpsc::Sender<Event>, log: &str, signature: String) -> 
         MintEvent::DISCRIMINATOR => {
             // TODO: probablly we don't need prompt the receipt event
             // here, it should be fetched on confirming the transaction.
-            let _mint = MintEvent::deserialize(data)?;
+            let mint = MintEvent::deserialize(data)?;
+            for (recipient, amount) in mint.mints {
+                tracing::debug!(
+                    "Received mint event: recipient={}, amount={}",
+                    recipient,
+                    amount
+                );
+            }
         }
         _ => {}
     }
