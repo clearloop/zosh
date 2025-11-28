@@ -8101,6 +8101,7 @@ dependencies = [
  "clap",
  "dirs",
  "futures-util",
+ "incrementalmerkletree",
  "orchard",
  "postcard",
  "prost",

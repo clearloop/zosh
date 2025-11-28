@@ -117,6 +117,6 @@ impl Light {
             &[],
         )?;
 
-        Ok(notes.orchard().into_iter().cloned().collect())
+        Ok(notes.orchard().to_vec())
     }
 }
