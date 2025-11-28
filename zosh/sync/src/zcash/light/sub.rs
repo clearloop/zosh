@@ -80,7 +80,7 @@ impl Light {
                     })
                 else {
                     // TODO: raise a refund event to the node.
-                    tracing::warn!("Memo is not found for note of {}", &txid);
+                    // tracing::warn!("Memo is not found for note of {}", &txid);
                     continue;
                 };
 
