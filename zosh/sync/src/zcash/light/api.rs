@@ -9,7 +9,7 @@ use orchard::{
     builder::{self, BundleType, MaybeSigned, OutputInfo, SpendInfo},
     bundle::Flags,
     circuit::ProvingKey,
-    keys::SpendValidatingKey,
+    keys::{Scope, SpendValidatingKey},
     primitives::redpallas::{Signature, SpendAuth},
     value::NoteValue,
 };
@@ -20,6 +20,7 @@ use zcash_client_backend::{
         wallet::ConfirmationsPolicy, Account, AccountBirthday, AccountPurpose, InputSource,
         TargetValue, WalletCommitmentTrees, WalletRead, WalletWrite,
     },
+    fees::orchard::InputView,
     proto::service::{BlockId, RawTransaction},
     sync,
 };
@@ -95,17 +96,32 @@ impl Light {
     }
 
     /// Send a fund to a orchard address
+    ///
+    /// # Arguments
+    /// * `amount` - The total amount to spend (spend value + transaction fee) in ZEC
     pub async fn send(
         &mut self,
         signer: &GroupSigners,
         recipient: UnifiedAddress,
         amount: f32,
     ) -> Result<()> {
-        let recipient = recipient
+        let recipient_orchard = recipient
             .orchard()
             .ok_or(anyhow::anyhow!("Invalid orchard address"))?;
         let ufvk = signer.ufvk()?;
-        let amount = (amount * 100_000_000.0).round() as u64;
+
+        // Convert amount to zatoshis (amount already includes spend value + fee)
+        let total_amount = (amount * 100_000_000.0).round() as u64;
+
+        // Standard Orchard transaction fee (1000 zatoshis = 0.00001 ZEC)
+        // This is a typical fee for Orchard transactions
+        const STANDARD_FEE: u64 = 1000;
+
+        // Calculate the spend value (amount - fee)
+        let spend_value = total_amount
+            .checked_sub(STANDARD_FEE)
+            .ok_or_else(|| anyhow::anyhow!("Amount too small to cover transaction fee"))?;
+
         let Some(account) = self.wallet.get_account_for_ufvk(&ufvk)? else {
             return Err(anyhow::anyhow!("Account not found by provided ufvk"));
         };
@@ -119,10 +135,10 @@ impl Light {
             .map_err(|e| anyhow::anyhow!("Failed to get target and anchor heights: {:?}", e))?
             .ok_or_else(|| anyhow::anyhow!("Wallet sync required"))?;
 
-        // 1. get spendable notes
+        // 1. get spendable notes - select notes that cover the total amount (spend + fee)
         let notes = self.wallet.select_spendable_notes(
             account.id(),
-            TargetValue::AtLeast(Zatoshis::from_u64(amount)?),
+            TargetValue::AtLeast(Zatoshis::from_u64(total_amount)?),
             &[ShieldedProtocol::Orchard],
             target_height,
             confirmations_policy,
@@ -132,6 +148,12 @@ impl Light {
         let Some(note) = notes.orchard().first() else {
             return Err(anyhow::anyhow!("No spendable notes found"));
         };
+
+        // Calculate change: note_value - total_amount (spend + fee)
+        let note_value = note.value().into_u64();
+        let change = note_value
+            .checked_sub(total_amount)
+            .ok_or_else(|| anyhow::anyhow!("Note value is less than required amount"))?;
 
         // Get anchor and merkle path at the anchor height (guaranteed to have a checkpoint)
         let (anchor, merkle_path) =
@@ -160,9 +182,37 @@ impl Light {
                     Ok::<_, anyhow::Error>((anchor.into(), merkle_path))
                 })?;
 
-        // 2. make the bundle of the transaction
-        let mut memo = [0; 512];
-        memo[..17].copy_from_slice(b"Bridged via Zosh.");
+        // 2. Prepare outputs: recipient output + change output (if any)
+        let mut outputs = Vec::new();
+
+        // Output to recipient with the spend value
+        let mut recipient_memo = [0; 512];
+        recipient_memo[..31].copy_from_slice(b"Bridged from solana via zosh.io");
+        outputs.push(OutputInfo::new(
+            None,
+            *recipient_orchard,
+            NoteValue::from_raw(spend_value),
+            recipient_memo,
+        ));
+
+        // If there's change, send it back to our own address
+        if change > 0 {
+            // Get our own Orchard address for change
+            let fvk = ufvk
+                .orchard()
+                .ok_or(anyhow::anyhow!("Invalid orchard full viewing key"))?;
+            let change_address = fvk.address_at(0u64, Scope::External);
+            let change_memo = [0; 512];
+            outputs.push(OutputInfo::new(
+                None,
+                change_address,
+                NoteValue::from_raw(change),
+                change_memo,
+            ));
+            tracing::info!("Sending change of {} zatoshis back to our address", change);
+        }
+
+        // 3. make the bundle of the transaction
         let Some((bundle, _meta)) = builder::bundle::<ZatBalance>(
             rand_core::OsRng,
             anchor,
@@ -178,12 +228,7 @@ impl Light {
                 merkle_path.into(),
             )
             .ok_or(anyhow::anyhow!("Failed to create spend info"))?],
-            vec![OutputInfo::new(
-                None,
-                *recipient,
-                NoteValue::from_raw(amount),
-                memo,
-            )],
+            outputs,
         )?
         else {
             return Err(anyhow::anyhow!("Failed to create bundle"));
@@ -203,7 +248,7 @@ impl Light {
             Some(bundle),
         );
 
-        // 3. Create proof and prepare for signing
+        // 4. Create proof and prepare for signing
         let txid_parts = utx.digest(TxIdDigester);
         let sighash = signature_hash(&utx, &SignableInput::Shielded, &txid_parts);
         let proving_key = ProvingKey::build();
@@ -231,7 +276,7 @@ impl Light {
             |_rng, auth| auth,
         );
 
-        // 4. Sign the transaction
+        // 5. Sign the transaction
         let mut signatures = Vec::new();
         for alpha in alphas.iter() {
             let randomizer = Randomizer::from_scalar(*alpha);
@@ -263,17 +308,29 @@ impl Light {
 
         let tx = tx.freeze()?;
         let txid = tx.txid();
-        tracing::info!("Transaction ID: {}", txid);
-
         let mut data = Vec::new();
         tx.write(&mut data)?;
+        tracing::info!("Transaction ID: {}", txid);
         let resp = self
             .client
             .send_transaction(RawTransaction { data, height: 0 })
             .await?
             .into_inner();
 
-        println!("Transaction sent: {:?}", resp);
+        // Check if the transaction was successfully sent
+        if resp.error_code != 0 {
+            return Err(anyhow::anyhow!(
+                "Transaction send failed: {} - {}",
+                resp.error_code,
+                resp.error_message
+            ));
+        }
+
+        // Sync the wallet to update its state after sending the transaction
+        // This ensures that spent notes are marked as spent and won't be selected again
+        // Note: The transaction may not be mined yet, but syncing will update the state
+        // once it's confirmed in a block
+        self.sync().await?;
         Ok(())
     }
 }
