@@ -1,5 +1,5 @@
 [workspace]
-members = ["zorch/*", "programs/*"]
+members = ["zosh/*", "programs/*"]
 resolver = "2"
 
 [workspace.package]
@@ -17,13 +17,13 @@ incremental = false
 codegen-units = 1
 
 [workspace.dependencies]
-network = { path = "zorch/network", package = "zorch-network" }
-node = { path = "zorch/node", package = "zorch-node" }
-runtime = { path = "zorch/runtime", package = "zorch-runtime" }
-sync = { path = "zorch/sync", package = "zorch-sync" }
-zcore = { path = "zorch/core", package = "zorch-core" }
-solana = { path = "chain/solana", package = "zorch-solana" }
-zorch = { path = "programs/zorch", package = "zorch-program" }
+network = { path = "zosh/network", package = "zosh-network" }
+node = { path = "zosh/node", package = "zosh-node" }
+runtime = { path = "zosh/runtime", package = "zosh-runtime" }
+sync = { path = "zosh/sync", package = "zosh-sync" }
+zcore = { path = "zosh/core", package = "zosh-core" }
+solana = { path = "chain/solana", package = "zosh-solana" }
+zosh = { path = "programs/zosh", package = "zosh-program" }
 
 # crates-io dependencies
 anchor-client = { version = "0.32.1", features = ["async"] }
@@ -31,12 +31,14 @@ anchor-lang = "0.32.1"
 anchor-spl = "0.32.1"
 anyhow = "1.0.100"
 async-trait = "0.1.89"
+base64 = "0.21.7"
 borsh = "1.5.7"
 bs58 = "0.5.1"
 clap = { version = "4.5.53", features = ["derive"] }
 dirs = "6.0.0"
 ed25519-dalek = "2.2.0"
 frost-core = "2.2.0"
+futures-util = "0.3.31"
 hex = "0.4.3"
 jsonrpsee-http-client = "0.26.0"
 mpl-token-metadata = { version = "5.0.0", features = ["serde"] }
@@ -55,6 +57,8 @@ solana-account = "2.2.1"
 solana-client = "2.3.13"
 solana-ed25519-program = "2.2.3"
 solana-program = "2.2.1"
+solana-pubsub-client = "2.3.13"
+solana-rpc-client-types = "2.3.13"
 solana-sdk = { version = "2.2.1", features = ["full"] }
 solana-sdk-ids = "^2"
 solana-signer = "2.2.1"
@@ -73,7 +77,7 @@ zcash_client_backend = { version = "0.21.0", features = [
     "orchard",
     "sync",
 ] }
-zcash_client_sqlite = { version = "0.19.0", features = ["orchard"] }
+zcash_client_sqlite = { version = "0.19.1", features = ["orchard"] }
 zcash_keys = { version = "0.12.0", features = ["orchard", "unstable-frost"] }
 zcash_primitives = "0.26.1"
 zcash_protocol = "0.7.1"

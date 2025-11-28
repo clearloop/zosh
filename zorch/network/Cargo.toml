@@ -1,6 +1,0 @@
-[package]
-name = "zorch-network"
-version.workspace = true
-edition.workspace = true
-
-[dependencies]

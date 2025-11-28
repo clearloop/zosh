@@ -3,7 +3,7 @@ resolution = true
 skip-lint = false
 
 [programs.localnet]
-zorch = "5QXepWTdHmsQkroWnitvs55jR6TxWbE8DCf54fQaYcH1"
+zosh = "5QXepWTdHmsQkroWnitvs55jR6TxWbE8DCf54fQaYcH1"
 
 [registry]
 url = "https://api.apr.dev"
@@ -13,7 +13,7 @@ cluster = "localnet"
 wallet = "~/.config/solana/id.json"
 
 [scripts]
-test = "cargo test -p zorch-program"
+test = "cargo test -p zosh-program"
 
 [test.validator]
 url = "https://api.mainnet-beta.solana.com"

@@ -1,8 +1,8 @@
 # Solana to Zcash
 
-Bridging zrcZEC from Solana to Zcash is pretty straightforward here.
+Bridging zoZEC from Solana to Zcash is pretty straightforward here.
 
-## 1. User burns zrcZEC with ZEC recipient specified
+## 1. User burns zoZEC with ZEC recipient specified
 
 ```rust
 struct BridgeToZcash {

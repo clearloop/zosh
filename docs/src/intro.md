@@ -6,7 +6,7 @@ The trustless privacy bridge for Solana and Zcash.
 
   - No custody wallet, everything on-chain.
   - [frost][frost] to manage the zcash orchard pool.
-  - `multi-sig` to manage the zrcZEC on the solana side.
+  - `multi-sig` to manage the zoZEC on the solana side.
 
 - **Privacy**: The privacy is ensured by the [orchard][orchard] pool from zcash.
   - On bridging ZEC to SOL, Zorch doesn't know the depositor of ZEC.

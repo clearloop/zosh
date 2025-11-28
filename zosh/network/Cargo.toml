@@ -1,0 +1,6 @@
+[package]
+name = "zosh-network"
+version.workspace = true
+edition.workspace = true
+
+[dependencies]

@@ -1,0 +1,2 @@
+[alias]
+mint = "nextest run -p zosh-program test_mint"
