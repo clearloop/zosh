@@ -145,11 +145,11 @@ impl Zcash {
     ) -> Result<()> {
         let mut light = Light::new(cfg).await?;
         light
-            .send(
+            .dev_send(
                 &postcard::from_bytes(&bs58::decode(group).into_vec()?)?,
                 UnifiedAddress::decode(&light.network, recipient)
                     .map_err(|e| anyhow::anyhow!(e))?,
-                amount,
+                (amount * 100_000_000.0).round() as u64,
             )
             .await?;
 

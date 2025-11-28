@@ -55,9 +55,7 @@ async fn handle(signer: GroupSigners, mut sync: Sync, mut rx: mpsc::Receiver<Eve
                     &String::from_utf8(bridge.recipient)?,
                 )
                 .map_err(|e| anyhow::anyhow!(e))?;
-                sync.zcash
-                    .send(&signer, address, bridge.amount as f32 / 100_000_000.0)
-                    .await?;
+                sync.zcash.dev_send(&signer, address, bridge.amount).await?;
             }
         }
     }
