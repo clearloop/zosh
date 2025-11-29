@@ -3,7 +3,7 @@
 use crate::Config;
 use anyhow::Result;
 use clap::Parser;
-use solana_sdk::{pubkey::Pubkey, signature::Keypair};
+use solana_sdk::{pubkey::Pubkey, signature::Keypair, signer::Signer};
 use std::str::FromStr;
 use zosh::client::ZoshClient;
 
@@ -58,7 +58,7 @@ impl Solana {
         let client = ZoshClient::new(
             config.rpc.solana.to_string(),
             config.rpc.solana_ws.to_string(),
-            keypair,
+            keypair.pubkey(),
         )?;
 
         match self {
@@ -81,7 +81,7 @@ impl Solana {
             return Ok(());
         }
 
-        let _ = client.initialize(client.payer()).await?;
+        let _tx = client.initialize(client.payer())?;
         let state = client.bridge_state().await?;
         println!("{state:#?}");
         Ok(())
@@ -89,7 +89,7 @@ impl Solana {
 
     /// Burn sZEC to bridge back to Zcash
     async fn burn(&self, client: ZoshClient, amount: u64, address: String) -> Result<()> {
-        client.send_burn(amount, address).await?;
+        let _tx = client.burn(amount, address)?;
         let balance = client.zec_balance(client.payer()).await?;
         println!("{balance:#?}");
         Ok(())
@@ -111,9 +111,7 @@ impl Solana {
             }
         }
 
-        client
-            .update_metadata(name.to_owned(), symbol.to_owned(), uri.to_owned())
-            .await?;
+        let _tx = client.update_metadata(name.to_owned(), symbol.to_owned(), uri.to_owned());
         let metadata = client.metadata().await?;
         println!("{metadata:#?}");
         Ok(())

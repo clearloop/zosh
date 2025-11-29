@@ -3,6 +3,7 @@
 use crate::Config;
 use anyhow::Result;
 use solana_pubsub_client::nonblocking::pubsub_client::PubsubClient;
+use solana_sdk::signer::Signer;
 pub use solana_sdk::{pubkey::Pubkey, signer::keypair::Keypair};
 use std::ops::Deref;
 pub use zosh::client::ZoshClient;
@@ -31,7 +32,7 @@ impl SolanaClient {
         let solana = ZoshClient::new(
             config.rpc.solana.to_string(),
             config.rpc.solana_ws.to_string(),
-            keypair,
+            keypair.pubkey(),
         )?;
 
         let sub = PubsubClient::new(config.rpc.solana_ws.as_ref()).await?;

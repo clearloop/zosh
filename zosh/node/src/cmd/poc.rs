@@ -3,7 +3,6 @@
 use anyhow::Result;
 use std::path::Path;
 use sync::{
-    solana::Pubkey,
     zcash::{AddressCodec, GroupSigners, UnifiedAddress},
     Config, Event, Sync,
 };
@@ -45,9 +44,9 @@ async fn handle(signer: GroupSigners, mut sync: Sync, mut rx: mpsc::Receiver<Eve
             Chain::Solana => {
                 let mut pubkey = [0; 32];
                 pubkey.copy_from_slice(bridge.recipient.as_slice());
-                sync.solana
-                    .dev_send_mint(Pubkey::new_from_array(pubkey), bridge.amount)
-                    .await?;
+                // sync.solana
+                //     .dev_send_mint(Pubkey::new_from_array(pubkey), bridge.amount)
+                //     .await?;
             }
             Chain::Zcash => {
                 let address = UnifiedAddress::decode(
