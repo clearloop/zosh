@@ -1,10 +1,6 @@
 //! Threshold action handlers - operations that require validator signatures
 
-use crate::{
-    errors::BridgeError,
-    events::{MintEvent, ValidatorSetUpdated},
-    utils::verify_threshold_signatures,
-};
+use crate::{errors::BridgeError, events::MintEvent};
 use anchor_lang::prelude::*;
 use anchor_spl::token::{self, MintTo, TokenAccount};
 
@@ -15,7 +11,6 @@ pub const MAX_BATCH_SIZE: usize = 10;
 pub fn mint<'info>(
     ctx: Context<'_, '_, '_, 'info, crate::MintZec<'info>>,
     mints: Vec<crate::types::MintEntry>,
-    signatures: Vec<[u8; 64]>,
 ) -> Result<()> {
     require!(
         !mints.is_empty() && mints.len() <= MAX_BATCH_SIZE,
@@ -23,8 +18,7 @@ pub fn mint<'info>(
     );
 
     // Validate all amounts and compute total
-    let nonce = ctx.accounts.bridge_state.nonce;
-    let mut message = nonce.to_le_bytes().to_vec();
+    let mut message = Vec::new();
     for mint_entry in &mints {
         require!(mint_entry.amount > 0, BridgeError::InvalidAmount);
         message.extend_from_slice(mint_entry.recipient.as_ref());
@@ -32,19 +26,7 @@ pub fn mint<'info>(
     }
 
     // Get references for verification
-
-    let validators = ctx.accounts.bridge_state.validators.clone();
-    let threshold = ctx.accounts.bridge_state.threshold;
     let bridge_state_bump = ctx.accounts.bridge_state.bump;
-
-    // Verify threshold signatures from current validator set
-    let _signers = verify_threshold_signatures(
-        &message,
-        &signatures,
-        &validators,
-        threshold,
-        &ctx.accounts.instructions,
-    )?;
 
     // Verify we have the correct number of remaining accounts
     require!(
@@ -83,67 +65,8 @@ pub fn mint<'info>(
     // Emit batch event
     emit!(MintEvent {
         mints: mint_tuples,
-        nonce,
         timestamp: Clock::get()?.unix_timestamp,
     });
-
-    // Increment nonce once for entire batch
-    ctx.accounts.bridge_state.nonce += 1;
-    Ok(())
-}
-
-/// Updates the entire validator set.
-pub fn validators(
-    ctx: Context<crate::Validators>,
-    new_validators: Vec<Pubkey>,
-    new_threshold: u8,
-    signatures: Vec<[u8; 64]>,
-) -> Result<()> {
-    let bridge_state = &mut ctx.accounts.bridge_state;
-    let new_total = new_validators.len() as u8;
-
-    // Validate new threshold
-    require!(
-        new_threshold > 0 && new_threshold <= new_total,
-        BridgeError::InvalidThreshold
-    );
-    require!(new_total > 0, BridgeError::InvalidThreshold);
-
-    // Serialize action data for signature verification
-    let nonce = bridge_state.nonce;
-    let mut message = nonce.to_le_bytes().to_vec();
-    message.extend_from_slice(&new_threshold.to_le_bytes());
-    for validator in &new_validators {
-        message.extend_from_slice(validator.as_ref());
-    }
-
-    // Verify threshold signatures from current validator set
-    let _signers = verify_threshold_signatures(
-        &message,
-        &signatures,
-        &bridge_state.validators,
-        bridge_state.threshold,
-        &ctx.accounts.instructions,
-    )?;
-
-    // Emit event
-    emit!(ValidatorSetUpdated {
-        old_validators: bridge_state.validators.clone(),
-        new_validators: new_validators.clone(),
-        threshold: new_threshold,
-        nonce: bridge_state.nonce,
-    });
-
-    // Update the validator set
-    bridge_state.validators = new_validators;
-    bridge_state.threshold = new_threshold;
-    bridge_state.total_validators = new_total;
-    bridge_state.nonce += 1;
-    msg!(
-        "Validator set updated to {} validators with threshold {}",
-        new_total,
-        new_threshold
-    );
 
     Ok(())
 }

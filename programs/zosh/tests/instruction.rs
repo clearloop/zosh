@@ -4,11 +4,7 @@ use anchor_client::Program;
 use anyhow::Result;
 use solana_sdk::{pubkey::Pubkey, signature::Keypair, signer::EncodableKey};
 use std::rc::Rc;
-use zosh::{
-    client::{util, ZoshClient},
-    types::MintEntry,
-    BridgeState,
-};
+use zosh::{client::ZoshClient, types::MintEntry, BridgeState};
 
 #[tokio::test]
 async fn test_connection() -> Result<()> {
@@ -18,32 +14,13 @@ async fn test_connection() -> Result<()> {
 }
 
 #[tokio::test]
-async fn test_update_validators() -> Result<()> {
-    let test = Test::new().await?;
-    let state = test.bridge_state().await?;
-    let validators = vec![test.payer()];
-    let message = util::create_validators_message(state.nonce, &validators, 1);
-    let signature = test.client.sign_message(&message)?;
-    let signature = *signature.as_array();
-    let _ = test
-        .client
-        .update_validators(vec![test.payer()], 1, vec![signature])
-        .await?;
-    Ok(())
-}
-
-#[tokio::test]
 async fn test_mint() -> Result<()> {
     let test = Test::new().await?;
-    let state = test.bridge_state().await?;
     let mints = vec![MintEntry {
         recipient: test.payer(),
         amount: 42,
     }];
-    let message = util::create_mint_message(state.nonce, &mints);
-    let signature = test.client.sign_message(&message)?;
-    let signature = *signature.as_array();
-    let _ = test.client.send_mint(mints, vec![signature]).await?;
+    let _ = test.client.send_mint(mints).await?;
     Ok(())
 }
 

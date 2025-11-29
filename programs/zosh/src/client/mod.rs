@@ -16,7 +16,6 @@ use std::rc::Rc;
 use crate::types::MintEntry;
 
 pub mod pda;
-pub mod util;
 
 /// Main client for interacting with the Zosh program
 pub struct ZoshClient {
@@ -142,23 +141,14 @@ impl ZoshClient {
 
     /// Mint sZEC to a recipient (development action)
     pub async fn dev_send_mint(&self, recipient: Pubkey, amount: u64) -> Result<()> {
-        let state = self.bridge_state().await?;
         let mints = vec![MintEntry { recipient, amount }];
-        let message = util::create_mint_message(state.nonce, &mints);
-        let signature = self.sign_message(&message)?;
-        let signature = *signature.as_array();
-        self.send_mint(mints, vec![signature]).await
+        self.send_mint(mints).await
     }
 
     /// Mint sZEC to recipients (threshold action)
-    pub async fn send_mint(
-        &self,
-        mint_entries: Vec<crate::types::MintEntry>,
-        signatures: Vec<[u8; 64]>,
-    ) -> Result<()> {
+    pub async fn send_mint(&self, mint_entries: Vec<crate::types::MintEntry>) -> Result<()> {
         anyhow::ensure!(!mint_entries.is_empty(), "No mint entries provided");
         let mut builder = self.program.request();
-        let state = self.bridge_state().await?;
 
         // create token accounts if not exists
         for entry in &mint_entries {
@@ -182,17 +172,6 @@ impl ZoshClient {
                     );
                 builder = builder.instruction(create_ata_ix);
             }
-        }
-
-        // create the ed25519 verify instructions
-        let message = util::create_mint_message(state.nonce, &mint_entries);
-        for signature in &signatures {
-            let ed25519_ix = solana_ed25519_program::new_ed25519_instruction_with_signature(
-                &message,
-                signature,
-                &self.keypair.pubkey().to_bytes(),
-            );
-            builder = builder.instruction(ed25519_ix);
         }
 
         // create the mint instruction
@@ -221,7 +200,6 @@ impl ZoshClient {
             })
             .args(crate::instruction::Mint {
                 mints: mint_entries,
-                signatures,
             })
             .accounts(remaining_accounts)
             .send()
@@ -257,54 +235,6 @@ impl ZoshClient {
             .send()
             .await?;
 
-        Ok(())
-    }
-
-    /// Update the validator set (threshold action)
-    pub async fn update_validators(
-        &self,
-        validators: Vec<Pubkey>,
-        threshold: u8,
-        signatures: Vec<[u8; 64]>,
-    ) -> Result<()> {
-        anyhow::ensure!(!validators.is_empty(), "No validators provided");
-        anyhow::ensure!(
-            threshold > 0 && threshold as usize <= validators.len(),
-            "Invalid threshold"
-        );
-
-        // Construct the ed25519 verify instruction
-        let state = self.bridge_state().await?;
-        let message = util::create_validators_message(state.nonce, &validators, threshold);
-        let mut builder = self.program.request();
-        for signature in &signatures {
-            let signer_pubkey = self.keypair.pubkey();
-            let ed25519_ix = solana_ed25519_program::new_ed25519_instruction_with_signature(
-                &message,
-                signature,
-                &signer_pubkey.to_bytes(),
-            );
-            builder = builder.instruction(ed25519_ix);
-        }
-
-        // create the update instruction
-        let bridge_state = pda::bridge_state();
-        builder
-            .accounts(crate::accounts::Validators {
-                payer: self.program.payer(),
-                bridge_state,
-                system_program: pda::SYSTEM_PROGRAM,
-                instructions: pda::INSTRUCTIONS_SYSVAR,
-            })
-            .args(crate::instruction::Validators {
-                validators,
-                threshold,
-                signatures,
-            })
-            .send()
-            .await?;
-
-        eprintln!("[DEBUG] update_validators transaction sent successfully");
         Ok(())
     }
 }

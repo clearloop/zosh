@@ -3,7 +3,7 @@
 use anchor_lang::prelude::*;
 use anchor_spl::token::{Mint, Token, TokenAccount};
 pub use errors::BridgeError;
-pub use events::{BurnEvent, MintEvent, ValidatorSetUpdated};
+pub use events::{BurnEvent, MintEvent};
 use handler::{external, internal, threshold};
 pub use state::BridgeState;
 
@@ -15,7 +15,6 @@ pub mod events;
 mod handler;
 pub mod state;
 pub mod types;
-mod utils;
 
 #[program]
 pub mod zosh {
@@ -44,24 +43,13 @@ pub mod zosh {
     pub fn mint<'info>(
         ctx: Context<'_, '_, '_, 'info, MintZec<'info>>,
         mints: Vec<types::MintEntry>,
-        signatures: Vec<[u8; 64]>,
     ) -> Result<()> {
-        threshold::mint(ctx, mints, signatures)
+        threshold::mint(ctx, mints)
     }
 
     /// Burn sZEC to bridge back to Zcash (public action)
     pub fn burn(ctx: Context<BurnZec>, amount: u64, zec_recipient: String) -> Result<()> {
         external::burn(ctx, amount, zec_recipient)
-    }
-
-    /// Update the entire validator set (threshold action)
-    pub fn validators(
-        ctx: Context<Validators>,
-        validators: Vec<Pubkey>,
-        threshold: u8,
-        signatures: Vec<[u8; 64]>,
-    ) -> Result<()> {
-        threshold::validators(ctx, validators, threshold, signatures)
     }
 }
 
@@ -318,54 +306,4 @@ pub struct BurnZec<'info> {
 
     /// Token program for burn operation.
     pub token_program: Program<'info, Token>,
-}
-
-/// Accounts for updating the entire validator set.
-///
-/// This is a threshold action that replaces the complete validator set with
-/// a new one. Requires signatures from the current validators meeting the
-/// current threshold. The account is reallocated to fit the new validator set.
-///
-/// # Accounts
-/// - `payer`: Transaction and realloc fee payer
-/// - `bridge_state`: Updated with new validator set, threshold, and total count
-/// - `system_program`: Required for reallocation
-///
-/// # Reallocation
-/// The bridge_state account is reallocated to accommodate the new number of
-/// validators. The payer covers any additional rent required.
-#[derive(Accounts)]
-#[instruction(validators: Vec<Pubkey>, threshold: u8, signatures: Vec<[u8; 64]>)]
-pub struct Validators<'info> {
-    /// Transaction fee payer and reallocation payer.
-    ///
-    /// Covers the cost of resizing the bridge_state account.
-    #[account(mut)]
-    pub payer: Signer<'info>,
-
-    /// Bridge state PDA storing validator set.
-    ///
-    /// Reallocated to fit the new validator set size.
-    /// Updated with new validators, threshold, and total count.
-    /// Nonce is incremented after update.
-    #[account(
-        mut,
-        seeds = [b"bridge-state"],
-        bump = bridge_state.bump,
-        realloc = BridgeState::space(validators.len()),
-        realloc::payer = payer,
-        realloc::zero = false
-    )]
-    pub bridge_state: Account<'info, BridgeState>,
-
-    /// System program for account reallocation.
-    pub system_program: Program<'info, System>,
-
-    /// Instructions sysvar for Ed25519 signature verification.
-    ///
-    /// Used to read Ed25519 program verification results.
-    ///
-    /// CHECK: Must be the Instructions sysvar account
-    #[account(address = anchor_lang::solana_program::sysvar::instructions::ID)]
-    pub instructions: UncheckedAccount<'info>,
 }

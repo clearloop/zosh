@@ -27,7 +27,6 @@ pub fn initialize(
     bridge_state.validators = validators;
     bridge_state.threshold = threshold;
     bridge_state.total_validators = total_validators;
-    bridge_state.nonce = 0;
     bridge_state.zec_mint = ctx.accounts.zec_mint.key();
     bridge_state.bump = ctx.bumps.bridge_state;
     msg!(
