@@ -2,13 +2,14 @@
 
 use crate::Config;
 use anyhow::Result;
-pub use cmd::Solana;
 use solana_pubsub_client::nonblocking::pubsub_client::PubsubClient;
 pub use solana_sdk::{pubkey::Pubkey, signer::keypair::Keypair};
 use std::ops::Deref;
 pub use zosh::client::ZoshClient;
+pub use {cmd::Solana, signer::GroupSigners};
 
 mod cmd;
+mod signer;
 mod sub;
 
 /// Solana client
