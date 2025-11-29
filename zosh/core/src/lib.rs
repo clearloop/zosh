@@ -2,7 +2,7 @@
 
 use serde::{Deserialize, Serialize};
 pub use {
-    block::{Block, Header},
+    block::{Block, Head, Header},
     ex::Extrinsic,
     history::History,
     state::State,
@@ -28,6 +28,9 @@ pub type Ed25519Signature = [u8; 64];
 
 /// The hash type for the zosh network
 pub type Hash = [u8; 32];
+
+/// The key type for the trie db
+pub type TrieKey = [u8; 31];
 
 /// The supported chains
 #[derive(Debug, Clone, Serialize, Deserialize)]

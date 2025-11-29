@@ -3,8 +3,10 @@
 use crate::{Header, ToSig};
 use anyhow::Result;
 use crypto::ed25519;
+use serde::{Deserialize, Serialize};
 
 /// The zoshBFT consensus state
+#[derive(Default, Debug, Clone, Serialize, Deserialize)]
 pub struct Bft {
     /// The validators of the BFT
     ///

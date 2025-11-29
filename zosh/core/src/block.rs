@@ -14,16 +14,6 @@ pub struct Block {
     pub extrinsic: Extrinsic,
 }
 
-impl Block {
-    /// Get the head of the block
-    pub fn head(&self) -> Head {
-        Head {
-            height: self.header.height,
-            hash: self.header.hash(),
-        }
-    }
-}
-
 /// The header structure of zorch
 #[derive(Serialize, Deserialize, Debug, Clone, Default)]
 pub struct Header {
@@ -33,7 +23,7 @@ pub struct Header {
     /// The parent block hash
     pub parent: [u8; 32],
 
-    /// The merkle root of the state
+    /// The merkle root of the parent state
     pub state: [u8; 32],
 
     /// The hash of the extrinsic
@@ -52,9 +42,18 @@ impl Header {
         data.extend_from_slice(&self.extrinsic);
         crypto::blake3(&data)
     }
+
+    /// Get the head of the block
+    pub fn head(&self) -> Head {
+        Head {
+            height: self.height,
+            hash: self.hash(),
+        }
+    }
 }
 
 /// The head of the block
+#[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct Head {
     /// The height of the block
     pub height: u32,

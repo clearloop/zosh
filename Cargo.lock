@@ -8164,6 +8164,7 @@ name = "zosh-runtime"
 version = "0.1.0"
 dependencies = [
  "anyhow",
+ "postcard",
  "zosh-core",
  "zosh-crypto",
  "zosh-sync",

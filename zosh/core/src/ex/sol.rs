@@ -9,6 +9,9 @@ use serde::{Deserialize, Serialize};
 /// been finalized on the solana side.
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct MintBundleReceipt {
+    /// The hash of the mint bundle
+    pub hash: [u8; 32],
+
     /// The signature of the receipt (solana side)
     ///
     /// TODO: handle big array for serde
