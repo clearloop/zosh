@@ -2,18 +2,6 @@
 
 use serde::{Deserialize, Serialize};
 
-/// Spend bundle for unlocking zec
-#[derive(Serialize, Deserialize, Clone, Debug)]
-pub struct UnlockBundle {
-    /// The outputs of the frost wallet
-    ///
-    /// The raw transaction of zcash
-    pub raw: Vec<u8>,
-
-    /// Source signatures from solana
-    pub source: Vec<Vec<u8>>,
-}
-
 /// the unlock bundle receipt
 #[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct UnlockBundleReceipt {
