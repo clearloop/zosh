@@ -4,7 +4,7 @@ use crate::Extrinsic;
 use serde::{Deserialize, Serialize};
 
 /// The block structure of zorch
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, Debug, Clone, Default)]
 pub struct Block {
     /// The header of the block
     pub header: Header,
@@ -14,7 +14,7 @@ pub struct Block {
 }
 
 /// The header structure of zorch
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, Debug, Clone, Default)]
 pub struct Header {
     /// The height of the block
     pub height: u32,
