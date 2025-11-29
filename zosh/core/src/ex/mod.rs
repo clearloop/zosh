@@ -2,34 +2,41 @@
 
 use serde::{Deserialize, Serialize};
 pub use {
-    sol::{MintBundle, MintBundleReceipt},
-    zec::{UnlockBundle, UnlockBundleReceipt},
+    bridge::{Bridge, BridgeBundle, Receipt},
+    ticket::Ticket,
 };
 
-mod sol;
-mod zec;
+mod bridge;
+mod ticket;
 
 /// The transactions inside of a block
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, Debug, Clone, Default)]
 pub struct Extrinsic {
-    /// Solana mint bundle
-    ///
-    /// FIXME: support multiple bundles after removing
-    /// the design of nonce.
-    pub mint: Option<MintBundle>,
+    /// The tickets for rotating the validators
+    pub tickets: Vec<Ticket>,
 
-    /// The receipts of mint bundles, could be async.
-    pub mint_receipts: Vec<MintBundleReceipt>,
+    /// The bridge transactions
+    pub bridge: Vec<BridgeBundle>,
 
-    /// The unlock bundles
-    pub unlock: Vec<UnlockBundle>,
-
-    /// The unlock receipts
-    pub unlock_receipts: Vec<UnlockBundleReceipt>,
+    /// The receipts of the bridge transactions
+    pub receipts: Vec<Receipt>,
 }
 
-/// The message trait
-pub trait Message {
-    /// Get the message need to sign for the transaction
-    fn message(&self) -> Vec<u8>;
+impl Extrinsic {
+    /// Get the signatures of the extrinsic
+    pub fn transactions(&self) -> Vec<Vec<u8>> {
+        let mut signatures = Vec::new();
+        for bundle in &self.bridge {
+            for bridge in &bundle.bridge {
+                signatures.push(bridge.txid.clone());
+            }
+        }
+
+        for receipt in &self.receipts {
+            signatures.push(receipt.txid.clone());
+        }
+
+        signatures.sort();
+        signatures
+    }
 }

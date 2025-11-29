@@ -15,7 +15,10 @@ use zcash_protocol::{
     memo::{Memo, MemoBytes},
     TxId,
 };
-use zcore::{req::Bridge, Chain};
+use zcore::{
+    ex::Bridge,
+    registry::{Chain, Coin},
+};
 
 /// The block time of zcash in seconds
 pub const ZCASH_BLOCK_TIME: u64 = 75;
@@ -75,6 +78,7 @@ impl Light {
                 );
                 let recipient = bs58::decode(text.trim()).into_vec()?;
                 tx.send(Event::Bridge(Bridge {
+                    coin: Coin::Zec,
                     recipient,
                     amount: note.value().into_u64(),
                     txid: txid.as_ref().to_vec(),

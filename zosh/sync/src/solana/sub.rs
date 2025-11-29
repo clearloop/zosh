@@ -10,7 +10,10 @@ use solana_rpc_client_types::{
 };
 use solana_sdk::commitment_config::CommitmentConfig;
 use tokio::sync::mpsc;
-use zcore::{req::Bridge, Chain};
+use zcore::{
+    ex::Bridge,
+    registry::{Chain, Coin},
+};
 use zosh::{
     client::{AnchorDeserialize, Discriminator},
     BurnEvent, MintEvent,
@@ -75,6 +78,7 @@ async fn handle_event(tx: mpsc::Sender<Event>, log: &str, signature: String) -> 
                 burn.amount
             );
             tx.send(Event::Bridge(Bridge {
+                coin: Coin::Zec,
                 recipient: burn.zec_recipient.into(),
                 amount: burn.amount,
                 txid: bs58::decode(signature).into_vec()?,
