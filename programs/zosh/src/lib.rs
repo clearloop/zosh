@@ -21,12 +21,8 @@ pub mod zosh {
     use super::*;
 
     /// Initialize the bridge with initial validator set and create sZEC mint
-    pub fn initialize(
-        ctx: Context<Initialize>,
-        validators: Vec<Pubkey>,
-        threshold: u8,
-    ) -> Result<()> {
-        internal::initialize(ctx, validators, threshold)
+    pub fn initialize(ctx: Context<Initialize>) -> Result<()> {
+        internal::initialize(ctx)
     }
 
     /// Update token metadata (internal action, authority only)
@@ -85,7 +81,7 @@ pub struct Initialize<'info> {
     #[account(
         init,
         payer = payer,
-        space = BridgeState::space(validators.len()),
+        space = 8 + 32 + 32 + 1,
         seeds = [b"bridge-state"],
         bump
     )]

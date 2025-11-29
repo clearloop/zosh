@@ -50,7 +50,7 @@ impl Test {
         if let Ok(state) = self.client.bridge_state().await {
             Ok(state)
         } else {
-            self.client.initialize(vec![self.client.payer()], 1).await?;
+            self.client.initialize().await?;
             self.client.bridge_state().await
         }
     }

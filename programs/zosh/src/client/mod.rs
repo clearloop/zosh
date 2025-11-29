@@ -1,6 +1,7 @@
 //! client library for the zosh program
 #![cfg(not(target_os = "solana"))]
 
+use crate::types::MintEntry;
 use anchor_client::{
     solana_sdk::{commitment_config::CommitmentConfig, pubkey::Pubkey, signature::Keypair},
     Client, Cluster, Program,
@@ -12,8 +13,6 @@ use anyhow::Result;
 use mpl_token_metadata::accounts::Metadata;
 use solana_sdk::{signature::Signature, signer::Signer};
 use std::rc::Rc;
-
-use crate::types::MintEntry;
 
 pub mod pda;
 
@@ -92,7 +91,7 @@ impl ZoshClient {
     }
 
     /// Initialize the bridge with initial validator set
-    pub async fn initialize(&self, validators: Vec<Pubkey>, threshold: u8) -> Result<Signature> {
+    pub async fn initialize(&self) -> Result<Signature> {
         let bridge_state = pda::bridge_state();
         let zec_mint = pda::zec_mint();
         let tx = self
@@ -106,10 +105,7 @@ impl ZoshClient {
                 token_program: pda::TOKEN_PROGRAM,
                 rent: pda::RENT,
             })
-            .args(crate::instruction::Initialize {
-                validators,
-                threshold,
-            })
+            .args(crate::instruction::Initialize {})
             .send()
             .await?;
         Ok(tx)

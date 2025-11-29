@@ -30,12 +30,5 @@ pub fn burn(ctx: Context<crate::BurnZec>, amount: u64, zec_recipient: String) ->
         timestamp: Clock::get()?.unix_timestamp,
     });
 
-    msg!(
-        "Burned {} sZEC from {} to ZEC address {}",
-        amount,
-        ctx.accounts.signer.key(),
-        zec_recipient
-    );
-
     Ok(())
 }

@@ -81,7 +81,7 @@ impl Solana {
             return Ok(());
         }
 
-        let _ = client.initialize(vec![client.payer()], 1).await?;
+        let _ = client.initialize().await?;
         let state = client.bridge_state().await?;
         println!("{state:#?}");
         Ok(())
