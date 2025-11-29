@@ -31,3 +31,14 @@ pub struct Header {
     /// Signatures of the block (except the current field)
     pub votes: Vec<Vec<u8>>,
 }
+
+impl Header {
+    /// Compute the hash of the header
+    pub fn hash(&self) -> [u8; 32] {
+        let mut data = self.height.to_le_bytes().to_vec();
+        data.extend_from_slice(&self.parent);
+        data.extend_from_slice(&self.state);
+        data.extend_from_slice(&self.extrinsic);
+        crypto::blake3(&data)
+    }
+}

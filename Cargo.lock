@@ -8024,7 +8024,16 @@ name = "zosh-core"
 version = "0.1.0"
 dependencies = [
  "anyhow",
+ "postcard",
  "serde",
+ "zosh-crypto",
+]
+
+[[package]]
+name = "zosh-crypto"
+version = "0.1.0"
+dependencies = [
+ "blake3",
 ]
 
 [[package]]
@@ -8079,6 +8088,7 @@ version = "0.1.0"
 dependencies = [
  "anyhow",
  "zosh-core",
+ "zosh-crypto",
  "zosh-sync",
 ]
 
