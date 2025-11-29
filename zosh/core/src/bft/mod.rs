@@ -11,4 +11,7 @@ pub struct Bft {
     ///
     /// The number of validators that need to sign the block
     pub threshold: u8,
+
+    /// The authoring randomness series
+    pub series: Vec<[u8; 32]>,
 }

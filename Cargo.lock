@@ -8078,16 +8078,8 @@ name = "zosh-runtime"
 version = "0.1.0"
 dependencies = [
  "anyhow",
- "bs58",
- "orchard",
- "postcard",
- "rand 0.8.5",
- "rand_core 0.6.4",
- "reddsa",
- "serde",
- "solana-sdk",
- "zcash_keys",
- "zcash_primitives",
+ "zosh-core",
+ "zosh-sync",
 ]
 
 [[package]]

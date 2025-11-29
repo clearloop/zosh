@@ -13,6 +13,12 @@ pub mod ex;
 pub mod req;
 pub mod state;
 
+/// The length of an epoch
+///
+/// Epoch length for rotating the validators, need
+/// to be determined once we can calculate our tps.
+pub const EPOCH_LENGTH: u32 = 12;
+
 /// The supported chains
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub enum Chain {

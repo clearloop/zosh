@@ -9,7 +9,7 @@ mod ticket;
 mod zec;
 
 /// The transactions inside of a block
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize, Default)]
 pub struct Extrinsic {
     /// The tickets for rotating the validators
     pub tickets: Vec<Ticket>,
