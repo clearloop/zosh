@@ -5,6 +5,7 @@ pub use {
     block::{Block, Header},
     ex::Extrinsic,
     state::State,
+    util::{Message, ToSig},
 };
 
 pub mod bft;
@@ -12,12 +13,16 @@ mod block;
 pub mod ex;
 pub mod req;
 pub mod state;
+pub mod util;
 
 /// The length of an epoch
 ///
 /// Epoch length for rotating the validators, need
 /// to be determined once we can calculate our tps.
 pub const EPOCH_LENGTH: u32 = 12;
+
+/// The signature type for the Ed25519 algorithm
+pub type Ed25519Signature = [u8; 64];
 
 /// The supported chains
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -27,12 +32,6 @@ pub enum Chain {
 
     /// Zcash chain
     Zcash,
-}
-
-/// The message trait
-pub trait Message {
-    /// Get the message need to sign for the transaction
-    fn message(&self) -> Vec<u8>;
 }
 
 /// Extrinsic with sources

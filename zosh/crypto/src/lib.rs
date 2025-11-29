@@ -1,5 +1,6 @@
 //! Crypto primitives for the zosh bridge
 
+pub mod ed25519;
 pub mod merkle;
 
 /// Compute the Blake3 hash of the data

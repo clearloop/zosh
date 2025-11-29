@@ -1,5 +1,7 @@
 //! The block structure of zorch
 
+use std::collections::BTreeMap;
+
 use crate::Extrinsic;
 use serde::{Deserialize, Serialize};
 
@@ -29,7 +31,7 @@ pub struct Header {
     pub extrinsic: [u8; 32],
 
     /// Signatures of the block (except the current field)
-    pub votes: Vec<Vec<u8>>,
+    pub votes: BTreeMap<[u8; 32], Vec<u8>>,
 }
 
 impl Header {

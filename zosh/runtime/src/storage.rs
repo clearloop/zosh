@@ -13,6 +13,9 @@ pub trait Storage {
 
     /// Set the block to the storage
     fn set_block(&self, block: Block) -> Result<()>;
+
+    /// Get the root of the state
+    fn root(&self) -> [u8; 32];
 }
 
 /// The operation of the storage
