@@ -9,6 +9,7 @@ pub use {config::Config, event::Event, solana::ZoshClient, zcash::Light};
 pub mod config;
 mod event;
 pub mod solana;
+mod validate;
 pub mod zcash;
 
 /// The sync data source

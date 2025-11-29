@@ -14,20 +14,16 @@ pub trait Storage {
     /// Set the block to the storage
     fn set_block(&self, block: Block) -> Result<()>;
 
+    /// Set the transactions to the storage
+    ///
+    /// TODO: use reference instead of cloning
+    fn set_txs(&self, txs: Vec<Vec<u8>>) -> Result<()>;
+
+    /// Check if transaction id exists in the storage
+    fn exists(&self, key: &[u8]) -> bool;
+
     /// Get the root of the state
     fn root(&self) -> [u8; 32];
-
-    /// Get the root of the pending state
-    fn root_pending(&self) -> [u8; 32];
-}
-
-/// The operation of the storage
-pub enum Operation {
-    /// Set the value of the key
-    Set([u8; 31], Vec<u8>),
-
-    /// Remove the value of the key
-    Remove([u8; 31]),
 }
 
 /// Commit builder
@@ -48,6 +44,7 @@ impl Commit {
     }
 
     /// Remove the value of the key
+    #[allow(unused)]
     pub fn remove(&mut self, key: TrieKey) -> &mut Self {
         self.remove.push(key);
         self
@@ -64,4 +61,13 @@ impl Commit {
         }
         ops
     }
+}
+
+/// The operation of the storage
+pub enum Operation {
+    /// Set the value of the key
+    Set([u8; 31], Vec<u8>),
+
+    /// Remove the value of the key
+    Remove([u8; 31]),
 }

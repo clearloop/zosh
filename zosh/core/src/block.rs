@@ -18,13 +18,16 @@ pub struct Block {
 #[derive(Serialize, Deserialize, Debug, Clone, Default)]
 pub struct Header {
     /// The height of the block
-    pub height: u32,
+    pub slot: u32,
 
     /// The parent block hash
     pub parent: [u8; 32],
 
     /// The merkle root of the parent state
     pub state: [u8; 32],
+
+    /// The accumulator of the block
+    pub accumulator: [u8; 32],
 
     /// The hash of the extrinsic
     pub extrinsic: [u8; 32],
@@ -36,7 +39,7 @@ pub struct Header {
 impl Header {
     /// Compute the hash of the header
     pub fn hash(&self) -> [u8; 32] {
-        let mut data = self.height.to_le_bytes().to_vec();
+        let mut data = self.slot.to_le_bytes().to_vec();
         data.extend_from_slice(&self.parent);
         data.extend_from_slice(&self.state);
         data.extend_from_slice(&self.extrinsic);
@@ -46,7 +49,7 @@ impl Header {
     /// Get the head of the block
     pub fn head(&self) -> Head {
         Head {
-            height: self.height,
+            slot: self.slot,
             hash: self.hash(),
         }
     }
@@ -56,7 +59,7 @@ impl Header {
 #[derive(Serialize, Deserialize, Clone, Debug, Default)]
 pub struct Head {
     /// The height of the block
-    pub height: u32,
+    pub slot: u32,
 
     /// The parent block hash
     pub hash: [u8; 32],

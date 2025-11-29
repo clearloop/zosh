@@ -11,7 +11,7 @@ pub struct State {
     /// The BFT consensus state
     pub bft: bft::Bft,
 
-    /// The history of the network
+    /// The present block head
     pub present: Head,
 
     /// The accumulator of all processed transactions

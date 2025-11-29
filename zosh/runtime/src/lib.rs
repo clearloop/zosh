@@ -9,6 +9,7 @@ mod hook;
 mod import;
 mod pool;
 mod storage;
+mod validate;
 
 /// The runtime of the zosh bridge
 pub struct Runtime<C: Config> {

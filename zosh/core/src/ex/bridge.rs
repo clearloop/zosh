@@ -9,7 +9,10 @@ pub struct BridgeBundle {
     /// The bridge transactions
     pub bridge: Vec<Bridge>,
 
-    /// The signatures of the bridge transactions
+    /// The data we need for reconstructing the outer transaction
+    pub data: Vec<u8>,
+
+    /// The signatures for the upcoming outer transactions
     pub signatures: Vec<Vec<u8>>,
 }
 
@@ -45,7 +48,7 @@ pub struct Receipt {
     pub coin: Coin,
 
     /// The signature of the confirmation transaction
-    pub signature: Vec<u8>,
+    pub txid: Vec<u8>,
 
     /// The source chain of the transaction
     pub source: Chain,
