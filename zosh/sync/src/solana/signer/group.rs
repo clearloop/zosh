@@ -2,12 +2,14 @@
 //!
 //! This is only for development usages
 
+use crate::solana::SolanaSignerInfo;
 use anyhow::Result;
 use frost_ed25519::{
     keys::{self, KeyPackage, PublicKeyPackage, SecretShare},
     round1, round2, Identifier, Signature, SigningPackage,
 };
 use serde::{Deserialize, Serialize};
+use solana_sdk::pubkey::Pubkey;
 use std::collections::BTreeMap;
 
 /// DEV_ONLY: Group signers for the solana bridge
@@ -70,6 +72,22 @@ impl GroupSigners {
     }
 }
 
+impl SolanaSignerInfo for GroupSigners {
+    fn public_key(&self) -> Pubkey {
+        let bytes = self
+            .package
+            .verifying_key()
+            .serialize()
+            .expect("Failed to serialize verifying key");
+
+        Pubkey::new_from_array(
+            bytes
+                .try_into()
+                .expect("Failed to convert verifying key to array"),
+        )
+    }
+}
+
 #[test]
 fn test_ed25519_group_signers() -> Result<()> {
     let group = GroupSigners::new(3, 2)?;
@@ -77,5 +95,12 @@ fn test_ed25519_group_signers() -> Result<()> {
     let signature = group.sign(message)?;
     let verifying_key = group.package.verifying_key();
     verifying_key.verify(message, &signature)?;
+    Ok(())
+}
+
+#[test]
+fn test_ed25519_public_key() -> Result<()> {
+    let group = GroupSigners::new(3, 2)?;
+    let _ = group.public_key();
     Ok(())
 }
