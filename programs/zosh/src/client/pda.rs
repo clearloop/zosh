@@ -19,9 +19,6 @@ pub const INSTRUCTIONS_SYSVAR: Pubkey = solana_sdk::sysvar::instructions::ID;
 /// Token metadata program ID
 pub const TOKEN_METADATA_PROGRAM: Pubkey = mpl_token_metadata::ID;
 
-/// Ed25519 program ID
-pub const ED25519_PROGRAM: Pubkey = solana_sdk::ed25519_program::ID;
-
 /// Derive the bridge state PDA
 pub fn bridge_state() -> Pubkey {
     Pubkey::find_program_address(&[b"bridge-state"], &crate::ID).0

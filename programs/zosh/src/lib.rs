@@ -21,8 +21,8 @@ pub mod zosh {
     use super::*;
 
     /// Initialize the bridge with initial validator set and create sZEC mint
-    pub fn initialize(ctx: Context<Initialize>) -> Result<()> {
-        internal::initialize(ctx)
+    pub fn initialize(ctx: Context<Initialize>, mpc: Pubkey) -> Result<()> {
+        internal::initialize(ctx, mpc)
     }
 
     /// Update token metadata (internal action, authority only)
@@ -54,30 +54,14 @@ pub mod zosh {
 // ============================================================================
 
 /// Accounts for initializing the bridge.
-///
-/// This instruction creates the bridge state account and the sZEC SPL token mint.
-/// It sets up the initial validator set and threshold for the consensus mechanism.
-///
-/// # Accounts
-/// - `payer`: Transaction fee payer and rent payer for new accounts
-/// - `bridge_state`: The main bridge state PDA that stores validator set and configuration
-/// - `zec_mint`: The SPL token mint for sZEC with 8 decimals (matching ZEC)
-/// - `system_program`: Required for account creation
-/// - `token_program`: Required for mint creation
-/// - `rent`: Rent sysvar for account rent calculations
 #[derive(Accounts)]
-#[instruction(validators: Vec<Pubkey>, threshold: u8)]
+#[instruction(mpc: Pubkey)]
 pub struct Initialize<'info> {
     /// Transaction fee payer and rent payer for new accounts.
-    ///
-    /// Must sign the transaction.
     #[account(mut)]
     pub payer: Signer<'info>,
 
     /// The main bridge state account storing validators and configuration.
-    ///
-    /// Initialized as a PDA with seeds `[b"bridge-state"]`.
-    /// Space is calculated based on the number of initial validators.
     #[account(
         init,
         payer = payer,
@@ -88,11 +72,6 @@ pub struct Initialize<'info> {
     pub bridge_state: Account<'info, BridgeState>,
 
     /// The sZEC SPL token mint.
-    ///
-    /// Initialized with:
-    /// - 8 decimals (matching ZEC)
-    /// - Mint authority set to bridge_state PDA
-    /// - Seeds `[b"zec-mint"]` for deterministic address
     #[account(
         init,
         payer = payer,
@@ -114,18 +93,6 @@ pub struct Initialize<'info> {
 }
 
 /// Accounts for updating token metadata.
-///
-/// This is an internal action that can only be called by the bridge authority.
-/// It creates or updates the Metaplex token metadata for the sZEC mint.
-///
-/// # Accounts
-/// - `authority`: Bridge authority (must match bridge_state.authority)
-/// - `bridge_state`: Read-only reference for authority validation
-/// - `zec_mint`: The sZEC token mint
-/// - `metadata`: Metaplex metadata account (PDA derived from mint)
-/// - `token_metadata_program`: Metaplex Token Metadata program
-/// - `system_program`: Required for account creation
-/// - `rent`: Rent sysvar
 #[derive(Accounts)]
 pub struct UpdateMetadata<'info> {
     /// Bridge authority that can update metadata.
@@ -154,62 +121,28 @@ pub struct UpdateMetadata<'info> {
     pub zec_mint: Account<'info, Mint>,
 
     /// Metaplex metadata account for the mint.
-    ///
-    /// This is a PDA derived from the mint address.
-    /// Will be created if it doesn't exist, or updated if it does.
-    ///
-    /// CHECK: Validated by Metaplex program
     #[account(mut)]
     pub metadata: UncheckedAccount<'info>,
 
     /// Metaplex Token Metadata program.
-    ///
-    /// CHECK: Validated during CPI invocation
     pub token_metadata_program: UncheckedAccount<'info>,
 
     /// System program for account creation.
     pub system_program: Program<'info, System>,
 
     /// Sysvar instructions account required by mpl-token-metadata.
-    ///
-    /// CHECK: Required by mpl-token-metadata CreateV1, validated by mpl-token-metadata program
     pub sysvar_instructions: UncheckedAccount<'info>,
 }
 
 /// Accounts for minting sZEC tokens.
-///
-/// This is a threshold action that requires signatures from validators meeting
-/// the threshold requirement. Validators sign off-chain and provide signatures
-/// to authorize the mint operation.
-///
-/// Supports both single and batch minting. For batch minting, pass multiple
-/// recipient token accounts via remaining_accounts in the same order as the
-/// mints vector.
-///
-/// # Accounts
-/// - `payer`: Transaction fee payer
-/// - `bridge_state`: Stores validator set and is used as mint authority
-/// - `zec_mint`: The sZEC token mint
-/// - `token_program`: Required for minting
-/// - `system_program`: Required for various operations
-/// - `instructions`: Instructions sysvar for signature verification
-///
-/// # Remaining Accounts
-/// - One token account per mint in the mints vector
-/// - Each must be for the sZEC mint and owned by the corresponding recipient
 #[derive(Accounts)]
-#[instruction(mints: Vec<types::MintEntry>, signatures: Vec<[u8; 64]>)]
+#[instruction(mints: Vec<types::MintEntry>)]
 pub struct MintZec<'info> {
     /// Transaction fee payer.
-    ///
-    /// Must sign the transaction.
     #[account(mut)]
     pub payer: Signer<'info>,
 
     /// Bridge state PDA storing validator set and configuration.
-    ///
-    /// Used as the mint authority for sZEC.
-    /// Nonce is incremented after successful mint.
     #[account(
         mut,
         seeds = [b"bridge-state"],
@@ -218,8 +151,6 @@ pub struct MintZec<'info> {
     pub bridge_state: Account<'info, BridgeState>,
 
     /// The sZEC token mint.
-    ///
-    /// Must match the mint stored in bridge_state.
     #[account(
         mut,
         seeds = [b"zec-mint"],
@@ -233,47 +164,16 @@ pub struct MintZec<'info> {
 
     /// System program.
     pub system_program: Program<'info, System>,
-
-    /// Instructions sysvar for Ed25519 signature verification.
-    ///
-    /// Used to read Ed25519 program verification results.
-    /// Ed25519 instructions must be included before this instruction in the transaction.
-    ///
-    /// CHECK: Must be the Instructions sysvar account
-    #[account(address = anchor_lang::solana_program::sysvar::instructions::ID)]
-    pub instructions: UncheckedAccount<'info>,
 }
 
 /// Accounts for burning sZEC tokens.
-///
-/// This is a public action that anyone can perform to bridge their sZEC back
-/// to ZEC on the Zcash network. The burn operation emits an event that off-chain
-/// validators monitor to process the corresponding ZEC transfer.
-///
-/// # Accounts
-/// - `signer`: User burning their sZEC tokens
-/// - `signer_token_account`: User's token account holding sZEC
-/// - `zec_mint`: The sZEC token mint (supply will decrease)
-/// - `bridge_state`: Read-only reference for mint validation
-/// - `token_program`: Required for burn operation
-///
-/// # Constraints
-/// - Signer must own the token account
-/// - Token account must hold sZEC tokens
-/// - Mint must match bridge state's recorded mint
 #[derive(Accounts)]
 pub struct BurnZec<'info> {
     /// User burning their sZEC tokens.
-    ///
-    /// Must sign the transaction and own the token account.
     #[account(mut)]
     pub signer: Signer<'info>,
 
     /// User's token account holding sZEC to be burned.
-    ///
-    /// Must be:
-    /// - Owned by the signer
-    /// - For the sZEC mint
     #[account(
         mut,
         constraint = signer_token_account.owner == signer.key() @ BridgeError::InvalidAmount,
@@ -282,9 +182,6 @@ pub struct BurnZec<'info> {
     pub signer_token_account: Account<'info, TokenAccount>,
 
     /// The sZEC token mint.
-    ///
-    /// Supply will be decreased by the burn amount.
-    /// Must match the mint stored in bridge_state.
     #[account(
         mut,
         constraint = zec_mint.key() == bridge_state.zec_mint @ BridgeError::InvalidAmount
@@ -292,8 +189,6 @@ pub struct BurnZec<'info> {
     pub zec_mint: Account<'info, Mint>,
 
     /// Bridge state for mint validation.
-    ///
-    /// Read-only reference to verify the correct mint is being burned.
     #[account(
         seeds = [b"bridge-state"],
         bump = bridge_state.bump

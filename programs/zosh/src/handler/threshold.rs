@@ -17,24 +17,8 @@ pub fn mint<'info>(
         BridgeError::InvalidBatchSize
     );
 
-    // Validate all amounts and compute total
-    let mut message = Vec::new();
-    for mint_entry in &mints {
-        require!(mint_entry.amount > 0, BridgeError::InvalidAmount);
-        message.extend_from_slice(mint_entry.recipient.as_ref());
-        message.extend_from_slice(&mint_entry.amount.to_le_bytes());
-    }
-
-    // Get references for verification
-    let bridge_state_bump = ctx.accounts.bridge_state.bump;
-
-    // Verify we have the correct number of remaining accounts
-    require!(
-        ctx.remaining_accounts.len() == mints.len(),
-        BridgeError::InvalidAccountCount
-    );
-
     // Process each mint in the batch
+    let bridge_state_bump = ctx.accounts.bridge_state.bump;
     let mut mint_tuples = Vec::with_capacity(mints.len());
     let zec_mint_key = ctx.accounts.zec_mint.key();
     let seeds = &[b"bridge-state".as_ref(), &[bridge_state_bump]];

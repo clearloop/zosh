@@ -81,7 +81,7 @@ impl Solana {
             return Ok(());
         }
 
-        let _ = client.initialize().await?;
+        let _ = client.initialize(client.payer()).await?;
         let state = client.bridge_state().await?;
         println!("{state:#?}");
         Ok(())

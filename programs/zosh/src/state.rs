@@ -10,6 +10,9 @@ pub struct BridgeState {
     /// The sZEC SPL token mint
     pub zec_mint: Pubkey,
 
+    /// The MPC pubkey
+    pub mpc: Pubkey,
+
     /// Bump seed for PDA derivation
     pub bump: u8,
 }

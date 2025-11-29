@@ -10,10 +10,11 @@ use mpl_token_metadata::{
 /// Initialize the bridge with initial validator set
 ///
 /// TODO: ensure this instruction should only be called for once.
-pub fn initialize(ctx: Context<crate::Initialize>) -> Result<()> {
+pub fn initialize(ctx: Context<crate::Initialize>, mpc: Pubkey) -> Result<()> {
     let bridge_state = &mut ctx.accounts.bridge_state;
     bridge_state.authority = ctx.accounts.payer.key();
     bridge_state.zec_mint = ctx.accounts.zec_mint.key();
+    bridge_state.mpc = mpc;
     bridge_state.bump = ctx.bumps.bridge_state;
     Ok(())
 }

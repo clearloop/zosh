@@ -50,7 +50,7 @@ impl Test {
         if let Ok(state) = self.client.bridge_state().await {
             Ok(state)
         } else {
-            self.client.initialize().await?;
+            self.client.initialize(self.payer()).await?;
             self.client.bridge_state().await
         }
     }

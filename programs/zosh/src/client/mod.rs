@@ -91,7 +91,7 @@ impl ZoshClient {
     }
 
     /// Initialize the bridge with initial validator set
-    pub async fn initialize(&self) -> Result<Signature> {
+    pub async fn initialize(&self, mpc: Pubkey) -> Result<Signature> {
         let bridge_state = pda::bridge_state();
         let zec_mint = pda::zec_mint();
         let tx = self
@@ -105,7 +105,7 @@ impl ZoshClient {
                 token_program: pda::TOKEN_PROGRAM,
                 rent: pda::RENT,
             })
-            .args(crate::instruction::Initialize {})
+            .args(crate::instruction::Initialize { mpc })
             .send()
             .await?;
         Ok(tx)
@@ -192,7 +192,6 @@ impl ZoshClient {
                 zec_mint,
                 token_program: pda::TOKEN_PROGRAM,
                 system_program: pda::SYSTEM_PROGRAM,
-                instructions: pda::INSTRUCTIONS_SYSVAR,
             })
             .args(crate::instruction::Mint {
                 mints: mint_entries,
