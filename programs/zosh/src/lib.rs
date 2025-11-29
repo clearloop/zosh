@@ -47,6 +47,14 @@ pub mod zosh {
     pub fn burn(ctx: Context<BurnZec>, amount: u64, zec_recipient: String) -> Result<()> {
         external::burn(ctx, amount, zec_recipient)
     }
+
+    /// Update the MPC pubkey (threshold action)
+    pub fn update_mpc<'info>(
+        ctx: Context<'_, '_, '_, 'info, UpdateMpc<'info>>,
+        new_mpc: Pubkey,
+    ) -> Result<()> {
+        threshold::update_mpc(ctx, new_mpc)
+    }
 }
 
 // ============================================================================
@@ -197,4 +205,23 @@ pub struct BurnZec<'info> {
 
     /// Token program for burn operation.
     pub token_program: Program<'info, Token>,
+}
+
+/// Accounts for updating the MPC pubkey.
+#[derive(Accounts)]
+pub struct UpdateMpc<'info> {
+    /// Transaction fee payer.
+    #[account(mut)]
+    pub payer: Signer<'info>,
+
+    /// Bridge state PDA storing validator set and configuration.
+    #[account(
+        mut,
+        seeds = [b"bridge-state"],
+        bump = bridge_state.bump
+    )]
+    pub bridge_state: Account<'info, BridgeState>,
+
+    /// System program.
+    pub system_program: Program<'info, System>,
 }

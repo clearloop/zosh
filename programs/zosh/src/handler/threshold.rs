@@ -12,6 +12,12 @@ pub fn mint<'info>(
     ctx: Context<'_, '_, '_, 'info, crate::MintZec<'info>>,
     mints: Vec<crate::types::MintEntry>,
 ) -> Result<()> {
+    // Verify that the signer is the MPC
+    require!(
+        ctx.accounts.payer.key() == ctx.accounts.bridge_state.mpc,
+        BridgeError::InvalidMpcSigner
+    );
+
     require!(
         !mints.is_empty() && mints.len() <= MAX_BATCH_SIZE,
         BridgeError::InvalidBatchSize
@@ -52,5 +58,21 @@ pub fn mint<'info>(
         timestamp: Clock::get()?.unix_timestamp,
     });
 
+    Ok(())
+}
+
+/// Updates the MPC pubkey in the bridge state.
+pub fn update_mpc<'info>(
+    ctx: Context<'_, '_, '_, 'info, crate::UpdateMpc<'info>>,
+    new_mpc: Pubkey,
+) -> Result<()> {
+    // Verify that the signer is the MPC
+    require!(
+        ctx.accounts.payer.key() == ctx.accounts.bridge_state.mpc,
+        BridgeError::InvalidMpcSigner
+    );
+
+    let bridge_state = &mut ctx.accounts.bridge_state;
+    bridge_state.mpc = new_mpc;
     Ok(())
 }
