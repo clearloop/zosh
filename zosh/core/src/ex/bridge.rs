@@ -1,12 +1,24 @@
-//! Requests from the sync clients
-//! The bridge transaction structure
+//! The bridge transactions
 
-use crate::Chain;
+use crate::registry::{Chain, Coin};
 use serde::{Deserialize, Serialize};
 
-/// The transaction structure of zorch
+/// The signed bridge transactions
 #[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct BridgeBundle {
+    /// The bridge transactions
+    pub bridge: Vec<Bridge>,
+
+    /// The signatures of the bridge transactions
+    pub signatures: Vec<Vec<u8>>,
+}
+
+/// The bridge transaction
+#[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct Bridge {
+    /// The token of the transaction
+    pub coin: Coin,
+
     /// The recipient address
     pub recipient: Vec<u8>,
 
@@ -28,6 +40,9 @@ pub struct Bridge {
 pub struct Receipt {
     /// The anchor signature of the source transaction
     pub anchor: Vec<u8>,
+
+    /// The coin of the transaction
+    pub coin: Coin,
 
     /// The signature of the confirmation transaction
     pub signature: Vec<u8>,

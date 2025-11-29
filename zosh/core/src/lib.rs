@@ -1,6 +1,5 @@
 //! Core types for the zorch network
 
-use serde::{Deserialize, Serialize};
 pub use {
     block::{Block, Head, Header},
     ex::Extrinsic,
@@ -11,7 +10,7 @@ pub use {
 pub mod bft;
 mod block;
 pub mod ex;
-pub mod req;
+pub mod registry;
 pub mod state;
 pub mod util;
 
@@ -29,13 +28,3 @@ pub type Hash = [u8; 32];
 
 /// The key type for the trie db
 pub type TrieKey = [u8; 31];
-
-/// The supported chains
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub enum Chain {
-    /// Solana chain
-    Solana,
-
-    /// Zcash chain
-    Zcash,
-}

@@ -14,3 +14,6 @@ pub const BFT_KEY: [u8; 31] = to_key!(0);
 
 /// The key for the history state
 pub const PRESENT_KEY: [u8; 31] = to_key!(1);
+
+/// The key for the accumulator state
+pub const ACCUMULATOR_KEY: [u8; 31] = to_key!(2);

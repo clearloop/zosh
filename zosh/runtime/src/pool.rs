@@ -1,7 +1,7 @@
 //! The mempool of the zosh
 
 use zcore::{
-    req::{Bridge, Receipt},
+    ex::{Bridge, Receipt},
     Extrinsic,
 };
 
