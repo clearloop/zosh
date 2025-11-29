@@ -12,7 +12,7 @@ use anyhow::Result;
 use mpl_token_metadata::accounts::Metadata;
 use solana_sdk::{
     hash::Hash,
-    signature::{NullSigner, Signature},
+    signature::{Keypair, Signature},
     transaction::Transaction,
 };
 use std::rc::Rc;
@@ -22,30 +22,20 @@ pub mod pda;
 /// Main client for interacting with the Zosh program
 pub struct ZoshClient {
     /// Anchor client program instance
-    program: Program<Rc<NullSigner>>,
+    pub program: Program<Rc<Keypair>>,
 }
 
 impl ZoshClient {
     /// Create a new ZoshClient
-    pub fn new(cluster_url: String, ws_url: String, mpc: Pubkey) -> Result<Self> {
+    pub fn new(cluster_url: String, ws_url: String, authority: Keypair) -> Result<Self> {
         let client = Client::new_with_options(
             Cluster::Custom(cluster_url, ws_url),
-            Rc::new(NullSigner::new(&mpc)),
+            Rc::new(authority),
             CommitmentConfig::confirmed(),
         );
 
         let program = client.program(crate::ID)?;
         Ok(Self { program })
-    }
-
-    /// Get the payer's public key
-    pub fn payer(&self) -> Pubkey {
-        self.program.payer()
-    }
-
-    /// Get the program client
-    pub fn program(&self) -> &Program<Rc<NullSigner>> {
-        &self.program
     }
 
     /// Get the latest blockhash
@@ -84,16 +74,12 @@ impl ZoshClient {
             &recipient,
             &pda::zec_mint(),
         );
-        let account_data = self
-            .program()
-            .rpc()
-            .get_account_data(&token_account)
-            .await?;
+        let account_data = self.program.rpc().get_account_data(&token_account).await?;
         TokenAccount::try_deserialize(&mut &account_data[..]).map_err(Into::into)
     }
 
     /// Initialize the bridge with initial validator set
-    pub fn initialize(&self, mpc: Pubkey) -> Result<Transaction> {
+    pub async fn initialize(&self, mpc: Pubkey) -> Result<Signature> {
         let bridge_state = pda::bridge_state();
         let zec_mint = pda::zec_mint();
         self.program
@@ -107,17 +93,18 @@ impl ZoshClient {
                 rent: pda::RENT,
             })
             .args(crate::instruction::Initialize { mpc })
-            .transaction()
+            .send()
+            .await
             .map_err(Into::into)
     }
 
     /// Update token metadata (authority only)
-    pub fn update_metadata(
+    pub async fn update_metadata(
         &self,
         name: String,
         symbol: String,
         uri: String,
-    ) -> Result<Transaction> {
+    ) -> Result<Signature> {
         let bridge_state = pda::bridge_state();
         let zec_mint = pda::zec_mint();
         let metadata = pda::metadata();
@@ -133,57 +120,13 @@ impl ZoshClient {
                 sysvar_instructions: pda::INSTRUCTIONS_SYSVAR,
             })
             .args(crate::instruction::Metadata { name, symbol, uri })
-            .transaction()
-            .map_err(Into::into)
-    }
-
-    /// Mint sZEC to recipients (threshold action)
-    pub async fn mint(&self, mints: Vec<crate::types::MintEntry>) -> Result<Transaction> {
-        anyhow::ensure!(!mints.is_empty(), "No mint entries provided");
-        let mut builder = self.program.request();
-
-        // create token accounts if not exists
-        for entry in &mints {
-            let token_account = spl_associated_token_account::get_associated_token_address(
-                &entry.recipient,
-                &pda::zec_mint(),
-            );
-            if self
-                .program()
-                .rpc()
-                .get_account_data(&token_account)
-                .await
-                .is_err()
-            {
-                let create_ata_ix =
-                    spl_associated_token_account::instruction::create_associated_token_account(
-                        &self.program().payer(),
-                        &entry.recipient,
-                        &pda::zec_mint(),
-                        &pda::TOKEN_PROGRAM,
-                    );
-                builder = builder.instruction(create_ata_ix);
-            }
-        }
-
-        // create the mint instruction
-        let bridge_state = pda::bridge_state();
-        let zec_mint = pda::zec_mint();
-        builder
-            .accounts(crate::accounts::MintZec {
-                payer: self.program.payer(),
-                bridge_state,
-                zec_mint,
-                token_program: pda::TOKEN_PROGRAM,
-                system_program: pda::SYSTEM_PROGRAM,
-            })
-            .args(crate::instruction::Mint { mints })
-            .transaction()
+            .send()
+            .await
             .map_err(Into::into)
     }
 
     /// Burn sZEC to bridge back to Zcash (public action)
-    pub fn burn(&self, amount: u64, zec_recipient: String) -> Result<Transaction> {
+    pub async fn burn(&self, amount: u64, zec_recipient: String) -> Result<Signature> {
         anyhow::ensure!(amount > 0, "Amount must be greater than 0");
         let bridge_state = pda::bridge_state();
         let zec_mint = pda::zec_mint();
@@ -205,6 +148,69 @@ impl ZoshClient {
                 amount,
                 zec_recipient,
             })
+            .send()
+            .await
+            .map_err(Into::into)
+    }
+
+    /// Update the MPC
+    pub async fn update_mpc(&self, mpc: Pubkey) -> Result<Transaction> {
+        let bridge_state = pda::bridge_state();
+        let bridge_state_data = self.bridge_state().await?;
+        self.program
+            .request()
+            .accounts(crate::accounts::UpdateMpc {
+                payer: bridge_state_data.mpc,
+                bridge_state,
+                system_program: pda::SYSTEM_PROGRAM,
+            })
+            .args(crate::instruction::UpdateMpc { mpc })
+            .transaction()
+            .map_err(Into::into)
+    }
+
+    /// Mint sZEC to recipients (threshold action)
+    pub async fn mint(&self, mints: Vec<crate::types::MintEntry>) -> Result<Transaction> {
+        anyhow::ensure!(!mints.is_empty(), "No mint entries provided");
+        let mut builder = self.program.request();
+
+        // create token accounts if not exists
+        for entry in &mints {
+            let token_account = spl_associated_token_account::get_associated_token_address(
+                &entry.recipient,
+                &pda::zec_mint(),
+            );
+            if self
+                .program
+                .rpc()
+                .get_account_data(&token_account)
+                .await
+                .is_err()
+            {
+                let create_ata_ix =
+                    spl_associated_token_account::instruction::create_associated_token_account(
+                        &self.program.payer(),
+                        &entry.recipient,
+                        &pda::zec_mint(),
+                        &pda::TOKEN_PROGRAM,
+                    );
+                builder = builder.instruction(create_ata_ix);
+            }
+        }
+
+        // create the mint instruction
+        let bridge_state = pda::bridge_state();
+        let bridge_state_data = self.bridge_state().await?;
+        let zec_mint = pda::zec_mint();
+        builder
+            .accounts(crate::accounts::MintZec {
+                payer: bridge_state_data.mpc,
+                bridge_state,
+                zec_mint,
+                token_program: pda::TOKEN_PROGRAM,
+                system_program: pda::SYSTEM_PROGRAM,
+            })
+            .args(crate::instruction::Mint { mints })
             .transaction()
             .map_err(Into::into)
     }

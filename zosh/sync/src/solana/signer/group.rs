@@ -73,7 +73,7 @@ impl GroupSigners {
 }
 
 impl SolanaSignerInfo for GroupSigners {
-    fn public_key(&self) -> Pubkey {
+    fn pubkey(&self) -> Pubkey {
         let bytes = self
             .package
             .verifying_key()
@@ -101,6 +101,6 @@ fn test_ed25519_group_signers() -> Result<()> {
 #[test]
 fn test_ed25519_public_key() -> Result<()> {
     let group = GroupSigners::new(3, 2)?;
-    let _ = group.public_key();
+    let _ = group.pubkey();
     Ok(())
 }

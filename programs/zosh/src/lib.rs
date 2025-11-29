@@ -51,9 +51,9 @@ pub mod zosh {
     /// Update the MPC pubkey (threshold action)
     pub fn update_mpc<'info>(
         ctx: Context<'_, '_, '_, 'info, UpdateMpc<'info>>,
-        new_mpc: Pubkey,
+        mpc: Pubkey,
     ) -> Result<()> {
-        threshold::update_mpc(ctx, new_mpc)
+        threshold::update_mpc(ctx, mpc)
     }
 }
 
@@ -209,6 +209,7 @@ pub struct BurnZec<'info> {
 
 /// Accounts for updating the MPC pubkey.
 #[derive(Accounts)]
+#[instruction(mpc: Pubkey)]
 pub struct UpdateMpc<'info> {
     /// Transaction fee payer.
     #[account(mut)]

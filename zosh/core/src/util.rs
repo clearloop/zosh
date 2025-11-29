@@ -37,3 +37,13 @@ impl ToSig for &Vec<u8> {
         sig
     }
 }
+
+impl ToSig for Vec<u8> {
+    fn ed25519(&self) -> Result<[u8; 64]> {
+        (&self).ed25519()
+    }
+
+    fn ed25519_unchecked(&self) -> [u8; 64] {
+        (&self).ed25519_unchecked()
+    }
+}
