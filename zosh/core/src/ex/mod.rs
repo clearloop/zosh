@@ -14,7 +14,7 @@ mod zec;
 pub struct Extrinsic {
     /// Solana mint bundle
     ///
-    /// FIXME: support multipe bundles after removing
+    /// FIXME: support multiple bundles after removing
     /// the design of nonce.
     pub mint: Option<MintBundle>,
 
