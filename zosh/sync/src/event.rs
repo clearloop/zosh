@@ -1,6 +1,6 @@
 //! Sync events
 
-use zcore::tx::{Bridge, Receipt};
+use zcore::req::{Bridge, Receipt};
 
 /// Sync events
 pub enum Event {

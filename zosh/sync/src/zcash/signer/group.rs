@@ -1,14 +1,26 @@
 //! Zcash group signers
 
 use anyhow::Result;
+use orchard::{
+    builder::MaybeSigned,
+    circuit::ProvingKey,
+    keys::SpendValidatingKey,
+    primitives::redpallas::{Signature, SpendAuth},
+};
 use reddsa::frost::redpallas::{
     self,
     keys::{self, KeyPackage, PublicKeyPackage, SecretShare},
-    round1, round2, Identifier, RandomizedParams, Randomizer, Signature, SigningPackage,
-    VerifyingKey,
+    round1, round2, Identifier, RandomizedParams, Randomizer, SigningPackage, VerifyingKey,
 };
 use serde::{Deserialize, Serialize};
 use std::collections::BTreeMap;
+use zcash_primitives::transaction::{
+    sighash::{signature_hash, SignableInput},
+    txid::TxIdDigester,
+    Authorized, TransactionData, Unauthorized,
+};
+
+use crate::zcash::SignerInfo;
 
 /// Zcash group signers
 #[derive(Serialize, Deserialize)]
@@ -42,7 +54,7 @@ impl GroupSigners {
         &self,
         message: &[u8],
         randomizer: &Randomizer,
-    ) -> Result<(Signature, VerifyingKey)> {
+    ) -> Result<(redpallas::Signature, VerifyingKey)> {
         let mut nonces = BTreeMap::new();
         let mut commitments = BTreeMap::new();
         let mut keypkgs = BTreeMap::new();
@@ -75,5 +87,68 @@ impl GroupSigners {
         let signature =
             redpallas::aggregate(&signing_package, &signatures, &self.package, &params)?;
         Ok((signature, *params.randomized_verifying_key()))
+    }
+
+    /// Sign a transaction with the group of signers
+    pub fn sign_tx(
+        &self,
+        utx: TransactionData<Unauthorized>,
+    ) -> Result<TransactionData<Authorized>> {
+        let fvk = self.orchard()?;
+        let txid_parts = utx.digest(TxIdDigester);
+        let sighash = signature_hash(&utx, &SignableInput::Shielded, &txid_parts);
+
+        // TODO: make this proving_key stays in memory
+        let proving_key = ProvingKey::build();
+        let proven = utx
+            .orchard_bundle()
+            .cloned()
+            .ok_or(anyhow::anyhow!("Failed to get orchard bundle"))?
+            .create_proof(&proving_key, rand_core::OsRng)?
+            .prepare(rand_core::OsRng, *sighash.as_ref());
+        let ak: SpendValidatingKey = fvk.into();
+        let mut alphas = Vec::new();
+        let proven = proven.map_authorization(
+            &mut rand_core::OsRng,
+            |_rng, _partial, maybe| {
+                if let MaybeSigned::SigningMetadata(parts) = &maybe {
+                    if parts.ak == ak {
+                        alphas.push(parts.alpha);
+                    }
+                }
+                maybe
+            },
+            |_rng, auth| auth,
+        );
+
+        // Sign the transaction
+        let mut signatures = Vec::new();
+        for alpha in alphas.iter() {
+            let randomizer = Randomizer::from_scalar(*alpha);
+            let (signature, _) = self.sign(sighash.as_ref(), &randomizer)?;
+            let sigbytes: [u8; 64] = signature
+                .serialize()?
+                .try_into()
+                .map_err(|_e| anyhow::anyhow!("Failed to convert signature to bytes"))?;
+            let signature = Signature::<SpendAuth>::from(sigbytes);
+            signatures.push(signature);
+        }
+
+        let proven = proven
+            .append_signatures(&signatures)
+            .map_err(|_e| anyhow::anyhow!("Failed to append signatures"))?
+            .finalize()
+            .map_err(|_e| anyhow::anyhow!("Failed to finalize"))?;
+
+        Ok(TransactionData::<Authorized>::from_parts(
+            utx.version(),
+            utx.consensus_branch_id(),
+            0,
+            utx.expiry_height(),
+            None,
+            None,
+            None,
+            Some(proven),
+        ))
     }
 }

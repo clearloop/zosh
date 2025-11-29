@@ -10,7 +10,7 @@ use solana_rpc_client_types::{
 };
 use solana_sdk::commitment_config::CommitmentConfig;
 use tokio::sync::mpsc;
-use zcore::tx::{Bridge, Chain};
+use zcore::{req::Bridge, Chain};
 use zosh::{
     client::{AnchorDeserialize, Discriminator},
     BurnEvent, MintEvent,

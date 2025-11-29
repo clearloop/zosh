@@ -1,6 +1,7 @@
+//! Requests from the sync clients
 //! The bridge transaction structure
 
-use crate::tx::Chain;
+use crate::Chain;
 use serde::{Deserialize, Serialize};
 
 /// The transaction structure of zorch

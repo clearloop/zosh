@@ -6,7 +6,6 @@ use orchard::keys::Scope;
 use std::time::Duration;
 use tokio::{sync::mpsc, time};
 use zcash_client_backend::{
-    data_api::{wallet::ConfirmationsPolicy, Account, InputSource, TargetValue, WalletRead},
     fees::orchard::InputView,
     proto::service::{BlockId, TxFilter},
 };
@@ -14,10 +13,9 @@ use zcash_primitives::transaction::Transaction;
 use zcash_protocol::{
     consensus::{BlockHeight, BranchId},
     memo::{Memo, MemoBytes},
-    value::Zatoshis,
-    ShieldedProtocol, TxId,
+    TxId,
 };
-use zcore::tx::{Bridge, Chain};
+use zcore::{req::Bridge, Chain};
 
 /// The block time of zcash in seconds
 pub const ZCASH_BLOCK_TIME: u64 = 75;
@@ -30,15 +28,8 @@ impl Light {
     pub async fn subscribe(&mut self, tx: mpsc::Sender<Event>) -> Result<()> {
         // TODO: we should get the latest height from the global on-chain state.
         let mut last_height = BlockHeight::from(0);
-
-        // FIXME: should not be MIN in production!
-        let confirmations = ConfirmationsPolicy::MIN;
         loop {
-            let Some((target, _anchor)) = self
-                .wallet
-                .get_target_and_anchor_heights(confirmations.trusted())
-                .map_err(|e| anyhow::anyhow!("Failed to get max height and hash: {:?}", e))?
-            else {
+            let Ok((target, _anchor)) = self.heights() else {
                 tracing::error!(
                     "Failed to get max height and hash, retrying in {} seconds",
                     ZCASH_BLOCK_TIME
@@ -47,21 +38,9 @@ impl Light {
                 continue;
             };
 
-            let Some(account) = self.wallet.get_account_for_ufvk(&self.ufvk)? else {
-                return Err(anyhow::anyhow!("Account not found by provided ufvk"));
-            };
-
             // Get the spendable notes
-            let notes = self.wallet.select_spendable_notes(
-                account.id(),
-                TargetValue::AtLeast(Zatoshis::from_u64(0)?),
-                &[ShieldedProtocol::Orchard],
-                target,
-                confirmations,
-                &[],
-            )?;
-
-            for note in notes.orchard() {
+            let notes = self.spendable_notes(0, target)?;
+            for note in notes.into_iter() {
                 let txid = note.txid();
                 let Some(mined_height) = note.mined_height() else {
                     tracing::warn!("Note mined height is not found for note of {}", &txid);
@@ -80,7 +59,7 @@ impl Light {
                     })
                 else {
                     // TODO: raise a refund event to the node.
-                    tracing::warn!("Memo is not found for note of {}", &txid);
+                    // tracing::warn!("Memo is not found for note of {}", &txid);
                     continue;
                 };
 

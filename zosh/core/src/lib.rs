@@ -1,10 +1,23 @@
 //! Core types for the zorch network
 
+use serde::{Deserialize, Serialize};
 pub use {
     block::{Block, Header},
-    tx::Transaction,
+    ex::Extrinsic,
+    state::State,
 };
 
 mod block;
-mod intent;
-pub mod tx;
+pub mod ex;
+pub mod req;
+mod state;
+
+/// The supported chains
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub enum Chain {
+    /// Solana chain
+    Solana,
+
+    /// Zcash chain
+    Zcash,
+}

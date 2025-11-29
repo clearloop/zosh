@@ -17,6 +17,7 @@ mod api;
 mod cache;
 mod config;
 mod sub;
+mod tx;
 
 /// Zcash light client
 pub struct Light {

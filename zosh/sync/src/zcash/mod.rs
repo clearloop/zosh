@@ -1,5 +1,6 @@
 //! Zcash related stuffs for zorch
 
+use zcash_client_backend::data_api::wallet::ConfirmationsPolicy;
 pub use {
     cmd::Zcash,
     light::{Config, Light},
@@ -13,3 +14,6 @@ pub use {
 mod cmd;
 mod light;
 mod signer;
+
+/// The confirmations policy for the zcash light client
+pub static CONFIRMATIONS: ConfirmationsPolicy = ConfirmationsPolicy::MIN;
