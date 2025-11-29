@@ -31,44 +31,15 @@ impl<C: Config> Runtime<C> {
     /// Process the extrinsic to mutate the state machine
     ///
     /// then get the merkle root of the new state
-    pub fn process(&self, extrinsic: &Extrinsic, mut state: State, head: Head) -> Result<Commit> {
+    pub fn process(&self, _extrinsic: &Extrinsic, state: State, head: Head) -> Result<Commit> {
         let mut commit = Commit::default();
         // 1. handle the tickets for zosh bft
         //
         // TODO: implement the tickets for zosh bft
 
-        // 2. import the block to the history
-        state.history.import(head)?;
-
-        // 2. import the solana mint bundles
-        if let Some(mint) = &extrinsic.mint {
-            let bundle = mint.extrinsic.clone();
-            let hash = crypto::blake3(&postcard::to_allocvec(&bundle)?);
-            state.sol.insert(hash, bundle);
-        }
-
-        // 3. import the unlock bundles from zcash
-        for unlock in &extrinsic.unlock {
-            let bundle = unlock.extrinsic.clone();
-            let hash = crypto::blake3(&postcard::to_allocvec(&bundle)?);
-            state.zec.insert(hash, bundle);
-        }
-
-        // 4. process the receipts of mint bundles
-        for receipt in &extrinsic.mint_receipts {
-            state.sol.remove(&receipt.hash);
-        }
-
-        // 5. process the receipts of unlock bundles
-        for receipt in &extrinsic.unlock_receipts {
-            state.zec.remove(&receipt.hash);
-        }
-
-        // 6. commit the state
+        // 7. commit the state
         commit.insert(key::BFT_KEY, postcard::to_allocvec(&state.bft)?);
-        commit.insert(key::HISTORY_KEY, postcard::to_allocvec(&state.history)?);
-        commit.insert(key::SOL_KEY, postcard::to_allocvec(&state.sol)?);
-        commit.insert(key::ZEC_KEY, postcard::to_allocvec(&state.zec)?);
+        commit.insert(key::PRESENT_KEY, postcard::to_allocvec(&head)?);
         Ok(commit)
     }
 
@@ -78,6 +49,12 @@ impl<C: Config> Runtime<C> {
     /// will be used for complete the QC of the block.
     pub async fn validate(&mut self, block: Block) -> Result<Ed25519Signature> {
         let hash = block.header.hash();
+
+        // TODO: validate the transactions inside of the block
+        //
+        // 1. solana mint bundles should satisfy the QC
+        // 2. zcash unlock bundles should satisfy the QC
+        // 3. validate the receipts and deduplicate our mempool
 
         self.sync
             .solana

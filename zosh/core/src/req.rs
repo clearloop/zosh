@@ -38,25 +38,3 @@ pub struct Receipt {
     /// The target chain of the transaction
     pub target: Chain,
 }
-
-/// If we can not decode the memo from zcash, we should
-/// refund the sender, requires sort of proofs.
-pub struct Refund {
-    /// The proof of the refund
-    pub proof: Vec<u8>,
-
-    /// The recipient address
-    pub recipient: Vec<u8>,
-
-    /// The amount of the refund
-    pub amount: u64,
-
-    /// The signature of the refund
-    pub signature: Vec<u8>,
-
-    /// The source chain of the transaction
-    pub source: Chain,
-
-    /// The reason of the refund
-    pub reason: String,
-}

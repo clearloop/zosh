@@ -4,7 +4,6 @@ use serde::{Deserialize, Serialize};
 pub use {
     block::{Block, Head, Header},
     ex::Extrinsic,
-    history::History,
     state::State,
     util::{Message, ToSig},
 };
@@ -12,7 +11,6 @@ pub use {
 pub mod bft;
 mod block;
 pub mod ex;
-mod history;
 pub mod req;
 pub mod state;
 pub mod util;
@@ -40,14 +38,4 @@ pub enum Chain {
 
     /// Zcash chain
     Zcash,
-}
-
-/// Extrinsic with sources
-#[derive(Serialize, Deserialize, Debug, Clone)]
-pub struct Sourced<T> {
-    /// The extrinsic
-    pub extrinsic: T,
-
-    /// The sources of the extrinsic
-    pub sources: Vec<Vec<u8>>,
 }

@@ -1,8 +1,11 @@
 //! The transaction structure of zorch
 
-use crate::{state::sol::MintBundle, Sourced};
 use serde::{Deserialize, Serialize};
-pub use {sol::MintBundleReceipt, ticket::Ticket, zec::UnlockBundleReceipt};
+pub use {
+    sol::{MintBundle, MintBundleReceipt},
+    ticket::Ticket,
+    zec::{UnlockBundle, UnlockBundleReceipt},
+};
 
 mod sol;
 mod ticket;
@@ -15,17 +18,24 @@ pub struct Extrinsic {
     pub tickets: Vec<Ticket>,
 
     /// Solana mint bundle
-    ///
-    /// FIXME: support multiple bundles after removing
-    /// the design of nonce.
-    pub mint: Option<Sourced<MintBundle>>,
+    pub mint: Vec<MintBundle>,
 
     /// The receipts of mint bundles, could be async.
     pub mint_receipts: Vec<MintBundleReceipt>,
 
     /// The unlock bundles
-    pub unlock: Vec<Sourced<Vec<u8>>>,
+    pub unlock: Vec<UnlockBundle>,
 
     /// The unlock receipts
     pub unlock_receipts: Vec<UnlockBundleReceipt>,
+}
+
+/// The transfer of the transaction
+#[derive(Serialize, Deserialize, Clone, Debug)]
+pub struct Transfer {
+    /// The recipient address
+    pub recipient: Vec<u8>,
+
+    /// The amount of the transfer
+    pub amount: u64,
 }

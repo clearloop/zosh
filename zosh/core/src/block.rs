@@ -53,7 +53,7 @@ impl Header {
 }
 
 /// The head of the block
-#[derive(Serialize, Deserialize, Clone, Debug)]
+#[derive(Serialize, Deserialize, Clone, Debug, Default)]
 pub struct Head {
     /// The height of the block
     pub height: u32,

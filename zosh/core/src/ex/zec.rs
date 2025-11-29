@@ -2,6 +2,13 @@
 
 use serde::{Deserialize, Serialize};
 
+/// The unlock bundle of the transaction
+#[derive(Serialize, Deserialize, Clone, Debug)]
+pub struct UnlockBundle {
+    /// Solana signatures of the unlock bundle
+    pub source: Vec<Vec<u8>>,
+}
+
 /// the unlock bundle receipt
 #[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct UnlockBundleReceipt {

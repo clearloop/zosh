@@ -8,9 +8,7 @@ impl<C: Config> Runtime<C> {
     /// Author an unauthorized block
     pub async fn author(&mut self) -> Result<Block> {
         let state = self.storage.state();
-        let Some(parent) = state.history.blocks.last().cloned() else {
-            anyhow::bail!("No parent block found");
-        };
+        let parent = state.present;
 
         // get the extrinsic from the pool
         let rawex = postcard::to_allocvec(&self.pool.extrinsic)?;
