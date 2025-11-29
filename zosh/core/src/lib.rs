@@ -4,6 +4,7 @@ use serde::{Deserialize, Serialize};
 pub use {
     block::{Block, Header},
     ex::Extrinsic,
+    history::History,
     state::State,
     util::{Message, ToSig},
 };
@@ -11,6 +12,7 @@ pub use {
 pub mod bft;
 mod block;
 pub mod ex;
+mod history;
 pub mod req;
 pub mod state;
 pub mod util;
@@ -19,10 +21,13 @@ pub mod util;
 ///
 /// Epoch length for rotating the validators, need
 /// to be determined once we can calculate our tps.
-pub const EPOCH_LENGTH: u32 = 12;
+pub const EPOCH_LENGTH: usize = 12;
 
 /// The signature type for the Ed25519 algorithm
 pub type Ed25519Signature = [u8; 64];
+
+/// The hash type for the zosh network
+pub type Hash = [u8; 32];
 
 /// The supported chains
 #[derive(Debug, Clone, Serialize, Deserialize)]

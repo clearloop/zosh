@@ -1,9 +1,8 @@
 //! The block structure of zorch
 
-use std::collections::BTreeMap;
-
 use crate::Extrinsic;
 use serde::{Deserialize, Serialize};
+use std::collections::BTreeMap;
 
 /// The block structure of zorch
 #[derive(Serialize, Deserialize, Debug, Clone, Default)]
@@ -13,6 +12,16 @@ pub struct Block {
 
     /// The extrinsic of the block
     pub extrinsic: Extrinsic,
+}
+
+impl Block {
+    /// Get the head of the block
+    pub fn head(&self) -> Head {
+        Head {
+            height: self.header.height,
+            hash: self.header.hash(),
+        }
+    }
 }
 
 /// The header structure of zorch
@@ -43,4 +52,13 @@ impl Header {
         data.extend_from_slice(&self.extrinsic);
         crypto::blake3(&data)
     }
+}
+
+/// The head of the block
+pub struct Head {
+    /// The height of the block
+    pub height: u32,
+
+    /// The parent block hash
+    pub hash: [u8; 32],
 }

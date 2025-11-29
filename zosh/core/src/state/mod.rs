@@ -1,6 +1,6 @@
 //! The state of the zosh network
 
-use crate::bft;
+use crate::{bft, History};
 
 pub mod key;
 pub mod sol;
@@ -15,4 +15,7 @@ pub struct State {
 
     /// The BFT consensus state
     pub bft: bft::Bft,
+
+    /// The history of the network
+    pub history: History,
 }
