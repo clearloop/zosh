@@ -8,7 +8,7 @@ use sync::{
     Config, Event, Sync,
 };
 use tokio::sync::mpsc;
-use zcore::tx::Chain;
+use zcore::Chain;
 
 /// Run the POC service
 pub async fn run(cache: &Path, config: &Config) -> Result<()> {

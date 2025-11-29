@@ -15,7 +15,7 @@ use zcash_protocol::{
     memo::{Memo, MemoBytes},
     TxId,
 };
-use zcore::tx::{Bridge, Chain};
+use zcore::{req::Bridge, Chain};
 
 /// The block time of zcash in seconds
 pub const ZCASH_BLOCK_TIME: u64 = 75;
