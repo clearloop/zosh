@@ -3,14 +3,14 @@
 use serde::{Deserialize, Serialize};
 pub use {
     block::{Block, Header},
-    state::State,
     ex::Extrinsic,
+    state::State,
 };
 
 mod block;
+pub mod ex;
 pub mod req;
 mod state;
-pub mod ex;
 
 /// The supported chains
 #[derive(Debug, Clone, Serialize, Deserialize)]
