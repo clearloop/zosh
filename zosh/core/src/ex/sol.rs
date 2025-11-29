@@ -1,6 +1,6 @@
 //! Solana related transactions
 
-use crate::tx::Message;
+use crate::ex::Message;
 use serde::{Deserialize, Serialize};
 
 /// The bridge bundle of the transaction
@@ -43,10 +43,6 @@ impl Message for MintBundle {
 
         message
     }
-
-    fn append_signature(&mut self, signature: [u8; 64]) {
-        self.signatures.push(signature.to_vec())
-    }
 }
 
 /// The receipt of the mint bundle
@@ -62,19 +58,9 @@ pub struct MintBundleReceipt {
 
     /// The nonce of the bundle
     pub nonce: u64,
-
-    /// Validators exceed the threshold should sign the receipt
-    /// to make sure this transaction is valid.
-    ///
-    /// TODO: handle big array for serde
-    pub signatures: Vec<Vec<u8>>,
 }
 
 impl Message for MintBundleReceipt {
-    fn append_signature(&mut self, signature: [u8; 64]) {
-        self.signatures.push(signature.to_vec())
-    }
-
     fn message(&self) -> Vec<u8> {
         let mut message = self.nonce.to_le_bytes().to_vec();
         message.extend_from_slice(&self.signature.to_vec());

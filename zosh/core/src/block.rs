@@ -1,17 +1,20 @@
 //! The block structure of zorch
 
-use crate::Transaction;
+use crate::Extrinsic;
+use serde::{Deserialize, Serialize};
 
 /// The block structure of zorch
+#[derive(Serialize, Deserialize)]
 pub struct Block {
     /// The header of the block
     pub header: Header,
 
-    /// The transactions of the block
-    pub transactions: Vec<Transaction>,
+    /// The extrinsic of the block
+    pub extrinsic: Extrinsic,
 }
 
 /// The header structure of zorch
+#[derive(Serialize, Deserialize)]
 pub struct Header {
     /// The height of the block
     pub height: u32,
@@ -22,6 +25,9 @@ pub struct Header {
     /// The merkle root of the state
     pub state: [u8; 32],
 
-    /// The merkle root of the transactions
-    pub transaction: [u8; 32],
+    /// The hash of the extrinsic
+    pub extrinsic: [u8; 32],
+
+    /// Signatures of the block (except the current field)
+    pub votes: Vec<Vec<u8>>,
 }

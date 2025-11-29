@@ -97,6 +97,8 @@ impl GroupSigners {
         let fvk = self.orchard()?;
         let txid_parts = utx.digest(TxIdDigester);
         let sighash = signature_hash(&utx, &SignableInput::Shielded, &txid_parts);
+
+        // TODO: make this proving_key stays in memory
         let proving_key = ProvingKey::build();
         let proven = utx
             .orchard_bundle()
