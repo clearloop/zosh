@@ -4,7 +4,7 @@ use anyhow::Result;
 use zcore::{Block, State, TrieKey};
 
 /// The storage for the zosh bridge
-pub trait Storage {
+pub trait Storage: Send + Sync + 'static {
     /// Batch the zosh state
     fn state(&self) -> State;
 

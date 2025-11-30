@@ -1,12 +1,11 @@
 //! Logger middleware
 
-use std::future::Future;
-
 use jsonrpsee::{
     core::middleware::{Batch, Notification},
     server::middleware::rpc::RpcServiceT,
     types::Request,
 };
+use std::future::Future;
 
 /// Logging service
 #[derive(Clone)]

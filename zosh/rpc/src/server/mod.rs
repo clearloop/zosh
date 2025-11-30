@@ -2,6 +2,12 @@
 
 #![cfg(feature = "server")]
 
+pub use jsonrpsee::{
+    core::{middleware::RpcServiceBuilder, SubscriptionResult},
+    server::Server,
+    types::ErrorObjectOwned,
+    PendingSubscriptionSink,
+};
 pub use sub::SubscriptionManager;
 
 pub mod middleware;
