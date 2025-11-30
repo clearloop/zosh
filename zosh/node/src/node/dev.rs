@@ -10,9 +10,6 @@ use zcore::Block;
 pub struct Dev {
     /// The runtime
     pub runtime: Runtime<Development>,
-
-    /// The subscription manager
-    pub manager: SubscriptionManager,
 }
 
 /// The development hook

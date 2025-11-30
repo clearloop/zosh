@@ -1,5 +1,6 @@
 //! Runtime library for the zosh bridge
 
+use anyhow::Result;
 use sync::Sync;
 pub use {config::Config, hook::Hook, pool::Pool, storage::Storage};
 
@@ -24,4 +25,17 @@ pub struct Runtime<C: Config> {
 
     /// The storage for the runtime
     pub storage: C::Storage,
+}
+
+impl<C: Config> Runtime<C> {
+    /// Create a new runtime
+    pub async fn new(hook: C::Hook, storage: C::Storage) -> Result<Self> {
+        let config = sync::Config::load()?;
+        Ok(Self {
+            hook,
+            pool: Pool::default(),
+            sync: Sync::new(&config).await?,
+            storage,
+        })
+    }
 }

@@ -20,6 +20,7 @@ codegen-units = 1
 crypto = { path = "zosh/crypto", package = "zosh-crypto" }
 network = { path = "zosh/network", package = "zosh-network" }
 node = { path = "zosh/node", package = "zosh-node" }
+rpc = { path = "zosh/rpc", package = "zosh-rpc" }
 runtime = { path = "zosh/runtime", package = "zosh-runtime" }
 sync = { path = "zosh/sync", package = "zosh-sync" }
 zcore = { path = "zosh/core", package = "zosh-core" }

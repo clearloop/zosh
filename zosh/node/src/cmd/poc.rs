@@ -1,7 +1,6 @@
 //! Command for the POC service
 
 use anyhow::Result;
-use std::path::Path;
 use sync::{
     solana::{self, Pubkey},
     zcash::{self, AddressCodec, UnifiedAddress},
@@ -11,9 +10,9 @@ use tokio::sync::mpsc;
 use zcore::registry::Chain;
 
 /// Run the POC service
-pub async fn run(cache: &Path, config: &Config) -> Result<()> {
-    let mut sync = Sync::new(cache, config).await?;
-    let sync2 = Sync::new(cache, config).await?;
+pub async fn run(config: &Config) -> Result<()> {
+    let mut sync = Sync::new(config).await?;
+    let sync2 = Sync::new(config).await?;
     let zcash: zcash::GroupSigners =
         postcard::from_bytes(&bs58::decode(config.key.zcash.as_str()).into_vec()?)?;
     let solana: solana::GroupSigners =

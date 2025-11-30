@@ -1,10 +1,9 @@
 //! Zcash group signers
 
-use crate::zcash::SignerInfo;
+use crate::zcash::{SignerInfo, PROVING_KEY};
 use anyhow::Result;
 use orchard::{
     builder::MaybeSigned,
-    circuit::ProvingKey,
     keys::SpendValidatingKey,
     primitives::redpallas::{Signature, SpendAuth},
 };
@@ -96,14 +95,11 @@ impl GroupSigners {
         let fvk = self.orchard()?;
         let txid_parts = utx.digest(TxIdDigester);
         let sighash = signature_hash(&utx, &SignableInput::Shielded, &txid_parts);
-
-        // TODO: make this proving_key stays in memory
-        let proving_key = ProvingKey::build();
         let proven = utx
             .orchard_bundle()
             .cloned()
             .ok_or(anyhow::anyhow!("Failed to get orchard bundle"))?
-            .create_proof(&proving_key, rand_core::OsRng)?
+            .create_proof(&PROVING_KEY, rand_core::OsRng)?
             .prepare(rand_core::OsRng, *sighash.as_ref());
         let ak: SpendValidatingKey = fvk.into();
         let mut alphas = Vec::new();

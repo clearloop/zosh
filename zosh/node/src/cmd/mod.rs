@@ -3,8 +3,10 @@
 use crate::Config;
 use anyhow::Result;
 use clap::Parser;
-use std::{path::PathBuf, sync::OnceLock};
-use sync::{solana, zcash};
+use sync::{
+    config::{CACHE_DIR, CONFIG_DIR},
+    solana, zcash,
+};
 use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt, EnvFilter};
 
 mod dev;
@@ -13,14 +15,6 @@ mod poc;
 /// Command line interface for the ZorchBridge node
 #[derive(Parser)]
 pub struct App {
-    /// Configuration directory
-    #[clap(short, long, default_value = default_config_dir())]
-    pub config: PathBuf,
-
-    /// Data directory
-    #[clap(long, default_value = default_cache_dir())]
-    pub cache: PathBuf,
-
     #[clap(subcommand)]
     pub command: Command,
 
@@ -35,24 +29,24 @@ impl App {
         self.init_tracing()?;
         self.create_dirs()?;
         match &self.command {
-            Command::Dev(dev) => dev.run(&self.config),
+            Command::Dev(dev) => dev.run().await,
             Command::Solana(solana) => {
-                let config = Config::load(&self.config)?;
+                let config = Config::load()?;
                 solana.run(&config).await
             }
             Command::Zcash(zcash) => {
-                let config = Config::load(&self.config)?;
-                zcash.run(&self.cache, &config).await
+                let config = Config::load()?;
+                zcash.run(&config).await
             }
-            Command::POC => poc::run(&self.cache, &Config::load(&self.config)?).await,
+            Command::POC => poc::run(&Config::load()?).await,
         }?;
 
         Ok(())
     }
 
     fn create_dirs(&self) -> Result<()> {
-        std::fs::create_dir_all(&self.config)?;
-        std::fs::create_dir_all(&self.cache)?;
+        std::fs::create_dir_all(CONFIG_DIR.as_path())?;
+        std::fs::create_dir_all(CACHE_DIR.as_path())?;
         Ok(())
     }
 
@@ -99,28 +93,4 @@ pub enum Command {
 
     /// Run the POC service
     POC,
-}
-
-fn default_config_dir() -> &'static str {
-    static CONFIG_DIR: OnceLock<String> = OnceLock::new();
-    CONFIG_DIR.get_or_init(|| {
-        dirs::home_dir()
-            .unwrap()
-            .join(".config")
-            .join("zosh")
-            .to_string_lossy()
-            .into_owned()
-    })
-}
-
-fn default_cache_dir() -> &'static str {
-    static CACHE_DIR: OnceLock<String> = OnceLock::new();
-    CACHE_DIR.get_or_init(|| {
-        dirs::home_dir()
-            .unwrap()
-            .join(".cache")
-            .join("zosh")
-            .to_string_lossy()
-            .into_owned()
-    })
 }

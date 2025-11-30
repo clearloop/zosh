@@ -9,7 +9,6 @@ use crate::zcash::{
 };
 use anyhow::Result;
 use clap::Parser;
-use std::path::Path;
 use zcash_client_backend::data_api::wallet::ConfirmationsPolicy;
 use zcash_client_backend::data_api::WalletRead;
 use zcash_client_backend::proto::service::Empty;
@@ -65,8 +64,8 @@ pub enum Zcash {
 
 impl Zcash {
     /// Run the zcash command
-    pub async fn run(&self, cache: &Path, config: &Config) -> Result<()> {
-        let cfg = config.zcash(cache)?;
+    pub async fn run(&self, config: &Config) -> Result<()> {
+        let cfg = config.zcash()?;
         match self {
             Self::Light => self.light(&cfg).await,
             Self::Sync => self.sync(&cfg).await,
