@@ -6,8 +6,9 @@ use hook::DevHook;
 use rpc::server::SubscriptionManager;
 use runtime::{Config, Pool, Runtime};
 use std::{net::SocketAddr, sync::Arc};
-use sync::{config::CACHE_DIR, Event, Sync};
+use sync::{config::CACHE_DIR, Sync};
 use tokio::sync::{mpsc, Mutex};
+use zcore::ex::Bridge;
 
 mod author;
 mod hook;
@@ -41,7 +42,7 @@ impl Dev {
     pub async fn start(self, address: SocketAddr) -> Result<()> {
         let Dev { runtime, pool, rpc } = self;
         let mut sync = Sync::load().await?;
-        let (tx, rx) = mpsc::channel::<Event>(512);
+        let (tx, rx) = mpsc::channel::<Bridge>(512);
         tokio::select! {
             r = relay::start(pool, rx) => r,
             r = author::start(runtime) => r,

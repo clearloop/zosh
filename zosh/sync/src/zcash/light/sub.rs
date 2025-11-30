@@ -1,6 +1,6 @@
 //! The subscription of the zcash light client
 
-use crate::{zcash::Light, Event};
+use crate::zcash::Light;
 use anyhow::Result;
 use orchard::keys::Scope;
 use std::time::Duration;
@@ -28,10 +28,20 @@ impl Light {
     ///
     /// FIXME: write new query of the walletdb to fetch the
     /// latest transactions efficiently.
-    pub async fn subscribe(&mut self, tx: mpsc::Sender<Event>) -> Result<()> {
+    pub async fn subscribe(&mut self, tx: mpsc::Sender<Bridge>) -> Result<()> {
+        loop {
+            if let Err(e) = self.subscribe_inner(tx.clone()).await {
+                tracing::error!("{e:?}");
+            }
+        }
+    }
+
+    /// Subscribe to the zcash light client
+    pub async fn subscribe_inner(&mut self, tx: mpsc::Sender<Bridge>) -> Result<()> {
         // TODO: we should get the latest height from the global on-chain state.
         let mut last_height = BlockHeight::from(0);
         loop {
+            self.sync().await?;
             let Ok((target, _anchor)) = self.heights() else {
                 tracing::error!(
                     "Failed to get max height and hash, retrying in {} seconds",
@@ -77,14 +87,14 @@ impl Light {
                     note.value().into_u64() as f32 / 100_000_000.0
                 );
                 let recipient = bs58::decode(text.trim()).into_vec()?;
-                tx.send(Event::Bridge(Bridge {
+                tx.send(Bridge {
                     coin: Coin::Zec,
                     recipient,
                     amount: note.value().into_u64(),
                     txid: txid.as_ref().to_vec(),
                     source: Chain::Zcash,
                     target: Chain::Solana,
-                }))
+                })
                 .await?;
             }
 

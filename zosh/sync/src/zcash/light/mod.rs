@@ -35,9 +35,6 @@ pub struct Light {
 
     /// The unified full viewing key of the light client
     pub ufvk: UnifiedFullViewingKey,
-
-    /// The configuration of the light client
-    config: Config,
 }
 
 impl Light {
@@ -71,7 +68,6 @@ impl Light {
             client,
             network: config.network,
             ufvk: config.ufvk.clone(),
-            config: config.clone(),
         };
 
         // import the account if it doesn't exist
@@ -81,10 +77,5 @@ impl Light {
 
         // wrap to the light client
         Ok(this)
-    }
-
-    /// Clone the light client
-    pub async fn duplicate(&self) -> Result<Self> {
-        Self::new(&self.config).await
     }
 }

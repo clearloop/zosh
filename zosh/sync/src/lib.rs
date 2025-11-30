@@ -3,10 +3,10 @@
 use crate::solana::SolanaClient;
 use anyhow::Result;
 use tokio::sync::mpsc;
-pub use {config::Config, event::Event, solana::ZoshClient, zcash::Light};
+use zcore::ex::Bridge;
+pub use {config::Config, solana::ZoshClient, zcash::Light};
 
 pub mod config;
-mod event;
 pub mod solana;
 mod validate;
 pub mod zcash;
@@ -36,10 +36,8 @@ impl Sync {
     }
 
     /// Start the sync
-    pub async fn start(&mut self, tx: mpsc::Sender<Event>) -> Result<()> {
-        let mut zsync = self.zcash.duplicate().await?;
+    pub async fn start(&mut self, tx: mpsc::Sender<Bridge>) -> Result<()> {
         tokio::select! {
-            r = zsync.sync_forever() => r,
             r = self.zcash.subscribe(tx.clone()) => r,
             r = self.solana.subscribe(tx.clone()) => r
         }

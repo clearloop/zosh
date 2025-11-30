@@ -11,8 +11,6 @@ use sync::{
 };
 use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt, EnvFilter};
 
-mod poc;
-
 /// Command line interface for the ZorchBridge node
 #[derive(Parser)]
 pub struct App {
@@ -39,7 +37,6 @@ impl App {
                 let config = Config::load()?;
                 zcash.run(&config).await
             }
-            Command::POC => poc::run(&Config::load()?).await,
         }?;
 
         Ok(())
@@ -94,7 +91,4 @@ pub enum Command {
     /// Zcash command
     #[clap(subcommand)]
     Zcash(zcash::Zcash),
-
-    /// Run the POC service
-    POC,
 }
