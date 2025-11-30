@@ -21,6 +21,12 @@ pub struct Sync {
 }
 
 impl Sync {
+    /// Load the sync configuration
+    pub async fn load() -> Result<Self> {
+        let config = Config::load()?;
+        Self::new(&config).await
+    }
+
     /// Create a new sync instance
     pub async fn new(config: &Config) -> Result<Self> {
         let zconf = config.zcash()?;

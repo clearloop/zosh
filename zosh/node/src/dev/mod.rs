@@ -1,19 +1,27 @@
 //! The development node implementation
 
-use crate::storage::Parity;
+use crate::{rpc::Rpc, storage::Parity};
 use anyhow::Result;
 use hook::DevHook;
 use rpc::server::SubscriptionManager;
-use runtime::{Config, Runtime};
-use std::sync::Arc;
-use sync::config::CACHE_DIR;
+use runtime::{Config, Pool, Runtime};
+use std::{net::SocketAddr, sync::Arc};
+use sync::{config::CACHE_DIR, Event, Sync};
+use tokio::sync::{mpsc, Mutex};
 
 mod hook;
+mod service;
 
 /// The development node implementation
 pub struct Dev {
     /// The runtime
     pub runtime: Runtime<Development>,
+
+    /// The pool of the development node
+    pub pool: Arc<Mutex<Pool>>,
+
+    /// The RPC service
+    pub rpc: Rpc<Parity>,
 }
 
 impl Dev {
@@ -23,13 +31,22 @@ impl Dev {
         let hook = DevHook::new(manager.clone());
         let parity = Arc::new(Parity::try_from(CACHE_DIR.join("chain"))?);
         let runtime = Runtime::new(hook, parity.clone()).await?;
-
-        Ok(Self { runtime })
+        let pool = runtime.pool.clone();
+        let rpc = Rpc::new(parity, manager);
+        Ok(Self { runtime, pool, rpc })
     }
 
     /// Start the development node
-    pub async fn start(self) -> Result<()> {
-        Ok(())
+    pub async fn start(self, address: SocketAddr) -> Result<()> {
+        let Dev { runtime, pool, rpc } = self;
+        let mut sync = Sync::load().await?;
+        let (tx, rx) = mpsc::channel::<Event>(512);
+        tokio::select! {
+            r = service::relay(pool, rx) => r,
+            r = service::authoring(runtime) => r,
+            r = rpc.start(address) => r,
+            r = sync.start(tx) => r,
+        }
     }
 }
 

@@ -28,6 +28,8 @@ impl BridgePool {
     }
 
     /// Complete a bridge bundle
+    ///
+    /// NOTE: need to just the voting power once we get to PoS.
     pub fn complete(&mut self, bundle_hash: Hash, signature: Vec<u8>, threshold: usize) {
         let Some(bundle) = self.in_progress.get_mut(&bundle_hash) else {
             return;
