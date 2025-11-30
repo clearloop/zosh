@@ -30,11 +30,8 @@ impl<T: AsRef<[u8]>> ChainFormatEncoder for T {
     }
 
     fn zcash_address(&self, network: &Network) -> Result<UnifiedAddress> {
-        Ok(UnifiedAddress::decode(
-            network,
-            &String::from_utf8(self.as_ref().to_vec())?.as_str(),
-        )
-        .map_err(|_| anyhow::anyhow!("Invalid zcash address"))?)
+        UnifiedAddress::decode(network, String::from_utf8(self.as_ref().to_vec())?.as_str())
+            .map_err(|e| anyhow::anyhow!("Invalid zcash address: {e:?}"))
     }
 
     fn solana_signature(&self) -> Result<Signature> {

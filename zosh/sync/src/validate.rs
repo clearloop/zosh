@@ -73,7 +73,7 @@ impl Sync {
                 });
 
                 tracing::info!(
-                    "Fullfilled bridge request from Zcash({}) to Solana({})! amount={} recipient={}",
+                    "Fulfilled bridge request from Zcash({}) to Solana({})! amount={} recipient={}",
                     bridge.txid.zcash_signature()?,
                     signature,
                     bridge.amount,
@@ -113,7 +113,7 @@ impl Sync {
                 });
 
                 tracing::info!(
-                    "Fullfilled bridge request from Solana({}) to Zcash({})! amount={} recipient={:?}",
+                    "Fulfilled bridge request from Solana({}) to Zcash({})! amount={} recipient={:?}",
                     bridge.txid.solana_signature()?,
                     txid,
                     bridge.amount,

@@ -30,8 +30,8 @@ impl<T: AsRef<[u8]>> FixedBytes for T {
     }
 
     fn bytes<const N: usize>(&self) -> Result<[u8; N]> {
-        Ok(self.as_ref().try_into().map_err(|_| {
-            anyhow::anyhow!("expected {N} bytes, got {} bytes", self.as_ref().len())
-        })?)
+        self.as_ref()
+            .try_into()
+            .map_err(|_| anyhow::anyhow!("expected {N} bytes, got {} bytes", self.as_ref().len()))
     }
 }
