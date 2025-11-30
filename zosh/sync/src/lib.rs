@@ -13,11 +13,17 @@ pub mod zcash;
 
 /// The sync data source
 pub struct Sync {
-    /// The zcash light client
-    pub zcash: ZcashClient,
+    /// The development MPC
+    pub dev_zcash_mpc: zcash::GroupSigners,
+
+    /// The development MPC
+    pub dev_solana_mpc: solana::GroupSigners,
 
     /// The solana client
     pub solana: SolanaClient,
+
+    /// The zcash light client
+    pub zcash: ZcashClient,
 }
 
 impl Sync {
@@ -32,7 +38,16 @@ impl Sync {
         let zconf = config.zcash()?;
         let zcash = ZcashClient::new(&zconf).await?;
         let solana = SolanaClient::new(config).await?;
-        Ok(Self { zcash, solana })
+        let dev_zcash_mpc: zcash::GroupSigners =
+            postcard::from_bytes(&bs58::decode(&config.key.zcash).into_vec()?)?;
+        let dev_solana_mpc: solana::GroupSigners =
+            postcard::from_bytes(&bs58::decode(&config.key.solana).into_vec()?)?;
+        Ok(Self {
+            dev_solana_mpc,
+            dev_zcash_mpc,
+            zcash,
+            solana,
+        })
     }
 
     /// Start the sync

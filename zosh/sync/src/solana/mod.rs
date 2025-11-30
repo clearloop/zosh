@@ -58,31 +58,16 @@ impl SolanaClient {
 
     /// Bundle bridge transactions
     ///
-    /// IMPORTANT: MUST validate the source chain tx before bundling
-    /// and this should be done before calling this interface.
-    pub async fn bundle(&self, bridges: Vec<Bridge>) -> Result<(BridgeBundle, Transaction)> {
+    /// IMPORTANT: things should be checked in the outer layer:
+    /// - the number of bridges is not too many
+    /// - the target chain is valid
+    /// - the source chain tx is valid
+    pub async fn bundle(&self, bridges: &[Bridge]) -> Result<(BridgeBundle, Transaction)> {
         let mut bundle = BridgeBundle::new(Chain::Solana);
         let mut mints = Vec::new();
 
-        // Check if the number of bridges is too many
-        if bridges.len() >= Chain::Solana.max_bundle_size() {
-            anyhow::bail!(
-                "Too many bridges: {}, expected: {}",
-                bridges.len(),
-                Chain::Solana.max_bundle_size()
-            );
-        }
-
         // Check if the target chain is valid
-        for bridge in &bridges {
-            if bridge.target != Chain::Solana {
-                anyhow::bail!(
-                    "Invalid target chain: {:?}, expected: {:?}",
-                    bridge.target,
-                    Chain::Solana
-                );
-            }
-
+        for bridge in bridges {
             let recipient = Pubkey::new_from_array(
                 bridge
                     .recipient

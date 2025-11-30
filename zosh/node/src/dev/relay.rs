@@ -41,8 +41,10 @@ pub async fn start(
             continue;
         }
 
-        let bundle = sync.bundle(mem::take(&mut bridges)).await?;
-        pool.lock().await.bridge.queue(bundle)?;
+        let (bundles, receipts) = sync.bundle(mem::take(&mut bridges)).await?;
+        let mut pool = pool.lock().await;
+        pool.bridge.queue(bundles)?;
+        pool.receipt.extend_from_slice(receipts.as_slice());
         now = Instant::now();
     }
     Ok(())
