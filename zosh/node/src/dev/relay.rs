@@ -9,9 +9,9 @@ use std::{
     sync::Arc,
     time::{Duration, Instant},
 };
-use sync::Sync;
+use sync::{zcash::Network, ChainFormatEncoder, Sync};
 use tokio::sync::{mpsc, Mutex};
-use zcore::ex::Bridge;
+use zcore::{ex::Bridge, registry::Chain};
 
 // The interval to bundle the transactions in seconds
 const BUNDLE_INTERVAL: u64 = 3;
@@ -28,7 +28,6 @@ pub async fn start(
     tracing::info!("Starting the relay service");
     let sync = Rc::new(Mutex::new(Sync::load().await?));
     let bridges = Arc::new(Mutex::new(Vec::new()));
-
     tokio::select! {
         r = collector(parity, rx, sync.clone(), bridges.clone()) => r,
         r = bundler(sync, bridges, pool) => r,
@@ -42,7 +41,6 @@ async fn collector(
     bridges: Arc<Mutex<Vec<Bridge>>>,
 ) -> Result<()> {
     while let Some(bridge) = rx.recv().await {
-        tracing::info!("Received bridge request: {:?}", bridge);
         // skip if the transaction is already processed
         if parity.exists(&bridge.txid)? {
             tracing::warn!("Bridge request already processed: {:?}", bridge.txid);
@@ -56,6 +54,25 @@ async fn collector(
             tracing::error!("{e:?}");
             continue;
         }
+
+        // print the bridge request details
+        tracing::info!(
+            "Received bridge request: from {:?} to {:?}({}) with amount {}, txid={}",
+            bridge.source,
+            bridge.target,
+            match bridge.target {
+                Chain::Solana => bridge.recipient.solana_address()?.to_string(),
+                Chain::Zcash => format!(
+                    "{:?}",
+                    bridge.recipient.zcash_address(&Network::TestNetwork)?
+                ),
+            },
+            bridge.amount,
+            match bridge.source {
+                Chain::Solana => bridge.txid.solana_signature()?.to_string(),
+                Chain::Zcash => bridge.txid.zcash_signature()?.to_string(),
+            }
+        );
 
         // Do the validation of the bridge request, insert to the queue
         // if it is valid.
@@ -81,8 +98,8 @@ async fn bundler(
             continue;
         }
 
+        tracing::debug!("Bundling {} bridge requests", bridges.len());
         let mut sync = sync.lock().await;
-        tracing::info!("Bundling {} bridge requests", bridges.len());
         let (bundles, receipts) = sync.bundle(mem::take(&mut bridges)).await?;
         let mut pool = pool.lock().await;
         pool.bridge.queue(bundles)?;

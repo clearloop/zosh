@@ -1,10 +1,7 @@
 //! Validation interfaces for bridge bundles
 
-use crate::Sync;
+use crate::{ChainFormatEncoder, Sync};
 use anyhow::Result;
-use solana_sdk::{pubkey::Pubkey, signature::Signature};
-use zcash_keys::{address::UnifiedAddress, encoding::AddressCodec};
-use zcash_protocol::TxId;
 use zcore::{
     ex::{Bridge, BridgeBundle, Receipt},
     registry::{Chain, Coin},
@@ -59,7 +56,6 @@ impl Sync {
         let mut bundles = Vec::new();
         let mut receipts = Vec::new();
         for unbundled in bridges.chunks(Chain::Solana.max_bundle_size()) {
-            tracing::info!("solana bundle size: {:?}", unbundled.len());
             let (bundle, transaction) = self.solana.bundle(unbundled).await?;
             let signature = self
                 .solana
@@ -78,10 +74,10 @@ impl Sync {
 
                 tracing::info!(
                     "Fullfilled bridge request from Zcash({}) to Solana({})! amount={} recipient={}",
-                    TxId::from_bytes(bridge.txid.clone().try_into().expect("Invalid zcash txid")),
+                    bridge.txid.zcash_signature()?,
                     signature,
                     bridge.amount,
-                    Pubkey::new_from_array(bridge.recipient.clone().try_into().expect("Invalid solana pubkey"))
+                    bridge.recipient.solana_address()?
                 );
             }
             bundles.push(bundle);
@@ -116,17 +112,12 @@ impl Sync {
                     target: Chain::Zcash,
                 });
 
-                let sig: [u8; 64] = bridge
-                    .txid
-                    .clone()
-                    .try_into()
-                    .expect("Invalid solana signature");
                 tracing::info!(
                     "Fullfilled bridge request from Solana({}) to Zcash({})! amount={} recipient={:?}",
-                    Signature::from(sig),
+                    bridge.txid.solana_signature()?,
                     txid,
                     bridge.amount,
-                    UnifiedAddress::decode(&self.zcash.network, &String::from_utf8(bridge.recipient.clone())?).expect("Invalid zcash address")
+                    bridge.recipient.zcash_address(&self.zcash.network)?
                 );
             }
             bundles.push(bundle);

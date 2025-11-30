@@ -1,6 +1,6 @@
 //! zoshBFT related primitives
 
-use crate::{Header, ToSig};
+use crate::{FixedBytes, Header};
 use anyhow::Result;
 use crypto::ed25519;
 use serde::{Deserialize, Serialize};
@@ -34,7 +34,7 @@ impl Bft {
                 continue;
             }
 
-            if ed25519::verify(key, &hash, &sig.ed25519()?).is_ok() {
+            if ed25519::verify(key, &hash, &sig.bytes64()?).is_ok() {
                 votes += 1;
             }
         }

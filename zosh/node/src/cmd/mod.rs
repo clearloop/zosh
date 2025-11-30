@@ -2,11 +2,11 @@
 
 use std::net::SocketAddr;
 
-use crate::{dev::Dev, Config};
+use crate::dev::Dev;
 use anyhow::Result;
 use clap::Parser;
 use sync::{
-    config::{CACHE_DIR, CONFIG_DIR},
+    config::{Config, CACHE_DIR, CONFIG_DIR},
     solana, zcash,
 };
 use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt, EnvFilter};

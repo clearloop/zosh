@@ -4,9 +4,10 @@ use crate::solana::SolanaClient;
 use anyhow::Result;
 use tokio::sync::mpsc;
 use zcore::ex::Bridge;
-pub use {config::Config, solana::ZoshClient, zcash::ZcashClient};
+pub use {config::Config, encoder::ChainFormatEncoder, solana::ZoshClient, zcash::ZcashClient};
 
 pub mod config;
+mod encoder;
 pub mod solana;
 mod validate;
 pub mod zcash;

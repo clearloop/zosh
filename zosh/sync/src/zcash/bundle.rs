@@ -1,8 +1,7 @@
 //! Bundle interfaces for zcash
 
-use crate::zcash::ZcashClient;
+use crate::{zcash::ZcashClient, ChainFormatEncoder};
 use anyhow::Result;
-use zcash_keys::{address::UnifiedAddress, encoding::AddressCodec};
 use zcash_primitives::transaction::{TransactionData, Unauthorized};
 use zcore::{
     ex::{Bridge, BridgeBundle},
@@ -19,9 +18,7 @@ impl ZcashClient {
     ) -> Result<(BridgeBundle, TransactionData<Unauthorized>)> {
         let bundle = BridgeBundle::new(Chain::Zcash);
         let bridge = bridges[0].clone();
-        let recipient =
-            UnifiedAddress::decode(&self.network, &String::from_utf8(bridge.recipient.clone())?)
-                .map_err(|e| anyhow::anyhow!("Invalid orchard address: {e:?}"))?;
+        let recipient = bridge.recipient.zcash_address(&self.network)?;
 
         let utx = self.tx(recipient, bridge.amount)?;
         Ok((bundle, utx))

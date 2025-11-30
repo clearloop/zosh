@@ -8,7 +8,7 @@ use anyhow::Result;
 pub use solana_sdk::{pubkey::Pubkey, signer::keypair::Keypair};
 use solana_sdk::{signature::Signature, signer::EncodableKey, transaction::Transaction};
 use std::ops::Deref;
-use zcore::ToSig;
+use zcore::FixedBytes;
 pub use zosh::client::ZoshClient;
 use zosh::types::MintEntry;
 
@@ -41,7 +41,7 @@ impl SolanaClient {
     ) -> Result<Signature> {
         let latest_blockhash = self.tx.latest_blockhash().await?;
         tx.message.recent_blockhash = latest_blockhash;
-        let signature = signer.sign(&tx.message_data())?.serialize()?.ed25519()?;
+        let signature = signer.sign(&tx.message_data())?.serialize()?.bytes64()?;
         tx.signatures = vec![signature.into()];
         self.tx.send(tx).await
     }

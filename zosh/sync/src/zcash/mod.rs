@@ -9,8 +9,10 @@ pub use {
     orchard::Address,
     signer::{GroupSigners, ShareSigner, SignerInfo},
     zcash_keys::{address::UnifiedAddress, encoding::AddressCodec, keys::UnifiedFullViewingKey},
-    zcash_primitives::consensus::Network,
-    zcash_protocol::consensus::BranchId,
+    zcash_protocol::{
+        consensus::{BranchId, Network},
+        TxId,
+    },
 };
 
 mod bundle;

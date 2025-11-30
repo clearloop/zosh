@@ -1,6 +1,6 @@
 //! Solana sync library
 
-use crate::Config;
+use crate::{ChainFormatEncoder, Config};
 use anyhow::Result;
 use solana_pubsub_client::nonblocking::pubsub_client::PubsubClient;
 pub use solana_sdk::{
@@ -69,13 +69,7 @@ impl SolanaClient {
 
         // Check if the target chain is valid
         for bridge in bridges {
-            let recipient = Pubkey::new_from_array(
-                bridge
-                    .recipient
-                    .clone()
-                    .try_into()
-                    .map_err(|e| anyhow::anyhow!("Invalid solana recipient: {e:?}"))?,
-            );
+            let recipient = bridge.recipient.solana_address()?;
             mints.push(MintEntry {
                 recipient,
                 amount: bridge.amount,
