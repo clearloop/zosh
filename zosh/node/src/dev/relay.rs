@@ -5,6 +5,7 @@ use anyhow::Result;
 use runtime::{Pool, Storage};
 use std::{
     mem,
+    rc::Rc,
     sync::Arc,
     time::{Duration, Instant},
 };
@@ -25,7 +26,7 @@ pub async fn start(
     rx: mpsc::Receiver<Bridge>,
 ) -> Result<()> {
     tracing::info!("Starting the relay service");
-    let sync = Arc::new(Mutex::new(Sync::load().await?));
+    let sync = Rc::new(Mutex::new(Sync::load().await?));
     let bridges = Arc::new(Mutex::new(Vec::new()));
 
     tokio::select! {
@@ -37,7 +38,7 @@ pub async fn start(
 async fn collector(
     parity: Arc<Parity>,
     mut rx: mpsc::Receiver<Bridge>,
-    sync: Arc<Mutex<Sync>>,
+    sync: Rc<Mutex<Sync>>,
     bridges: Arc<Mutex<Vec<Bridge>>>,
 ) -> Result<()> {
     while let Some(bridge) = rx.recv().await {
@@ -64,7 +65,7 @@ async fn collector(
 }
 
 async fn bundler(
-    sync: Arc<Mutex<Sync>>,
+    sync: Rc<Mutex<Sync>>,
     bridges: Arc<Mutex<Vec<Bridge>>>,
     pool: Arc<Mutex<Pool>>,
 ) -> Result<()> {
