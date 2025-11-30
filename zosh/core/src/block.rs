@@ -29,7 +29,7 @@ pub struct Header {
     /// The accumulator of the block
     pub accumulator: [u8; 32],
 
-    /// The hash of the extrinsic
+    /// The merkle root of the extrinsic
     pub extrinsic: [u8; 32],
 
     /// Signatures of the block (except the current field)

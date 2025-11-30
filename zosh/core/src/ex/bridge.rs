@@ -1,11 +1,18 @@
 //! The bridge transactions
 
-use crate::registry::{Chain, Coin};
+use crate::{
+    registry::{Chain, Coin},
+    Hash,
+};
+use anyhow::Result;
 use serde::{Deserialize, Serialize};
 
 /// The signed bridge transactions
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct BridgeBundle {
+    /// The target chain of the bundle
+    pub target: Chain,
+
     /// The bridge transactions
     pub bridge: Vec<Bridge>,
 
@@ -14,6 +21,26 @@ pub struct BridgeBundle {
 
     /// The signatures for the upcoming outer transactions
     pub signatures: Vec<Vec<u8>>,
+}
+
+impl BridgeBundle {
+    /// Compute the hash of the bridge bundle
+    pub fn hash(&self) -> Result<Hash> {
+        let data = postcard::to_allocvec(&self)?;
+        Ok(crypto::blake3(&data))
+    }
+}
+
+impl BridgeBundle {
+    /// Create a new bridge bundle
+    pub fn new(target: Chain) -> Self {
+        Self {
+            target,
+            bridge: Vec::new(),
+            data: Vec::new(),
+            signatures: Vec::new(),
+        }
+    }
 }
 
 /// The bridge transaction

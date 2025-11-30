@@ -2,39 +2,59 @@
 
 use crate::solana::SolanaClient;
 use anyhow::Result;
-use std::path::Path;
 use tokio::sync::mpsc;
-pub use {config::Config, event::Event, solana::ZoshClient, zcash::Light};
+use zcore::ex::Bridge;
+pub use {config::Config, encoder::ChainFormatEncoder, solana::ZoshClient, zcash::ZcashClient};
 
 pub mod config;
-mod event;
+mod encoder;
 pub mod solana;
 mod validate;
 pub mod zcash;
 
 /// The sync data source
 pub struct Sync {
-    /// The zcash light client
-    pub zcash: Light,
+    /// The development MPC
+    pub dev_zcash_mpc: zcash::GroupSigners,
+
+    /// The development MPC
+    pub dev_solana_mpc: solana::GroupSigners,
 
     /// The solana client
     pub solana: SolanaClient,
+
+    /// The zcash light client
+    pub zcash: ZcashClient,
 }
 
 impl Sync {
+    /// Load the sync configuration
+    pub async fn load() -> Result<Self> {
+        let config = Config::load()?;
+        Self::new(&config).await
+    }
+
     /// Create a new sync instance
-    pub async fn new(cache: &Path, config: &Config) -> Result<Self> {
-        let zconf = config.zcash(cache)?;
-        let zcash = Light::new(&zconf).await?;
+    pub async fn new(config: &Config) -> Result<Self> {
+        let zconf = config.zcash()?;
+        let zcash = ZcashClient::new(&zconf).await?;
         let solana = SolanaClient::new(config).await?;
-        Ok(Self { zcash, solana })
+        let dev_zcash_mpc: zcash::GroupSigners =
+            postcard::from_bytes(&bs58::decode(&config.key.zcash).into_vec()?)?;
+        let dev_solana_mpc: solana::GroupSigners =
+            postcard::from_bytes(&bs58::decode(&config.key.solana).into_vec()?)?;
+        Ok(Self {
+            dev_solana_mpc,
+            dev_zcash_mpc,
+            zcash,
+            solana,
+        })
     }
 
     /// Start the sync
-    pub async fn start(&mut self, tx: mpsc::Sender<Event>) -> Result<()> {
-        let mut zsync = self.zcash.duplicate().await?;
+    pub async fn start(&mut self, tx: mpsc::Sender<Bridge>) -> Result<()> {
+        tracing::info!("Starting the sync services");
         tokio::select! {
-            r = zsync.sync_forever() => r,
             r = self.zcash.subscribe(tx.clone()) => r,
             r = self.solana.subscribe(tx.clone()) => r
         }

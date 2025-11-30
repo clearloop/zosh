@@ -1,6 +1,8 @@
 //! Runtime library for the zosh bridge
 
-use sync::Sync;
+use anyhow::Result;
+use std::sync::Arc;
+use tokio::sync::Mutex;
 pub use {config::Config, hook::Hook, pool::Pool, storage::Storage};
 
 mod author;
@@ -8,8 +10,7 @@ mod config;
 mod hook;
 mod import;
 mod pool;
-mod storage;
-mod validate;
+pub mod storage;
 
 /// The runtime of the zosh bridge
 pub struct Runtime<C: Config> {
@@ -17,11 +18,19 @@ pub struct Runtime<C: Config> {
     pub hook: C::Hook,
 
     /// The mempool
-    pub pool: Pool,
-
-    /// The sync clients for verification usages
-    pub sync: Sync,
+    pub pool: Arc<Mutex<Pool>>,
 
     /// The storage for the runtime
     pub storage: C::Storage,
+}
+
+impl<C: Config> Runtime<C> {
+    /// Create a new runtime
+    pub async fn new(hook: C::Hook, storage: C::Storage, threshold: usize) -> Result<Self> {
+        Ok(Self {
+            hook,
+            pool: Arc::new(Mutex::new(Pool::new(threshold))),
+            storage,
+        })
+    }
 }

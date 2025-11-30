@@ -8,42 +8,30 @@ pub trait Message {
     fn message(&self) -> Vec<u8>;
 }
 
-/// Convert an array of bytes to a signature
-pub trait ToSig {
-    /// Convert the data to a signature
-    fn ed25519(&self) -> Result<[u8; 64]>;
+/// convert the bytes to a fixed size array
+pub trait FixedBytes {
+    /// Convert the bytes to a 32 byte array
+    fn bytes32(&self) -> Result<[u8; 32]>;
 
-    /// Convert the data to a signature
-    fn ed25519_unchecked(&self) -> [u8; 64];
+    /// Convert the bytes to a 64 byte array
+    fn bytes64(&self) -> Result<[u8; 64]>;
+
+    /// Convert the bytes to a fixed size array
+    fn bytes<const N: usize>(&self) -> Result<[u8; N]>;
 }
 
-impl ToSig for &Vec<u8> {
-    fn ed25519(&self) -> Result<[u8; 64]> {
-        if self.len() != 64 {
-            anyhow::bail!(
-                "Invalid signature length, expected 64 bytes, got {}",
-                self.len()
-            );
-        }
-
-        let mut sig = [0u8; 64];
-        sig.copy_from_slice(&self[..64]);
-        Ok(sig)
+impl<T: AsRef<[u8]>> FixedBytes for T {
+    fn bytes32(&self) -> Result<[u8; 32]> {
+        self.bytes::<32>()
     }
 
-    fn ed25519_unchecked(&self) -> [u8; 64] {
-        let mut sig = [0u8; 64];
-        sig.copy_from_slice(&self[..64]);
-        sig
-    }
-}
-
-impl ToSig for Vec<u8> {
-    fn ed25519(&self) -> Result<[u8; 64]> {
-        (&self).ed25519()
+    fn bytes64(&self) -> Result<[u8; 64]> {
+        self.bytes::<64>()
     }
 
-    fn ed25519_unchecked(&self) -> [u8; 64] {
-        (&self).ed25519_unchecked()
+    fn bytes<const N: usize>(&self) -> Result<[u8; N]> {
+        self.as_ref()
+            .try_into()
+            .map_err(|_| anyhow::anyhow!("expected {N} bytes, got {} bytes", self.as_ref().len()))
     }
 }

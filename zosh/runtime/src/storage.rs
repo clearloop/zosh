@@ -1,15 +1,36 @@
 //! The storage of zosh
 
 use anyhow::Result;
-use zcore::{Block, State, TrieKey};
+use std::sync::Arc;
+use zcore::{state::key, Block, State, TrieKey};
 
 /// The storage for the zosh bridge
-pub trait Storage {
+pub trait Storage: Send + Sync + 'static {
     /// Batch the zosh state
-    fn state(&self) -> State;
+    fn state(&self) -> Result<State> {
+        let mut state = State::default();
+        if let Some(value) = self.get(&key::ACCUMULATOR_KEY)? {
+            state.accumulator = value
+                .try_into()
+                .map_err(|e| anyhow::anyhow!("Invalid accumulator: {e:?}"))?;
+        }
+
+        if let Some(value) = self.get(&key::BFT_KEY)? {
+            state.bft = postcard::from_bytes(&value)?;
+        }
+
+        if let Some(value) = self.get(&key::PRESENT_KEY)? {
+            state.present = postcard::from_bytes(&value)?;
+        }
+
+        Ok(state)
+    }
+
+    /// Get the value of the key
+    fn get(&self, key: &[u8]) -> Result<Option<Vec<u8>>>;
 
     /// Batch the operations to the storage
-    fn commit(&self, operations: Vec<Operation>) -> Result<()>;
+    fn commit(&self, commit: Commit) -> Result<()>;
 
     /// Set the block to the storage
     fn set_block(&self, block: Block) -> Result<()>;
@@ -20,10 +41,40 @@ pub trait Storage {
     fn set_txs(&self, txs: Vec<Vec<u8>>) -> Result<()>;
 
     /// Check if transaction id exists in the storage
-    fn exists(&self, key: &[u8]) -> bool;
+    fn exists(&self, key: &[u8]) -> Result<bool>;
 
     /// Get the root of the state
-    fn root(&self) -> [u8; 32];
+    fn root(&self) -> Result<[u8; 32]>;
+}
+
+impl<S: Storage> Storage for Arc<S> {
+    fn state(&self) -> Result<State> {
+        self.as_ref().state()
+    }
+
+    fn get(&self, key: &[u8]) -> Result<Option<Vec<u8>>> {
+        self.as_ref().get(key)
+    }
+
+    fn commit(&self, commit: Commit) -> Result<()> {
+        self.as_ref().commit(commit)
+    }
+
+    fn set_block(&self, block: Block) -> Result<()> {
+        self.as_ref().set_block(block)
+    }
+
+    fn set_txs(&self, txs: Vec<Vec<u8>>) -> Result<()> {
+        self.as_ref().set_txs(txs)
+    }
+
+    fn exists(&self, key: &[u8]) -> Result<bool> {
+        self.as_ref().exists(key)
+    }
+
+    fn root(&self) -> Result<[u8; 32]> {
+        self.as_ref().root()
+    }
 }
 
 /// Commit builder

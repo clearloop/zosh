@@ -1,6 +1,6 @@
 //! The subscription of the solana client
 
-use crate::{solana::SolanaClient, Event};
+use crate::solana::SolanaClient;
 use anyhow::Result;
 use base64::{engine::general_purpose::STANDARD, Engine};
 use futures_util::StreamExt;
@@ -16,12 +16,12 @@ use zcore::{
 };
 use zosh::{
     client::{AnchorDeserialize, Discriminator},
-    BurnEvent, MintEvent,
+    BurnEvent,
 };
 
 impl SolanaClient {
     /// Subscribe to the solana client
-    pub async fn subscribe(&self, tx: mpsc::Sender<Event>) -> Result<()> {
+    pub async fn subscribe(&self, tx: mpsc::Sender<Bridge>) -> Result<()> {
         let filter = RpcTransactionLogsFilter::Mentions(vec![zosh::ID.to_string()]);
         let config = RpcTransactionLogsConfig {
             commitment: Some(CommitmentConfig::confirmed()),
@@ -34,18 +34,15 @@ impl SolanaClient {
                 err,
                 logs,
             } = response.value;
-            if err.is_some() {
+            if let Some(err) = err {
+                tracing::error!("{err:?}");
                 continue;
             }
 
             // Parse events from logs
-            //
-            // TODO: shall we embed slot in the event as well?
             for entry in &logs {
-                if handle_event(tx.clone(), entry, signature.clone())
-                    .await
-                    .is_err()
-                {
+                if let Err(e) = handle_event(tx.clone(), entry, signature.clone()).await {
+                    tracing::error!("{e:?}");
                     continue;
                 }
             }
@@ -58,49 +55,33 @@ impl SolanaClient {
 }
 
 /// Parse an Anchor event from a Solana program log entry
-async fn handle_event(tx: mpsc::Sender<Event>, log: &str, signature: String) -> Result<()> {
-    let log = log
-        .trim_start_matches("Program log: ")
-        .trim_start_matches("Program data: ");
+async fn handle_event(tx: mpsc::Sender<Bridge>, log: &str, signature: String) -> Result<()> {
+    let data_prefix = "Program data: ";
+    if !log.starts_with(data_prefix) {
+        return Ok(());
+    }
 
-    let bytes = STANDARD.decode(log.trim())?;
+    let encoded = log.trim_start_matches(data_prefix).trim();
+    let bytes = STANDARD.decode(encoded)?;
     if bytes.len() < 8 {
         anyhow::bail!("Invalid log length");
     }
 
-    let data = &mut &bytes[8..];
-    match &bytes[..8] {
-        BurnEvent::DISCRIMINATOR => {
-            let burn = BurnEvent::deserialize(data)?;
-            tracing::debug!(
-                "Received bridge request target={}, amount={}",
-                burn.zec_recipient,
-                burn.amount
-            );
-            tx.send(Event::Bridge(Bridge {
-                coin: Coin::Zec,
-                recipient: burn.zec_recipient.into(),
-                amount: burn.amount,
-                txid: bs58::decode(signature).into_vec()?,
-                source: Chain::Solana,
-                target: Chain::Zcash,
-            }))
-            .await?;
-        }
-        MintEvent::DISCRIMINATOR => {
-            // TODO: probably we don't need prompt the receipt event
-            // here, it should be fetched on confirming the transaction.
-            let mint = MintEvent::deserialize(data)?;
-            for (recipient, amount) in mint.mints {
-                tracing::debug!(
-                    "Received mint event: recipient={}, amount={}",
-                    recipient,
-                    amount
-                );
-            }
-        }
-        _ => {}
+    // Check if this is a BurnEvent by comparing discriminators
+    if &bytes[..8] != BurnEvent::DISCRIMINATOR {
+        return Ok(());
     }
 
+    let data = &mut &bytes[8..];
+    let burn = BurnEvent::deserialize(data)?;
+    tx.send(Bridge {
+        coin: Coin::Zec,
+        recipient: burn.zec_recipient.into(),
+        amount: burn.amount,
+        txid: bs58::decode(signature).into_vec()?,
+        source: Chain::Solana,
+        target: Chain::Zcash,
+    })
+    .await?;
     Ok(())
 }

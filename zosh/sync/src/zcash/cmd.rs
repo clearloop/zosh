@@ -3,13 +3,12 @@
 use crate::config::Config;
 use crate::zcash::{
     self,
-    light::Light,
+    light::ZcashClient,
     signer::{GroupSigners, SignerInfo},
     AddressCodec, UnifiedAddress, UnifiedFullViewingKey,
 };
 use anyhow::Result;
 use clap::Parser;
-use std::path::Path;
 use zcash_client_backend::data_api::wallet::ConfirmationsPolicy;
 use zcash_client_backend::data_api::WalletRead;
 use zcash_client_backend::proto::service::Empty;
@@ -65,8 +64,8 @@ pub enum Zcash {
 
 impl Zcash {
     /// Run the zcash command
-    pub async fn run(&self, cache: &Path, config: &Config) -> Result<()> {
-        let cfg = config.zcash(cache)?;
+    pub async fn run(&self, config: &Config) -> Result<()> {
+        let cfg = config.zcash()?;
         match self {
             Self::Light => self.light(&cfg).await,
             Self::Sync => self.sync(&cfg).await,
@@ -97,7 +96,7 @@ impl Zcash {
 
     /// Get the light client info
     async fn light(&self, cfg: &zcash::light::Config) -> Result<()> {
-        let mut light = Light::new(cfg).await?;
+        let mut light = ZcashClient::new(cfg).await?;
         let info = light.client.get_lightd_info(Empty {}).await?;
         println!("Light client info: {:?}", info);
         Ok(())
@@ -105,14 +104,14 @@ impl Zcash {
 
     /// Sync the local wallet with the remote light client
     async fn sync(&self, cfg: &zcash::light::Config) -> Result<()> {
-        let mut light = Light::new(cfg).await?;
+        let mut light = ZcashClient::new(cfg).await?;
         light.sync().await?;
         Ok(())
     }
 
     /// Import a unified full viewing key
     async fn import(&self, cfg: &zcash::light::Config, ufvk: &str, name: &str) -> Result<()> {
-        let mut light = Light::new(cfg).await?;
+        let mut light = ZcashClient::new(cfg).await?;
         light
             .import(
                 name,
@@ -125,7 +124,7 @@ impl Zcash {
 
     /// Get the wallet summary
     async fn summary(&self, cfg: &zcash::light::Config) -> Result<()> {
-        let light = Light::new(cfg).await?;
+        let light = ZcashClient::new(cfg).await?;
         let summary = light
             .wallet
             .get_wallet_summary(ConfirmationsPolicy::new_symmetrical(1.try_into().unwrap()))?
@@ -143,7 +142,7 @@ impl Zcash {
         recipient: &str,
         amount: f32,
     ) -> Result<()> {
-        let mut light = Light::new(cfg).await?;
+        let mut light = ZcashClient::new(cfg).await?;
         light
             .dev_send(
                 &postcard::from_bytes(&bs58::decode(group).into_vec()?)?,

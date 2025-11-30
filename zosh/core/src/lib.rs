@@ -4,7 +4,7 @@ pub use {
     block::{Block, Head, Header},
     ex::Extrinsic,
     state::State,
-    util::{Message, ToSig},
+    util::{FixedBytes, Message},
 };
 
 pub mod bft;

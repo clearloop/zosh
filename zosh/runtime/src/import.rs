@@ -14,19 +14,24 @@ impl<C: Config> Runtime<C> {
     ///
     /// TODO: but we need to validate the rotation of the validators here.
     pub fn import(&mut self, block: Block) -> Result<()> {
-        let state = self.storage.state();
+        let state = self.storage.state()?;
         state.bft.validate_votes(&block.header)?;
 
         // 1. validate the parent state root
-        if block.header.state != self.storage.root() {
+        if block.header.state != self.storage.root()? {
             anyhow::bail!("Invalid parent state root");
         }
 
         // 2. update the accumulator with the signatures of the block
-        let txs = block.extrinsic.transactions();
-        let accumulator = self.accumulate(state.accumulator, txs.clone())?;
+        let txs = block.extrinsic.txs();
+        let accumulator = self.accumulate(state.accumulator, &txs)?;
         if accumulator != block.header.accumulator {
-            anyhow::bail!("Invalid accumulator");
+            anyhow::bail!(
+                "Invalid accumulator: parent={}, txs={}, accumulator={}",
+                bs58::encode(state.accumulator).into_string(),
+                txs.len(),
+                bs58::encode(accumulator).into_string()
+            );
         }
 
         // 3. stores the block to the storage
@@ -35,7 +40,7 @@ impl<C: Config> Runtime<C> {
         commit.insert(key::ACCUMULATOR_KEY, crypto::blake3(&accumulator).to_vec());
         commit.insert(key::BFT_KEY, postcard::to_allocvec(&state.bft)?);
         commit.insert(key::PRESENT_KEY, postcard::to_allocvec(&head)?);
-        self.storage.commit(commit.ops())?;
+        self.storage.commit(commit)?;
         self.storage.set_block(block)?;
         self.storage.set_txs(txs)?;
         Ok(())

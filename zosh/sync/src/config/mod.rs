@@ -3,12 +3,35 @@
 use crate::{solana, zcash::SignerInfo};
 use anyhow::Result;
 use serde::{Deserialize, Serialize};
-use std::{fs, path::Path};
+use std::{
+    fs,
+    path::{Path, PathBuf},
+    sync::LazyLock,
+};
 pub use {crate::zcash, key::Key, network::Network, rpc::Rpc};
 
 mod key;
 mod network;
 mod rpc;
+
+/// The cache directory
+pub static CACHE_DIR: LazyLock<PathBuf> = LazyLock::new(|| {
+    dirs::home_dir()
+        .expect("home directory not found")
+        .join(".cache")
+        .join("zosh")
+});
+
+/// The configuration directory
+pub static CONFIG_DIR: LazyLock<PathBuf> = LazyLock::new(|| {
+    dirs::home_dir()
+        .expect("home directory not found")
+        .join(".config")
+        .join("zosh")
+});
+
+/// The configuration file
+pub static CONFIG_FILE: LazyLock<PathBuf> = LazyLock::new(|| CONFIG_DIR.join("config.toml"));
 
 /// Configuration for the zorch node
 #[derive(Debug, Serialize, Deserialize)]
@@ -25,23 +48,22 @@ pub struct Config {
 
 impl Config {
     /// Load the configuration from a file
-    pub fn load(path: &Path) -> Result<Self> {
-        let config = path.join("config.toml");
-        if !config.exists() {
-            return Self::generate(&config);
+    pub fn load() -> Result<Self> {
+        if !CONFIG_FILE.exists() {
+            return Self::generate(CONFIG_FILE.as_path());
         }
-        let file = fs::read_to_string(path.join("config.toml"))?;
+        let file = fs::read_to_string(CONFIG_FILE.as_path())?;
         Ok(toml::from_str(&file)?)
     }
 
     /// Get the zcash light client configuration
-    pub fn zcash(&self, cache: &Path) -> Result<zcash::Config> {
+    pub fn zcash(&self) -> Result<zcash::Config> {
         let group: zcash::GroupSigners =
             postcard::from_bytes(&bs58::decode(self.key.zcash.as_str()).into_vec()?)?;
         let ufvk = group.ufvk()?;
         Ok(zcash::Config {
-            cache: cache.join("chain.db"),
-            wallet: cache.join("wallet.db"),
+            cache: CACHE_DIR.join("chain.db"),
+            wallet: CACHE_DIR.join("wallet.db"),
             lightwalletd: self.rpc.lightwalletd.clone(),
             network: self.network.clone().into(),
             ufvk,

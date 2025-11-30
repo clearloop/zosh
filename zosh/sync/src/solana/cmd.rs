@@ -99,7 +99,7 @@ impl Solana {
     ) -> Result<()> {
         let mints = vec![zosh::types::MintEntry { recipient, amount }];
         let tx = client.mint(mints).await?;
-        let _signature = client.dev_sign_and_send(tx, dev_mpc).await?;
+        let _signature = client.dev_sign_and_send(tx, &dev_mpc).await?;
         self.balance(client, Some(recipient.to_string())).await?;
         Ok(())
     }

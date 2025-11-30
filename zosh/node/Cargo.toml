@@ -8,13 +8,17 @@ sync.workspace = true
 
 # crates-io dependencies
 anyhow.workspace = true
+async-trait.workspace = true
 bs58.workspace = true
 clap.workspace = true
+crypto.workspace = true
 dirs.workspace = true
 hex.workspace = true
+parity-db.workspace = true
 postcard.workspace = true
 rand_core.workspace = true
 reddsa.workspace = true
+rpc.workspace = true
 runtime.workspace = true
 serde.workspace = true
 solana-signer.workspace = true
