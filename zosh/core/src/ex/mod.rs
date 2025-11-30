@@ -24,7 +24,7 @@ pub struct Extrinsic {
 
 impl Extrinsic {
     /// Get the signatures of the extrinsic
-    pub fn transactions(&self) -> Vec<Vec<u8>> {
+    pub fn txs(&self) -> Vec<Vec<u8>> {
         let mut signatures = Vec::new();
         for bundle in &self.bridge {
             for bridge in &bundle.bridge {

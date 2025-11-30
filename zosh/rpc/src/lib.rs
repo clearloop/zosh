@@ -1,14 +1,26 @@
-pub fn add(left: u64, right: u64) -> u64 {
-    left + right
-}
+//! Zosh JSON RPC API.
 
-#[cfg(test)]
-mod tests {
-    use super::*;
+use jsonrpsee::{core::SubscriptionResult, proc_macros::rpc, types::ErrorObjectOwned};
+use zcore::{Block, State};
 
-    #[test]
-    fn it_works() {
-        let result = add(2, 2);
-        assert_eq!(result, 4);
-    }
+pub mod server;
+
+#[cfg_attr(
+    all(feature = "client", feature = "server"),
+    rpc(client, server, namespace = "zosh")
+)]
+#[cfg_attr(feature = "server", rpc(server))]
+#[cfg_attr(feature = "client", rpc(client))]
+pub trait Api {
+    /// Async method call example.
+    #[method(name = "chainInfo")]
+    async fn chain(&self) -> Result<State, ErrorObjectOwned>;
+
+    /// Subscribe to new blocks.
+    #[subscription(name = "subscribeBlock", item = Block)]
+    async fn subscribe_block(&self) -> SubscriptionResult;
+
+    /// Subscribe to transactions status.
+    #[subscription(name = "subscribeTransaction", item = Vec<u8>)]
+    async fn subscribe_transaction(&self, txid: Vec<u8>) -> SubscriptionResult;
 }

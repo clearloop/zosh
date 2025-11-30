@@ -44,7 +44,7 @@ frost-ed25519 = "2.2.0"
 futures-util = "0.3.31"
 hex = "0.4.3"
 incrementalmerkletree = "0.8.2"
-jsonrpsee-http-client = "0.26.0"
+jsonrpsee = "0.26.0"
 mpl-token-metadata = { version = "5.0.0", features = ["serde"] }
 orchard = { version = "0.11.0", default-features = false, features = [
     "unstable-frost",
@@ -58,6 +58,7 @@ rand_core = "0.6.4"
 reddsa = { version = "0.5.1", features = ["frost", "serde"] }
 rusqlite = "0.37.0"
 serde = "1.0.228"
+serde_json = "1.0.145"
 solana-account = "2.2.1"
 solana-client = "2.3.13"
 solana-program = "2.2.1"

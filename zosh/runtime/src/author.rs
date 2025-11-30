@@ -16,7 +16,7 @@ impl<C: Config> Runtime<C> {
 
         // Build the header first
         let root = self.storage.root();
-        let txs = self.pool.extrinsic.transactions();
+        let txs = self.pool.extrinsic.txs();
         let accumulator = self.accumulate(parent.hash, txs)?;
         let header = Header {
             // TODO: if the previous lead failed to author lock, we need to
