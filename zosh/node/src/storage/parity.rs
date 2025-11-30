@@ -99,6 +99,10 @@ impl TryFrom<PathBuf> for Parity {
                     btree_index: true,
                     ..Default::default()
                 },
+                ColumnOptions {
+                    btree_index: true,
+                    ..Default::default()
+                },
             ],
             sync_wal: true,
             sync_data: true,

@@ -4,11 +4,14 @@ use crate::dev::Development;
 use anyhow::Result;
 use runtime::Runtime;
 use solana_signer::Signer;
-use std::time::Instant;
+use std::time::{Duration, Instant};
 use sync::solana::dev;
 
 // The interval to author the block in seconds
 const AUTHOR_INTERVAL: u64 = 3;
+
+/// One second
+const ONE_SECOND: Duration = Duration::from_secs(1);
 
 /// Start the authoring service
 ///
@@ -21,6 +24,7 @@ pub async fn start(mut runtime: Runtime<Development>) -> Result<()> {
 
     loop {
         if now.elapsed().as_secs() < AUTHOR_INTERVAL {
+            tokio::time::sleep(ONE_SECOND).await;
             continue;
         }
 

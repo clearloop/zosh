@@ -2,6 +2,9 @@
 
 use crate::Sync;
 use anyhow::Result;
+use solana_sdk::{pubkey::Pubkey, signature::Signature};
+use zcash_keys::{address::UnifiedAddress, encoding::AddressCodec};
+use zcash_protocol::TxId;
 use zcore::{
     ex::{Bridge, BridgeBundle, Receipt},
     registry::{Chain, Coin},
@@ -25,7 +28,11 @@ impl Sync {
         }
 
         let (sol_bundles, sol_receipts) = self.bundle_sol_bridges(sol_bundles).await?;
-        Ok((sol_bundles, sol_receipts))
+        let (zcash_bundles, zcash_receipts) = self.bundle_zcash_bridges(zcash_bundles).await?;
+        Ok((
+            vec![sol_bundles, zcash_bundles].concat(),
+            vec![sol_receipts, zcash_receipts].concat(),
+        ))
     }
 
     /// Bundle the bridge requests for solana
@@ -38,9 +45,11 @@ impl Sync {
         &mut self,
         bridges: Vec<Bridge>,
     ) -> Result<(Vec<BridgeBundle>, Vec<Receipt>)> {
+        tracing::info!("Bundling {} solana bridge requests", bridges.len());
         let mut bundles = Vec::new();
         let mut receipts = Vec::new();
-        for unbundled in bridges.windows(Chain::Solana.max_bundle_size()) {
+        for unbundled in bridges.chunks(Chain::Solana.max_bundle_size()) {
+            tracing::info!("solana bundle size: {:?}", unbundled.len());
             let (bundle, transaction) = self.solana.bundle(unbundled).await?;
             let signature = self
                 .solana
@@ -56,6 +65,14 @@ impl Sync {
                     source: Chain::Zcash,
                     target: Chain::Solana,
                 });
+
+                tracing::info!(
+                    "Fullfilled bridge request from Zcash({}) to Solana({})! amount={} recipient={}",
+                    TxId::from_bytes(bridge.txid.clone().try_into().expect("Invalid zcash txid")),
+                    signature,
+                    bridge.amount,
+                    Pubkey::new_from_array(bridge.recipient.clone().try_into().expect("Invalid solana pubkey"))
+                );
             }
             bundles.push(bundle);
         }
@@ -70,6 +87,7 @@ impl Sync {
         &mut self,
         bridges: Vec<Bridge>,
     ) -> Result<(Vec<BridgeBundle>, Vec<Receipt>)> {
+        tracing::info!("Bundling {} zcash bridge requests", bridges.len());
         let mut bundles = Vec::new();
         let mut receipts = Vec::new();
         for unbundled in bridges.windows(Chain::Zcash.max_bundle_size()) {
@@ -88,6 +106,19 @@ impl Sync {
                     source: Chain::Solana,
                     target: Chain::Zcash,
                 });
+
+                let sig: [u8; 64] = bridge
+                    .txid
+                    .clone()
+                    .try_into()
+                    .expect("Invalid solana signature");
+                tracing::info!(
+                    "Fullfilled bridge request from Solana({}) to Zcash({})! amount={} recipient={:?}",
+                    Signature::from(sig),
+                    txid,
+                    bridge.amount,
+                    UnifiedAddress::decode(&self.zcash.network, &String::from_utf8(bridge.recipient.clone())?).expect("Invalid zcash address")
+                );
             }
             bundles.push(bundle);
         }

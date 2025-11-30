@@ -3,8 +3,9 @@
 use crate::Config;
 use anyhow::Result;
 use solana_pubsub_client::nonblocking::pubsub_client::PubsubClient;
-use solana_sdk::transaction::Transaction;
-pub use solana_sdk::{pubkey::Pubkey, signer::keypair::Keypair};
+pub use solana_sdk::{
+    pubkey::Pubkey, signature::Signature, signer::keypair::Keypair, transaction::Transaction,
+};
 
 use zcore::{
     ex::{Bridge, BridgeBundle},
