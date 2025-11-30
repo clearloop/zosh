@@ -22,7 +22,7 @@ impl SolanaClient {
     ) -> Result<Signature> {
         let mints = vec![MintEntry { recipient, amount }];
         let tx = self.tx.mint(mints).await?;
-        let signature = self.dev_sign_and_send(tx, &mpc).await?;
+        let signature = self.dev_sign_and_send(tx, mpc).await?;
         Ok(signature)
     }
 

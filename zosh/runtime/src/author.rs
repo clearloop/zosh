@@ -33,7 +33,7 @@ impl<C: Config> Runtime<C> {
     }
 
     /// Accumulate the signatures of the extrinsic
-    pub fn accumulate(&self, prev: Hash, txs: &Vec<Vec<u8>>) -> Result<[u8; 32]> {
+    pub fn accumulate(&self, prev: Hash, txs: &[Vec<u8>]) -> Result<[u8; 32]> {
         let mut accumulator = prev.to_vec();
         accumulator.extend_from_slice(&txs.iter().flatten().copied().collect::<Vec<u8>>());
         Ok(crypto::blake3(&accumulator))

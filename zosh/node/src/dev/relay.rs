@@ -3,7 +3,7 @@
 use crate::storage::Parity;
 use anyhow::Result;
 use runtime::{Pool, Storage};
-use std::{sync::Arc, time::Instant};
+use std::{mem, sync::Arc, time::Instant};
 use sync::Sync;
 use tokio::sync::{mpsc, Mutex};
 use zcore::ex::Bridge;
@@ -41,7 +41,7 @@ pub async fn start(
             continue;
         }
 
-        let bundle = sync.bundle(bridges.drain(..).collect()).await?;
+        let bundle = sync.bundle(mem::take(&mut bridges)).await?;
         pool.lock().await.bridge.queue(bundle)?;
         now = Instant::now();
     }
