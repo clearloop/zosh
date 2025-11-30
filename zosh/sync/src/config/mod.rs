@@ -28,7 +28,7 @@ impl Config {
     pub fn load(path: &Path) -> Result<Self> {
         let config = path.join("config.toml");
         if !config.exists() {
-            return Self::generate(path);
+            return Self::generate(&config);
         }
         let file = fs::read_to_string(path.join("config.toml"))?;
         Ok(toml::from_str(&file)?)

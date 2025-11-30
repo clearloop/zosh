@@ -73,7 +73,7 @@ pub struct Initialize<'info> {
     #[account(
         init,
         payer = payer,
-        space = 8 + 32 + 32 + 1,
+        space = 8 + 32 + 32 + 32 + 1,
         seeds = [b"bridge-state"],
         bump
     )]
@@ -129,16 +129,22 @@ pub struct UpdateMetadata<'info> {
     pub zec_mint: Account<'info, Mint>,
 
     /// Metaplex metadata account for the mint.
+    ///
+    /// CHECK: This is the metadata account for the mint.
     #[account(mut)]
     pub metadata: UncheckedAccount<'info>,
 
     /// Metaplex Token Metadata program.
+    ///
+    /// CHECK: This is the Metaplex Token Metadata program.
     pub token_metadata_program: UncheckedAccount<'info>,
 
     /// System program for account creation.
     pub system_program: Program<'info, System>,
 
     /// Sysvar instructions account required by mpl-token-metadata.
+    ///
+    /// CHECK: This is the sysvar instructions account required by mpl-token-metadata.
     pub sysvar_instructions: UncheckedAccount<'info>,
 }
 

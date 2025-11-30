@@ -37,10 +37,10 @@ pub enum Solana {
     /// Get or update the current metadata
     Metadata {
         /// The new of our bridged ZEC
-        #[clap(short, long, default_value = "Zorch ZEC")]
+        #[clap(short, long, default_value = "Zosh ZEC")]
         name: String,
         /// The new symbol of our bridged ZEC
-        #[clap(short, long, default_value = "zrcZEC")]
+        #[clap(short, long, default_value = "zoZEC")]
         symbol: String,
         /// The new URI of our bridged ZEC
         #[clap(
