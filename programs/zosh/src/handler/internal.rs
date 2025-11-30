@@ -10,32 +10,12 @@ use mpl_token_metadata::{
 /// Initialize the bridge with initial validator set
 ///
 /// TODO: ensure this instruction should only be called for once.
-pub fn initialize(
-    ctx: Context<crate::Initialize>,
-    validators: Vec<Pubkey>,
-    threshold: u8,
-) -> Result<()> {
-    let total_validators = validators.len() as u8;
-    require!(total_validators > 0, BridgeError::InvalidThreshold);
-    require!(
-        threshold > 0 && threshold <= total_validators,
-        BridgeError::InvalidThreshold
-    );
-
+pub fn initialize(ctx: Context<crate::Initialize>, mpc: Pubkey) -> Result<()> {
     let bridge_state = &mut ctx.accounts.bridge_state;
     bridge_state.authority = ctx.accounts.payer.key();
-    bridge_state.validators = validators;
-    bridge_state.threshold = threshold;
-    bridge_state.total_validators = total_validators;
-    bridge_state.nonce = 0;
     bridge_state.zec_mint = ctx.accounts.zec_mint.key();
+    bridge_state.mpc = mpc;
     bridge_state.bump = ctx.bumps.bridge_state;
-    msg!(
-        "Bridge initialized with {} validators and threshold {}",
-        total_validators,
-        threshold
-    );
-
     Ok(())
 }
 
@@ -46,9 +26,6 @@ pub fn metadata(
     symbol: String,
     uri: String,
 ) -> Result<()> {
-    msg!("Updating token metadata: {} ({})", name, symbol);
-
-    // Derive the metadata PDA
     let zec_mint_key = ctx.accounts.zec_mint.key();
     let metadata_seeds = &[
         b"metadata",
@@ -57,8 +34,6 @@ pub fn metadata(
     ];
     let (metadata_pda, _bump) =
         Pubkey::find_program_address(metadata_seeds, &mpl_token_metadata::ID);
-
-    // Verify the provided metadata account matches the derived PDA
     require!(
         ctx.accounts.metadata.key() == metadata_pda,
         BridgeError::InvalidRecipient
@@ -103,6 +78,5 @@ pub fn metadata(
         builder.invoke_signed(&[&[b"bridge-state", &[ctx.accounts.bridge_state.bump]]])?;
     }
 
-    msg!("Token metadata updated successfully");
     Ok(())
 }

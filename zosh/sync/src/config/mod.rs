@@ -1,9 +1,8 @@
 //! Configuration for the zorch node
 
-use crate::zcash::{GroupSigners, SignerInfo};
+use crate::{solana, zcash::SignerInfo};
 use anyhow::Result;
 use serde::{Deserialize, Serialize};
-use solana_sdk::signature::Keypair;
 use std::{fs, path::Path};
 pub use {crate::zcash, key::Key, network::Network, rpc::Rpc};
 
@@ -29,7 +28,7 @@ impl Config {
     pub fn load(path: &Path) -> Result<Self> {
         let config = path.join("config.toml");
         if !config.exists() {
-            return Self::generate(path);
+            return Self::generate(&config);
         }
         let file = fs::read_to_string(path.join("config.toml"))?;
         Ok(toml::from_str(&file)?)
@@ -37,7 +36,7 @@ impl Config {
 
     /// Get the zcash light client configuration
     pub fn zcash(&self, cache: &Path) -> Result<zcash::Config> {
-        let group: GroupSigners =
+        let group: zcash::GroupSigners =
             postcard::from_bytes(&bs58::decode(self.key.zcash.as_str()).into_vec()?)?;
         let ufvk = group.ufvk()?;
         Ok(zcash::Config {
@@ -58,9 +57,10 @@ impl Config {
                 lightwalletd: "http://127.0.0.1:9067".parse()?,
             },
             key: Key {
-                zcash: bs58::encode(postcard::to_allocvec(&GroupSigners::new(3, 2)?)?)
+                zcash: bs58::encode(postcard::to_allocvec(&zcash::GroupSigners::new(3, 2)?)?)
                     .into_string(),
-                solana: Keypair::new().to_base58_string(),
+                solana: bs58::encode(postcard::to_allocvec(&solana::GroupSigners::new(3, 2)?)?)
+                    .into_string(),
             },
             network: Network::Testnet,
         };

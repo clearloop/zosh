@@ -1,5 +1,6 @@
 //! Zcash group signers
 
+use crate::zcash::SignerInfo;
 use anyhow::Result;
 use orchard::{
     builder::MaybeSigned,
@@ -20,9 +21,7 @@ use zcash_primitives::transaction::{
     Authorized, TransactionData, Unauthorized,
 };
 
-use crate::zcash::SignerInfo;
-
-/// Zcash group signers
+/// DEV_ONLY: Zcash group signers
 #[derive(Serialize, Deserialize)]
 pub struct GroupSigners {
     /// shares of the signers

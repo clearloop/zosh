@@ -1,11 +1,13 @@
 //! Solana command line interface
 
-use crate::Config;
+use crate::{
+    solana::{GroupSigners, SolanaClient, SolanaSignerInfo},
+    Config,
+};
 use anyhow::Result;
 use clap::Parser;
-use solana_sdk::{pubkey::Pubkey, signature::Keypair};
+use solana_sdk::pubkey::Pubkey;
 use std::str::FromStr;
-use zosh::client::ZoshClient;
 
 /// Solana command line interface
 #[derive(Parser)]
@@ -31,13 +33,27 @@ pub enum Solana {
         recipient: String,
     },
 
+    DevMint {
+        /// The address of the recipient
+        #[clap(
+            short,
+            long,
+            default_value = "FVyaCqkMQmju9i36gprXpwo5jMU12FLoPvwBMocYdPjt"
+        )]
+        recipient: Pubkey,
+
+        /// The amount to mint
+        #[clap(short, long)]
+        amount: u64,
+    },
+
     /// Get or update the current metadata
     Metadata {
         /// The new of our bridged ZEC
-        #[clap(short, long, default_value = "Zorch ZEC")]
+        #[clap(short, long, default_value = "Zosh ZEC")]
         name: String,
         /// The new symbol of our bridged ZEC
-        #[clap(short, long, default_value = "zrcZEC")]
+        #[clap(short, long, default_value = "zoZEC")]
         symbol: String,
         /// The new URI of our bridged ZEC
         #[clap(
@@ -54,17 +70,17 @@ pub enum Solana {
 impl Solana {
     /// Run the Solana command
     pub async fn run(&self, config: &Config) -> Result<()> {
-        let keypair = Keypair::from_base58_string(&config.key.solana);
-        let client = ZoshClient::new(
-            config.rpc.solana.to_string(),
-            config.rpc.solana_ws.to_string(),
-            keypair,
-        )?;
+        let mpc: GroupSigners =
+            postcard::from_bytes(&bs58::decode(&config.key.solana).into_vec()?)?;
+        let client = SolanaClient::new(config).await?;
 
         match self {
-            Self::State => self.initialize(client).await,
+            Self::State => self.initialize(client, mpc.pubkey()).await,
             Self::Balance { address } => self.balance(client, address.clone()).await,
             Self::Burn { amount, recipient } => self.burn(client, *amount, recipient.clone()).await,
+            Self::DevMint { recipient, amount } => {
+                self.dev_mint(client, mpc, *recipient, *amount).await
+            }
             Self::Metadata {
                 name,
                 symbol,
@@ -74,23 +90,40 @@ impl Solana {
         }
     }
 
+    async fn dev_mint(
+        &self,
+        client: SolanaClient,
+        dev_mpc: GroupSigners,
+        recipient: Pubkey,
+        amount: u64,
+    ) -> Result<()> {
+        let mints = vec![zosh::types::MintEntry { recipient, amount }];
+        let tx = client.mint(mints).await?;
+        let _signature = client.dev_sign_and_send(tx, dev_mpc).await?;
+        self.balance(client, Some(recipient.to_string())).await?;
+        Ok(())
+    }
+
     /// Initialize the bridge
-    async fn initialize(&self, client: ZoshClient) -> Result<()> {
+    async fn initialize(&self, client: SolanaClient, mpc: Pubkey) -> Result<()> {
         if let Ok(state) = client.bridge_state().await {
             println!("{state:#?}");
             return Ok(());
         }
 
-        let _ = client.initialize(vec![client.payer()], 1).await?;
+        // prints the state
+        client.initialize(mpc).await?;
         let state = client.bridge_state().await?;
         println!("{state:#?}");
         Ok(())
     }
 
     /// Burn sZEC to bridge back to Zcash
-    async fn burn(&self, client: ZoshClient, amount: u64, address: String) -> Result<()> {
-        client.send_burn(amount, address).await?;
-        let balance = client.zec_balance(client.payer()).await?;
+    async fn burn(&self, client: SolanaClient, amount: u64, address: String) -> Result<()> {
+        client.burn(amount, address).await?;
+
+        // prints the balance
+        let balance = client.zec_balance(client.program.payer()).await?;
         println!("{balance:#?}");
         Ok(())
     }
@@ -98,7 +131,7 @@ impl Solana {
     /// Get the current metadata
     async fn metadata(
         &self,
-        client: ZoshClient,
+        client: SolanaClient,
         name: &str,
         symbol: &str,
         uri: &str,
@@ -114,14 +147,16 @@ impl Solana {
         client
             .update_metadata(name.to_owned(), symbol.to_owned(), uri.to_owned())
             .await?;
+
+        // prints the metadata
         let metadata = client.metadata().await?;
         println!("{metadata:#?}");
         Ok(())
     }
 
     /// Get the current zec balance for a recipient
-    async fn balance(&self, client: ZoshClient, address: Option<String>) -> Result<()> {
-        let address = address.unwrap_or_else(|| client.payer().to_string());
+    async fn balance(&self, client: SolanaClient, address: Option<String>) -> Result<()> {
+        let address = address.unwrap_or_else(|| client.program.payer().to_string());
         let recipient = Pubkey::from_str(&address)?;
         let balance = client.zec_balance(recipient).await?;
         println!("{balance:#?}");

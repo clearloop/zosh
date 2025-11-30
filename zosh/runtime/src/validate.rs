@@ -11,11 +11,10 @@ impl<C: Config> Runtime<C> {
         self.validate_duplications(&block.extrinsic)?;
         self.sync.validate_bridges(&block.extrinsic.bridge)?;
         self.sync.validate_receipts(&block.extrinsic.receipts)?;
-        let hash = block.header.hash();
-        self.sync
-            .solana
-            .sign_message(&hash)
-            .map(|sig| *sig.as_array())
+        let _hash = block.header.hash();
+
+        // TODO: sign the hash with validators' keypair
+        todo!()
     }
 
     /// Validate the duplications of the extrinsic

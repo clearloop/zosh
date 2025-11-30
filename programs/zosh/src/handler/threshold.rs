@@ -1,10 +1,6 @@
 //! Threshold action handlers - operations that require validator signatures
 
-use crate::{
-    errors::BridgeError,
-    events::{MintEvent, ValidatorSetUpdated},
-    utils::verify_threshold_signatures,
-};
+use crate::{errors::BridgeError, events::MintEvent};
 use anchor_lang::prelude::*;
 use anchor_spl::token::{self, MintTo, TokenAccount};
 
@@ -15,60 +11,59 @@ pub const MAX_BATCH_SIZE: usize = 10;
 pub fn mint<'info>(
     ctx: Context<'_, '_, '_, 'info, crate::MintZec<'info>>,
     mints: Vec<crate::types::MintEntry>,
-    signatures: Vec<[u8; 64]>,
 ) -> Result<()> {
     require!(
         !mints.is_empty() && mints.len() <= MAX_BATCH_SIZE,
         BridgeError::InvalidBatchSize
     );
 
-    // Validate all amounts and compute total
-    let nonce = ctx.accounts.bridge_state.nonce;
-    let mut message = nonce.to_le_bytes().to_vec();
-    for mint_entry in &mints {
-        require!(mint_entry.amount > 0, BridgeError::InvalidAmount);
-        message.extend_from_slice(mint_entry.recipient.as_ref());
-        message.extend_from_slice(&mint_entry.amount.to_le_bytes());
-    }
-
-    // Get references for verification
-
-    let validators = ctx.accounts.bridge_state.validators.clone();
-    let threshold = ctx.accounts.bridge_state.threshold;
-    let bridge_state_bump = ctx.accounts.bridge_state.bump;
-
-    // Verify threshold signatures from current validator set
-    let _signers = verify_threshold_signatures(
-        &message,
-        &signatures,
-        &validators,
-        threshold,
-        &ctx.accounts.instructions,
-    )?;
-
-    // Verify we have the correct number of remaining accounts
-    require!(
-        ctx.remaining_accounts.len() == mints.len(),
-        BridgeError::InvalidAccountCount
-    );
-
     // Process each mint in the batch
+    let bridge_state_bump = ctx.accounts.bridge_state.bump;
     let mut mint_tuples = Vec::with_capacity(mints.len());
     let zec_mint_key = ctx.accounts.zec_mint.key();
     let seeds = &[b"bridge-state".as_ref(), &[bridge_state_bump]];
     let signer_seeds = &[&seeds[..]];
+
+    // We need recipient accounts in remaining_accounts after the ATAs
+    // Remaining accounts layout: [ata0, recipient0, ata1, recipient1, ...]
+    require!(
+        ctx.remaining_accounts.len() == mints.len() * 2,
+        BridgeError::InvalidRecipient
+    );
+
     for (i, mint_entry) in mints.iter().enumerate() {
-        let recipient_token_account_info = &ctx.remaining_accounts[i];
-        let token_account_data = recipient_token_account_info.try_borrow_data()?;
-        let token_account = TokenAccount::try_deserialize(&mut &token_account_data[..])?;
-        require!(token_account.mint == zec_mint_key, BridgeError::InvalidMint);
+        let recipient_token_account_info = &ctx.remaining_accounts[i * 2];
+        let recipient_account_info = &ctx.remaining_accounts[i * 2 + 1];
         require!(
-            token_account.owner == mint_entry.recipient,
+            recipient_account_info.key() == mint_entry.recipient,
             BridgeError::InvalidRecipient
         );
 
+        // Check if the ATA exists, create it if not
+        if recipient_token_account_info.data_is_empty() {
+            let cpi_accounts = anchor_spl::associated_token::Create {
+                payer: ctx.accounts.payer.to_account_info(),
+                associated_token: recipient_token_account_info.to_account_info(),
+                authority: recipient_account_info.to_account_info(),
+                mint: ctx.accounts.zec_mint.to_account_info(),
+                system_program: ctx.accounts.system_program.to_account_info(),
+                token_program: ctx.accounts.token_program.to_account_info(),
+            };
+            let cpi_program = ctx.accounts.associated_token_program.to_account_info();
+            let cpi_ctx = CpiContext::new(cpi_program, cpi_accounts);
+            anchor_spl::associated_token::create(cpi_ctx)?;
+        } else {
+            let token_account_data = recipient_token_account_info.try_borrow_data()?;
+            let token_account = TokenAccount::try_deserialize(&mut &token_account_data[..])?;
+            require!(token_account.mint == zec_mint_key, BridgeError::InvalidMint);
+            require!(
+                token_account.owner == mint_entry.recipient,
+                BridgeError::InvalidRecipient
+            );
+            drop(token_account_data);
+        }
+
         // Mint tokens to this recipient
-        drop(token_account_data);
         let cpi_accounts = MintTo {
             mint: ctx.accounts.zec_mint.to_account_info(),
             to: recipient_token_account_info.to_account_info(),
@@ -83,67 +78,24 @@ pub fn mint<'info>(
     // Emit batch event
     emit!(MintEvent {
         mints: mint_tuples,
-        nonce,
         timestamp: Clock::get()?.unix_timestamp,
     });
 
-    // Increment nonce once for entire batch
-    ctx.accounts.bridge_state.nonce += 1;
     Ok(())
 }
 
-/// Updates the entire validator set.
-pub fn validators(
-    ctx: Context<crate::Validators>,
-    new_validators: Vec<Pubkey>,
-    new_threshold: u8,
-    signatures: Vec<[u8; 64]>,
+/// Updates the MPC pubkey in the bridge state.
+pub fn update_mpc<'info>(
+    ctx: Context<'_, '_, '_, 'info, crate::UpdateMpc<'info>>,
+    new_mpc: Pubkey,
 ) -> Result<()> {
-    let bridge_state = &mut ctx.accounts.bridge_state;
-    let new_total = new_validators.len() as u8;
-
-    // Validate new threshold
+    // Verify that the signer is the MPC
     require!(
-        new_threshold > 0 && new_threshold <= new_total,
-        BridgeError::InvalidThreshold
-    );
-    require!(new_total > 0, BridgeError::InvalidThreshold);
-
-    // Serialize action data for signature verification
-    let nonce = bridge_state.nonce;
-    let mut message = nonce.to_le_bytes().to_vec();
-    message.extend_from_slice(&new_threshold.to_le_bytes());
-    for validator in &new_validators {
-        message.extend_from_slice(validator.as_ref());
-    }
-
-    // Verify threshold signatures from current validator set
-    let _signers = verify_threshold_signatures(
-        &message,
-        &signatures,
-        &bridge_state.validators,
-        bridge_state.threshold,
-        &ctx.accounts.instructions,
-    )?;
-
-    // Emit event
-    emit!(ValidatorSetUpdated {
-        old_validators: bridge_state.validators.clone(),
-        new_validators: new_validators.clone(),
-        threshold: new_threshold,
-        nonce: bridge_state.nonce,
-    });
-
-    // Update the validator set
-    bridge_state.validators = new_validators;
-    bridge_state.threshold = new_threshold;
-    bridge_state.total_validators = new_total;
-    bridge_state.nonce += 1;
-    msg!(
-        "Validator set updated to {} validators with threshold {}",
-        new_total,
-        new_threshold
+        ctx.accounts.payer.key() == ctx.accounts.bridge_state.mpc,
+        BridgeError::InvalidMpcSigner
     );
 
+    let bridge_state = &mut ctx.accounts.bridge_state;
+    bridge_state.mpc = new_mpc;
     Ok(())
 }
