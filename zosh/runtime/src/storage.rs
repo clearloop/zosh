@@ -1,6 +1,7 @@
 //! The storage of zosh
 
 use anyhow::Result;
+use std::sync::Arc;
 use zcore::{Block, State, TrieKey};
 
 /// The storage for the zosh bridge
@@ -24,6 +25,32 @@ pub trait Storage: Send + Sync + 'static {
 
     /// Get the root of the state
     fn root(&self) -> Result<[u8; 32]>;
+}
+
+impl<S: Storage> Storage for Arc<S> {
+    fn state(&self) -> State {
+        self.as_ref().state()
+    }
+
+    fn commit(&self, commit: Commit) -> Result<()> {
+        self.as_ref().commit(commit)
+    }
+
+    fn set_block(&self, block: Block) -> Result<()> {
+        self.as_ref().set_block(block)
+    }
+
+    fn set_txs(&self, txs: Vec<Vec<u8>>) -> Result<()> {
+        self.as_ref().set_txs(txs)
+    }
+
+    fn exists(&self, key: &[u8]) -> Result<bool> {
+        self.as_ref().exists(key)
+    }
+
+    fn root(&self) -> Result<[u8; 32]> {
+        self.as_ref().root()
+    }
 }
 
 /// Commit builder

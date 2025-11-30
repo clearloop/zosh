@@ -1,18 +1,11 @@
-//! The development node implementation
+//! The development hook implementation
 
-use crate::node::Development;
 use anyhow::Result;
 use rpc::server::SubscriptionManager;
-use runtime::{Hook, Runtime};
+use runtime::Hook;
 use zcore::Block;
 
-/// The development node implementation
-pub struct Dev {
-    /// The runtime
-    pub runtime: Runtime<Development>,
-}
-
-/// The development hook
+/// The development hook implementation
 pub struct DevHook {
     manager: SubscriptionManager,
 }
