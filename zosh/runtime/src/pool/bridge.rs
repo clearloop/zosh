@@ -7,6 +7,9 @@ use zcore::{ex::BridgeBundle, Hash};
 /// The bridge requests pool for zosh
 #[derive(Default)]
 pub struct BridgePool {
+    /// The threshold for the bridge requests
+    pub threshold: usize,
+
     /// The in-progress bridge requests, aggregating signatures
     in_progress: BTreeMap<Hash, BridgeBundle>,
 
@@ -15,6 +18,15 @@ pub struct BridgePool {
 }
 
 impl BridgePool {
+    /// Create a new bridge requests pool
+    pub fn new(threshold: usize) -> Self {
+        Self {
+            threshold,
+            in_progress: BTreeMap::new(),
+            completed: BTreeMap::new(),
+        }
+    }
+
     /// Queue a bridge bundle
     pub fn queue(&mut self, bundles: Vec<BridgeBundle>) -> Result<()> {
         for bundle in bundles {
@@ -27,14 +39,14 @@ impl BridgePool {
     /// Complete a bridge bundle
     ///
     /// NOTE: need to just the voting power once we get to PoS.
-    pub fn complete(&mut self, bundle_hash: Hash, signature: Vec<u8>, threshold: usize) {
+    pub fn complete(&mut self, bundle_hash: Hash, signature: Vec<u8>) {
         let Some(bundle) = self.in_progress.get_mut(&bundle_hash) else {
             return;
         };
 
         // push the signature to the bundle
         bundle.signatures.push(signature);
-        if bundle.signatures.len() < threshold {
+        if bundle.signatures.len() < self.threshold {
             return;
         }
 

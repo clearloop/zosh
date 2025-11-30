@@ -1,13 +1,12 @@
 //! The development node services
 
+use crate::storage::Parity;
 use anyhow::Result;
 use runtime::{Pool, Storage};
 use std::{sync::Arc, time::Instant};
 use sync::Sync;
 use tokio::sync::{mpsc, Mutex};
 use zcore::ex::Bridge;
-
-use crate::storage::Parity;
 
 // The interval to bundle the transactions in seconds
 const BUNDLE_INTERVAL: u64 = 3;

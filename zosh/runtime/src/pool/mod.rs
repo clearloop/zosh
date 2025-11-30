@@ -17,6 +17,14 @@ pub struct Pool {
 }
 
 impl Pool {
+    /// Create a new mempool
+    pub fn new(threshold: usize) -> Self {
+        Self {
+            bridge: BridgePool::new(threshold),
+            receipt: Vec::new(),
+        }
+    }
+
     /// Pack the pool into an extrinsic
     pub fn pack(&mut self) -> Result<Extrinsic> {
         let receipts = self.receipt.drain(..).collect();

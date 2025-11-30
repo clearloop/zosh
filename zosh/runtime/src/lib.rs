@@ -26,10 +26,10 @@ pub struct Runtime<C: Config> {
 
 impl<C: Config> Runtime<C> {
     /// Create a new runtime
-    pub async fn new(hook: C::Hook, storage: C::Storage) -> Result<Self> {
+    pub async fn new(hook: C::Hook, storage: C::Storage, threshold: usize) -> Result<Self> {
         Ok(Self {
             hook,
-            pool: Arc::new(Mutex::new(Pool::default())),
+            pool: Arc::new(Mutex::new(Pool::new(threshold))),
             storage,
         })
     }

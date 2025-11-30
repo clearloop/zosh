@@ -11,6 +11,7 @@ use tokio::sync::{mpsc, Mutex};
 use zcore::ex::Bridge;
 
 mod author;
+mod genesis;
 mod hook;
 mod relay;
 
@@ -35,7 +36,7 @@ impl Dev {
         let manager = SubscriptionManager::default();
         let hook = DevHook::new(manager.clone());
         let parity = Arc::new(Parity::try_from(CACHE_DIR.join("chain"))?);
-        let runtime = Runtime::new(hook, parity.clone()).await?;
+        let runtime = Runtime::new(hook, parity.clone(), 1).await?;
         let pool = runtime.pool.clone();
         let rpc = Rpc::new(parity.clone(), manager);
         Ok(Self {

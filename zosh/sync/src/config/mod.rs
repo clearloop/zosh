@@ -31,7 +31,7 @@ pub static CONFIG_DIR: LazyLock<PathBuf> = LazyLock::new(|| {
 });
 
 /// The configuration file
-pub static CONFIG_FILE: LazyLock<PathBuf> = LazyLock::new(|| CONFIG_DIR.join("sync.toml"));
+pub static CONFIG_FILE: LazyLock<PathBuf> = LazyLock::new(|| CONFIG_DIR.join("config.toml"));
 
 /// Configuration for the zorch node
 #[derive(Debug, Serialize, Deserialize)]

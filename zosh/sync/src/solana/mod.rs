@@ -18,7 +18,7 @@ pub use {
 };
 
 mod cmd;
-mod dev;
+pub mod dev;
 mod signer;
 mod sub;
 
