@@ -21,7 +21,7 @@ impl<C: Config> Runtime<C> {
     fn validate_duplications(&self, ex: &Extrinsic) -> Result<()> {
         let txs = ex.txs();
         for tx in txs {
-            if self.storage.exists(&tx) {
+            if self.storage.exists(&tx)? {
                 anyhow::bail!("Transaction already processed");
             }
         }

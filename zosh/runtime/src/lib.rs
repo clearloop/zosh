@@ -8,7 +8,7 @@ mod config;
 mod hook;
 mod import;
 mod pool;
-mod storage;
+pub mod storage;
 mod validate;
 
 /// The runtime of the zosh bridge

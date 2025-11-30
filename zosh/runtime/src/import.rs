@@ -18,7 +18,7 @@ impl<C: Config> Runtime<C> {
         state.bft.validate_votes(&block.header)?;
 
         // 1. validate the parent state root
-        if block.header.state != self.storage.root() {
+        if block.header.state != self.storage.root()? {
             anyhow::bail!("Invalid parent state root");
         }
 
@@ -35,7 +35,7 @@ impl<C: Config> Runtime<C> {
         commit.insert(key::ACCUMULATOR_KEY, crypto::blake3(&accumulator).to_vec());
         commit.insert(key::BFT_KEY, postcard::to_allocvec(&state.bft)?);
         commit.insert(key::PRESENT_KEY, postcard::to_allocvec(&head)?);
-        self.storage.commit(commit.ops())?;
+        self.storage.commit(commit)?;
         self.storage.set_block(block)?;
         self.storage.set_txs(txs)?;
         Ok(())

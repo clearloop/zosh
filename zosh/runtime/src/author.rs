@@ -15,7 +15,7 @@ impl<C: Config> Runtime<C> {
         let extrinsic = crypto::blake3(&rawex);
 
         // Build the header first
-        let root = self.storage.root();
+        let root = self.storage.root()?;
         let txs = self.pool.extrinsic.txs();
         let accumulator = self.accumulate(parent.hash, txs)?;
         let header = Header {

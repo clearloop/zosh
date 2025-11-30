@@ -9,7 +9,7 @@ pub trait Storage {
     fn state(&self) -> State;
 
     /// Batch the operations to the storage
-    fn commit(&self, operations: Vec<Operation>) -> Result<()>;
+    fn commit(&self, commit: Commit) -> Result<()>;
 
     /// Set the block to the storage
     fn set_block(&self, block: Block) -> Result<()>;
@@ -20,10 +20,10 @@ pub trait Storage {
     fn set_txs(&self, txs: Vec<Vec<u8>>) -> Result<()>;
 
     /// Check if transaction id exists in the storage
-    fn exists(&self, key: &[u8]) -> bool;
+    fn exists(&self, key: &[u8]) -> Result<bool>;
 
     /// Get the root of the state
-    fn root(&self) -> [u8; 32];
+    fn root(&self) -> Result<[u8; 32]>;
 }
 
 /// Commit builder
