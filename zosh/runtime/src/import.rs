@@ -24,7 +24,7 @@ impl<C: Config> Runtime<C> {
 
         // 2. update the accumulator with the signatures of the block
         let txs = block.extrinsic.txs();
-        let accumulator = self.accumulate(state.accumulator, txs.clone())?;
+        let accumulator = self.accumulate(state.accumulator, &txs)?;
         if accumulator != block.header.accumulator {
             anyhow::bail!("Invalid accumulator");
         }
