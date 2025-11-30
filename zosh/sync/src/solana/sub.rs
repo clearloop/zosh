@@ -56,20 +56,23 @@ impl SolanaClient {
 
 /// Parse an Anchor event from a Solana program log entry
 async fn handle_event(tx: mpsc::Sender<Bridge>, log: &str, signature: String) -> Result<()> {
-    let log = log
-        .trim_start_matches("Program log: ")
-        .trim_start_matches("Program data: ");
+    let data_prefix = "Program data: ";
+    if !log.starts_with(data_prefix) {
+        return Ok(());
+    }
 
-    let bytes = STANDARD.decode(log.trim())?;
+    let encoded = log.trim_start_matches(data_prefix).trim();
+    let bytes = STANDARD.decode(encoded)?;
     if bytes.len() < 8 {
         anyhow::bail!("Invalid log length");
     }
 
-    let data = &mut &bytes[8..];
+    // Check if this is a BurnEvent by comparing discriminators
     if &bytes[..8] != BurnEvent::DISCRIMINATOR {
         return Ok(());
     }
 
+    let data = &mut &bytes[8..];
     let burn = BurnEvent::deserialize(data)?;
     tx.send(Bridge {
         coin: Coin::Zec,

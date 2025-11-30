@@ -14,6 +14,8 @@ impl Sync {
     /// Bundle the bridge requests
     ///
     /// We need to sign the bundles after processed.
+    ///
+    /// TODO: make the bundling process in parallel.
     pub async fn bundle(
         &mut self,
         bridges: Vec<Bridge>,
@@ -27,12 +29,21 @@ impl Sync {
             }
         }
 
-        let (sol_bundles, sol_receipts) = self.bundle_sol_bridges(sol_bundles).await?;
-        let (zcash_bundles, zcash_receipts) = self.bundle_zcash_bridges(zcash_bundles).await?;
-        Ok((
-            vec![sol_bundles, zcash_bundles].concat(),
-            vec![sol_receipts, zcash_receipts].concat(),
-        ))
+        let mut bundles = Vec::new();
+        let mut receipts = Vec::new();
+        if !sol_bundles.is_empty() {
+            let (sol_bundles, sol_receipts) = self.bundle_sol_bridges(sol_bundles).await?;
+            bundles.extend(sol_bundles);
+            receipts.extend(sol_receipts);
+        }
+
+        if !zcash_bundles.is_empty() {
+            let (zcash_bundles, zcash_receipts) = self.bundle_zcash_bridges(zcash_bundles).await?;
+            bundles.extend(zcash_bundles);
+            receipts.extend(zcash_receipts);
+        }
+
+        Ok((bundles, receipts))
     }
 
     /// Bundle the bridge requests for solana
@@ -45,7 +56,6 @@ impl Sync {
         &mut self,
         bridges: Vec<Bridge>,
     ) -> Result<(Vec<BridgeBundle>, Vec<Receipt>)> {
-        tracing::info!("Bundling {} solana bridge requests", bridges.len());
         let mut bundles = Vec::new();
         let mut receipts = Vec::new();
         for unbundled in bridges.chunks(Chain::Solana.max_bundle_size()) {
@@ -87,7 +97,6 @@ impl Sync {
         &mut self,
         bridges: Vec<Bridge>,
     ) -> Result<(Vec<BridgeBundle>, Vec<Receipt>)> {
-        tracing::info!("Bundling {} zcash bridge requests", bridges.len());
         let mut bundles = Vec::new();
         let mut receipts = Vec::new();
         for unbundled in bridges.windows(Chain::Zcash.max_bundle_size()) {
