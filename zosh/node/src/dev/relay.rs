@@ -1,17 +1,50 @@
 //! The development node services
 
 use anyhow::Result;
-use runtime::Pool;
-use std::sync::Arc;
+use runtime::{Pool, Storage};
+use std::{sync::Arc, time::Instant};
 use sync::Sync;
 use tokio::sync::{mpsc, Mutex};
 use zcore::ex::Bridge;
 
+use crate::storage::Parity;
+
+// The interval to bundle the transactions in seconds
+const BUNDLE_INTERVAL: u64 = 3;
+
 /// Start the relay service
-pub async fn start(pool: Arc<Mutex<Pool>>, mut rx: mpsc::Receiver<Bridge>) -> Result<()> {
+pub async fn start(
+    parity: Arc<Parity>,
+    pool: Arc<Mutex<Pool>>,
+    mut rx: mpsc::Receiver<Bridge>,
+) -> Result<()> {
     let mut sync = Sync::load().await?;
+    let mut now = Instant::now();
+    let mut bridges = Vec::new();
     while let Some(bridge) = rx.recv().await {
-        
+        // skip if the transaction is already processed
+        if parity.exists(&bridge.txid)? {
+            continue;
+        }
+
+        // validate the bridge request
+        //
+        // TODO: in production we should do this in parallel.
+        if let Err(e) = sync.validate_bridge(&bridge).await {
+            tracing::error!("{e:?}");
+            continue;
+        }
+
+        // Do the validation of the bridge request, insert to the queue
+        // if it is valid.
+        bridges.push(bridge);
+        if now.elapsed().as_secs() < BUNDLE_INTERVAL {
+            continue;
+        }
+
+        let bundle = sync.bundle(bridges.drain(..).collect()).await?;
+        pool.lock().await.bridge.queue(bundle)?;
+        now = Instant::now();
     }
     Ok(())
 }

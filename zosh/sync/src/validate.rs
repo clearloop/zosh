@@ -2,23 +2,21 @@
 
 use crate::Sync;
 use anyhow::Result;
-use std::collections::BTreeMap;
-use zcore::{
-    ex::{BridgeBundle, Receipt},
-    registry::Chain,
-};
+use zcore::ex::{Bridge, BridgeBundle};
 
 impl Sync {
-    /// Validate the bridge bundle
+    /// Bundle the bridge requests
     ///
-    /// 1. reconstruct the bridge messages from the bundle
-    /// 2. verify the signatures of the messages
-    pub fn validate_bridges(&self, _bundles: &BTreeMap<Chain, Vec<BridgeBundle>>) -> Result<()> {
-        Ok(())
+    /// We need to sign the bundles after processed.
+    pub async fn bundle(&mut self, bridges: Vec<Bridge>) -> Result<Vec<BridgeBundle>> {
+        // TODO: implement the bundling logic
+        Ok(Vec::new())
     }
 
-    /// Validate the receipts of the bridge transactions
-    pub fn validate_receipts(&self, _receipts: &[Receipt]) -> Result<()> {
+    /// Validate the bridge request
+    ///
+    /// depends on the transaction id of the source chain.
+    pub async fn validate_bridge(&mut self, _bridge: &Bridge) -> Result<()> {
         Ok(())
     }
 }

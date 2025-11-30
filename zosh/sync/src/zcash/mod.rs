@@ -1,8 +1,7 @@
 //! Zcash related stuffs for zorch
 
-use std::sync::LazyLock;
-
 use orchard::circuit::ProvingKey;
+use std::sync::LazyLock;
 use zcash_client_backend::data_api::wallet::ConfirmationsPolicy;
 pub use {
     cmd::Zcash,

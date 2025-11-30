@@ -16,14 +16,17 @@ mod relay;
 
 /// The development node implementation
 pub struct Dev {
-    /// The runtime
-    pub runtime: Runtime<Development>,
+    /// The storage of the development node
+    pub parity: Arc<Parity>,
 
     /// The pool of the development node
     pub pool: Arc<Mutex<Pool>>,
 
     /// The RPC service
     pub rpc: Rpc<Parity>,
+
+    /// The runtime
+    pub runtime: Runtime<Development>,
 }
 
 impl Dev {
@@ -34,17 +37,27 @@ impl Dev {
         let parity = Arc::new(Parity::try_from(CACHE_DIR.join("chain"))?);
         let runtime = Runtime::new(hook, parity.clone()).await?;
         let pool = runtime.pool.clone();
-        let rpc = Rpc::new(parity, manager);
-        Ok(Self { runtime, pool, rpc })
+        let rpc = Rpc::new(parity.clone(), manager);
+        Ok(Self {
+            runtime,
+            pool,
+            rpc,
+            parity,
+        })
     }
 
     /// Start the development node
     pub async fn start(self, address: SocketAddr) -> Result<()> {
-        let Dev { runtime, pool, rpc } = self;
+        let Dev {
+            parity,
+            pool,
+            rpc,
+            runtime,
+        } = self;
         let mut sync = Sync::load().await?;
         let (tx, rx) = mpsc::channel::<Bridge>(512);
         tokio::select! {
-            r = relay::start(pool, rx) => r,
+            r = relay::start(parity, pool, rx) => r,
             r = author::start(runtime) => r,
             r = rpc.start(address) => r,
             r = sync.start(tx) => r,
