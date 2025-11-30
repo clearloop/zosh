@@ -54,16 +54,18 @@ impl SolanaClient {
     /// Mint tokens for development purposes
     pub async fn dev_mint(
         &self,
-        mints: Vec<zosh::types::MintEntry>,
-        mpc: GroupSigners,
+        recipient: Pubkey,
+        amount: u64,
+        mpc: &GroupSigners,
     ) -> Result<Signature> {
+        let mints = vec![zosh::types::MintEntry { recipient, amount }];
         let tx = self.tx.mint(mints).await?;
-        let signature = self.dev_sign_and_send(tx, mpc).await?;
+        let signature = self.dev_sign_and_send(tx, &mpc).await?;
         Ok(signature)
     }
 
     /// Update the MPC for development purposes
-    pub async fn dev_update_mpc(&self, mpc: GroupSigners) -> Result<Signature> {
+    pub async fn dev_update_mpc(&self, mpc: &GroupSigners) -> Result<Signature> {
         let tx = self.tx.update_mpc(mpc.pubkey()).await?;
         let signature = self.dev_sign_and_send(tx, mpc).await?;
         Ok(signature)
@@ -73,7 +75,7 @@ impl SolanaClient {
     pub async fn dev_sign_and_send(
         &self,
         mut tx: Transaction,
-        signer: GroupSigners,
+        signer: &GroupSigners,
     ) -> Result<Signature> {
         let latest_blockhash = self.tx.latest_blockhash().await?;
         tx.message.recent_blockhash = latest_blockhash;
