@@ -9,8 +9,9 @@ use std::{net::SocketAddr, sync::Arc};
 use sync::{config::CACHE_DIR, Event, Sync};
 use tokio::sync::{mpsc, Mutex};
 
+mod author;
 mod hook;
-mod service;
+mod relay;
 
 /// The development node implementation
 pub struct Dev {
@@ -42,8 +43,8 @@ impl Dev {
         let mut sync = Sync::load().await?;
         let (tx, rx) = mpsc::channel::<Event>(512);
         tokio::select! {
-            r = service::relay(pool, rx) => r,
-            r = service::authoring(runtime) => r,
+            r = relay::start(pool, rx) => r,
+            r = author::start(runtime) => r,
             r = rpc.start(address) => r,
             r = sync.start(tx) => r,
         }

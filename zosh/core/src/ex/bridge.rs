@@ -27,7 +27,7 @@ impl BridgeBundle {
     /// Compute the hash of the bridge bundle
     pub fn hash(&self, block: Hash) -> Result<Hash> {
         let mut data = block.to_vec();
-        data.extend_from_slice(&postcard::to_allocvec(&self)?);
+        postcard::to_slice(&self, &mut data)?;
         Ok(crypto::blake3(&data))
     }
 }
