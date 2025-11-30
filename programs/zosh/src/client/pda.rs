@@ -1,7 +1,7 @@
 //! PDA functions for the zosh program
 
 use anchor_lang::system_program;
-use anchor_spl::token;
+use anchor_spl::{associated_token, token};
 use solana_sdk::pubkey::Pubkey;
 
 /// System program ID
@@ -9,6 +9,9 @@ pub const SYSTEM_PROGRAM: Pubkey = system_program::ID;
 
 /// Token program ID
 pub const TOKEN_PROGRAM: Pubkey = token::ID;
+
+/// Associated Token Account program ID
+pub const ASSOCIATED_TOKEN_PROGRAM: Pubkey = associated_token::ID;
 
 /// Rent sysvar ID
 pub const RENT: Pubkey = solana_sdk::sysvar::rent::ID;

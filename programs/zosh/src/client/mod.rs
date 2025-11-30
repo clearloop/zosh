@@ -5,7 +5,7 @@ use anchor_client::{
     solana_sdk::{commitment_config::CommitmentConfig, pubkey::Pubkey},
     Client, Cluster, Program,
 };
-use anchor_lang::AccountDeserialize;
+use anchor_lang::{AccountDeserialize, InstructionData};
 pub use anchor_lang::{AnchorDeserialize, Discriminator};
 use anchor_spl::token::TokenAccount;
 use anyhow::Result;
@@ -157,61 +157,92 @@ impl ZoshClient {
     pub async fn update_mpc(&self, mpc: Pubkey) -> Result<Transaction> {
         let bridge_state = pda::bridge_state();
         let bridge_state_data = self.bridge_state().await?;
-        self.program
-            .request()
-            .accounts(crate::accounts::UpdateMpc {
-                payer: bridge_state_data.mpc,
-                bridge_state,
-                system_program: pda::SYSTEM_PROGRAM,
-            })
-            .args(crate::instruction::UpdateMpc { mpc })
-            .transaction()
-            .map_err(Into::into)
+
+        // Build instruction manually to control the fee payer
+        let account_metas = vec![
+            solana_sdk::instruction::AccountMeta::new(bridge_state_data.mpc, true), // payer (signer)
+            solana_sdk::instruction::AccountMeta::new(bridge_state, false),
+            solana_sdk::instruction::AccountMeta::new_readonly(pda::SYSTEM_PROGRAM, false),
+        ];
+
+        // Serialize instruction data
+        let data = crate::instruction::UpdateMpc { mpc }.data();
+
+        let instruction = solana_sdk::instruction::Instruction {
+            program_id: crate::ID,
+            accounts: account_metas,
+            data,
+        };
+
+        // Build transaction with MPC as fee payer
+        let recent_blockhash = self.latest_blockhash().await?;
+        let message = solana_sdk::message::Message::new_with_blockhash(
+            &[instruction],
+            Some(&bridge_state_data.mpc),
+            &recent_blockhash,
+        );
+
+        Ok(Transaction {
+            signatures: vec![solana_sdk::signature::Signature::default()],
+            message,
+        })
     }
 
     /// Mint sZEC to recipients (threshold action)
     pub async fn mint(&self, mints: Vec<crate::types::MintEntry>) -> Result<Transaction> {
         anyhow::ensure!(!mints.is_empty(), "No mint entries provided");
-        let mut builder = self.program.request();
+        let bridge_state = pda::bridge_state();
+        let bridge_state_data = self.bridge_state().await?;
+        let zec_mint = pda::zec_mint();
 
-        // create token accounts if not exists
+        // Build instruction manually to control the fee payer
+        let mut account_metas = vec![
+            solana_sdk::instruction::AccountMeta::new(bridge_state_data.mpc, true), // payer (signer)
+            solana_sdk::instruction::AccountMeta::new(bridge_state, false),
+            solana_sdk::instruction::AccountMeta::new(zec_mint, false),
+            solana_sdk::instruction::AccountMeta::new_readonly(pda::TOKEN_PROGRAM, false),
+            solana_sdk::instruction::AccountMeta::new_readonly(
+                pda::ASSOCIATED_TOKEN_PROGRAM,
+                false,
+            ),
+            solana_sdk::instruction::AccountMeta::new_readonly(pda::SYSTEM_PROGRAM, false),
+        ];
+
+        // Add ATAs and recipients as remaining accounts (pattern: ata, recipient, ata, recipient, ...)
         for entry in &mints {
             let token_account = spl_associated_token_account::get_associated_token_address(
                 &entry.recipient,
                 &pda::zec_mint(),
             );
-            if self
-                .program
-                .rpc()
-                .get_account_data(&token_account)
-                .await
-                .is_err()
-            {
-                let create_ata_ix =
-                    spl_associated_token_account::instruction::create_associated_token_account(
-                        &self.program.payer(),
-                        &entry.recipient,
-                        &pda::zec_mint(),
-                        &pda::TOKEN_PROGRAM,
-                    );
-                builder = builder.instruction(create_ata_ix);
-            }
+            account_metas.push(solana_sdk::instruction::AccountMeta::new(
+                token_account,
+                false,
+            ));
+            account_metas.push(solana_sdk::instruction::AccountMeta::new_readonly(
+                entry.recipient,
+                false,
+            ));
         }
 
-        // create the mint instruction
-        let bridge_state = pda::bridge_state();
-        let bridge_state_data = self.bridge_state().await?;
-        let zec_mint = pda::zec_mint();
-        builder
-            .accounts(crate::accounts::MintZec {
-                payer: bridge_state_data.mpc,
-                bridge_state,
-                zec_mint,
-                token_program: pda::TOKEN_PROGRAM,
-                system_program: pda::SYSTEM_PROGRAM,
-            })
-            .args(crate::instruction::Mint { mints })
-            .transaction()
-            .map_err(Into::into)
+        // Serialize instruction data using InstructionData
+        let data = crate::instruction::Mint { mints }.data();
+        let instruction = solana_sdk::instruction::Instruction {
+            program_id: crate::ID,
+            accounts: account_metas,
+            data,
+        };
+
+        // Build transaction with MPC as fee payer
+        let recent_blockhash = self.latest_blockhash().await?;
+        let message = solana_sdk::message::Message::new_with_blockhash(
+            &[instruction],
+            Some(&bridge_state_data.mpc),
+            &recent_blockhash,
+        );
+
+        Ok(Transaction {
+            signatures: vec![solana_sdk::signature::Signature::default()],
+            message,
+        })
     }
 }

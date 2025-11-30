@@ -148,38 +148,6 @@ pub struct UpdateMetadata<'info> {
     pub sysvar_instructions: UncheckedAccount<'info>,
 }
 
-/// Accounts for minting sZEC tokens.
-#[derive(Accounts)]
-#[instruction(mints: Vec<types::MintEntry>)]
-pub struct MintZec<'info> {
-    /// Transaction fee payer.
-    #[account(mut)]
-    pub payer: Signer<'info>,
-
-    /// Bridge state PDA storing validator set and configuration.
-    #[account(
-        mut,
-        seeds = [b"bridge-state"],
-        bump = bridge_state.bump
-    )]
-    pub bridge_state: Account<'info, BridgeState>,
-
-    /// The sZEC token mint.
-    #[account(
-        mut,
-        seeds = [b"zec-mint"],
-        bump,
-        constraint = zec_mint.key() == bridge_state.zec_mint @ BridgeError::InvalidMint
-    )]
-    pub zec_mint: Account<'info, Mint>,
-
-    /// Token program for mint operations.
-    pub token_program: Program<'info, Token>,
-
-    /// System program.
-    pub system_program: Program<'info, System>,
-}
-
 /// Accounts for burning sZEC tokens.
 #[derive(Accounts)]
 pub struct BurnZec<'info> {
@@ -211,6 +179,43 @@ pub struct BurnZec<'info> {
 
     /// Token program for burn operation.
     pub token_program: Program<'info, Token>,
+}
+
+/// Accounts for minting sZEC tokens.
+#[derive(Accounts)]
+#[instruction(mints: Vec<types::MintEntry>)]
+pub struct MintZec<'info> {
+    /// Transaction fee payer.
+    #[account(mut, constraint = payer.key() == bridge_state.mpc @ BridgeError::InvalidMpcSigner)]
+    pub payer: Signer<'info>,
+
+    /// Bridge state PDA storing validator set and configuration.
+    #[account(
+        mut,
+        seeds = [b"bridge-state"],
+        bump = bridge_state.bump
+    )]
+    pub bridge_state: Account<'info, BridgeState>,
+
+    /// The sZEC token mint.
+    #[account(
+        mut,
+        seeds = [b"zec-mint"],
+        bump,
+        constraint = zec_mint.key() == bridge_state.zec_mint @ BridgeError::InvalidMint
+    )]
+    pub zec_mint: Account<'info, Mint>,
+
+    /// Token program for mint operations.
+    pub token_program: Program<'info, Token>,
+
+    /// Associated Token Account program.
+    /// CHECK: This is the Associated Token Account program ID
+    #[account(constraint = associated_token_program.key() == anchor_spl::associated_token::ID)]
+    pub associated_token_program: AccountInfo<'info>,
+
+    /// System program.
+    pub system_program: Program<'info, System>,
 }
 
 /// Accounts for updating the MPC pubkey.
