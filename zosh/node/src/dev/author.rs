@@ -35,7 +35,7 @@ pub async fn start(mut runtime: Runtime<Development>) -> Result<()> {
 
         runtime.import(block)?;
         tracing::info!(
-            "Imported block#{slot}: {}",
+            "Imported block: slot={slot} hash={}",
             bs58::encode(&hash).into_string()
         );
         now = Instant::now();

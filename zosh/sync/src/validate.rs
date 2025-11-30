@@ -25,7 +25,7 @@ impl Sync {
         }
 
         let (sol_bundles, sol_receipts) = self.bundle_sol_bridges(sol_bundles).await?;
-        Ok((vec![sol_bundles].concat(), vec![sol_receipts].concat()))
+        Ok((sol_bundles, sol_receipts))
     }
 
     /// Bundle the bridge requests for solana

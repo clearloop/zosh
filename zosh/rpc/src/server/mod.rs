@@ -5,7 +5,7 @@
 pub use jsonrpsee::{
     core::{middleware::RpcServiceBuilder, SubscriptionResult},
     server::Server,
-    types::ErrorObjectOwned,
+    types::{ErrorCode, ErrorObjectOwned},
     PendingSubscriptionSink,
 };
 pub use sub::SubscriptionManager;

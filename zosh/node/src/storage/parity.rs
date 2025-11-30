@@ -4,7 +4,7 @@ use anyhow::Result;
 use parity_db::{BTreeIterator, ColumnOptions, Db, Operation as Op, Options};
 use runtime::storage::{Commit, Operation, Storage};
 use std::path::PathBuf;
-use zcore::{Block, State};
+use zcore::Block;
 
 /// The state column
 pub const STATE_COLUMN: u8 = 0;
@@ -18,9 +18,16 @@ pub const TRANSACTION_COLUMN: u8 = 2;
 /// The parity database storage
 pub struct Parity(Db);
 
+impl Parity {
+    /// Commit the genesis state
+    pub fn is_empty(&self) -> Result<bool> {
+        Ok(self.0.iter(STATE_COLUMN)?.next()?.is_none())
+    }
+}
+
 impl Storage for Parity {
-    fn state(&self) -> State {
-        todo!()
+    fn get(&self, key: &[u8]) -> Result<Option<Vec<u8>>> {
+        self.0.get(STATE_COLUMN, key).map_err(Into::into)
     }
 
     fn commit(&self, commit: Commit) -> Result<()> {
@@ -84,10 +91,6 @@ impl TryFrom<PathBuf> for Parity {
         let options = Options {
             path,
             columns: vec![
-                ColumnOptions {
-                    btree_index: true,
-                    ..Default::default()
-                },
                 ColumnOptions {
                     btree_index: true,
                     ..Default::default()

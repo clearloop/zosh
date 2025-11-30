@@ -14,7 +14,7 @@ impl<C: Config> Runtime<C> {
     ///
     /// TODO: but we need to validate the rotation of the validators here.
     pub fn import(&mut self, block: Block) -> Result<()> {
-        let state = self.storage.state();
+        let state = self.storage.state()?;
         state.bft.validate_votes(&block.header)?;
 
         // 1. validate the parent state root
@@ -26,7 +26,12 @@ impl<C: Config> Runtime<C> {
         let txs = block.extrinsic.txs();
         let accumulator = self.accumulate(state.accumulator, &txs)?;
         if accumulator != block.header.accumulator {
-            anyhow::bail!("Invalid accumulator");
+            anyhow::bail!(
+                "Invalid accumulator: parent={}, txs={}, accumulator={}",
+                bs58::encode(state.accumulator).into_string(),
+                txs.len(),
+                bs58::encode(accumulator).into_string()
+            );
         }
 
         // 3. stores the block to the storage

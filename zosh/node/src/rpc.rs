@@ -4,8 +4,8 @@ use anyhow::Result;
 use async_trait::async_trait;
 use rpc::{
     server::{
-        middleware, ErrorObjectOwned, PendingSubscriptionSink, RpcServiceBuilder, Server,
-        SubscriptionManager, SubscriptionResult,
+        middleware, ErrorCode, ErrorObjectOwned, PendingSubscriptionSink, RpcServiceBuilder,
+        Server, SubscriptionManager, SubscriptionResult,
     },
     ApiServer,
 };
@@ -51,7 +51,13 @@ impl<S: Storage> Rpc<S> {
 impl<S: Storage> ApiServer for Rpc<S> {
     /// Get the chain info
     async fn chain(&self) -> Response<State> {
-        Ok(self.storage.state())
+        self.storage.state().map_err(|e| {
+            ErrorObjectOwned::owned(
+                ErrorCode::InternalError.code(),
+                e.to_string(),
+                Option::<()>::None,
+            )
+        })
     }
 
     /// Subscribe to new blocks

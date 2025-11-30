@@ -8,14 +8,14 @@ use zcore::{Block, Hash, Header};
 impl<C: Config> Runtime<C> {
     /// Author an unauthorized block
     pub async fn author(&mut self) -> Result<Block> {
-        let state = self.storage.state();
+        let state = self.storage.state()?;
         let parent = state.present;
 
         // get the extrinsic from the pool
         let extrinsic = self.pool.lock().await.pack()?;
         let txs = extrinsic.txs();
-        let accumulator = self.accumulate(parent.hash, &txs)?;
-        let root = merkle::root(txs);
+        let accumulator = self.accumulate(state.accumulator, &txs)?;
+        let state = self.storage.root()?;
 
         // Build the header first
         let header = Header {
@@ -23,9 +23,9 @@ impl<C: Config> Runtime<C> {
             // skip the slot and use the next slot.
             slot: parent.slot + 1,
             parent: parent.hash,
-            state: root,
+            state,
             accumulator,
-            extrinsic: root,
+            extrinsic: merkle::root(txs),
             votes: Default::default(),
         };
 

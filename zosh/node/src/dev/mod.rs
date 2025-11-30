@@ -4,7 +4,7 @@ use crate::{rpc::Rpc, storage::Parity};
 use anyhow::Result;
 use hook::DevHook;
 use rpc::server::SubscriptionManager;
-use runtime::{Config, Pool, Runtime};
+use runtime::{Config, Pool, Runtime, Storage};
 use std::{net::SocketAddr, sync::Arc};
 use sync::{config::CACHE_DIR, Sync};
 use tokio::sync::{mpsc, Mutex};
@@ -39,6 +39,9 @@ impl Dev {
         let runtime = Runtime::new(hook, parity.clone(), 1).await?;
         let pool = runtime.pool.clone();
         let rpc = Rpc::new(parity.clone(), manager);
+        if parity.is_empty()? {
+            parity.commit(genesis::commit()?)?;
+        }
         Ok(Self {
             runtime,
             pool,

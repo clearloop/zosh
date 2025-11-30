@@ -8758,8 +8758,10 @@ name = "zosh-runtime"
 version = "0.1.0"
 dependencies = [
  "anyhow",
+ "bs58",
  "postcard",
  "tokio",
+ "tracing",
  "zosh-core",
  "zosh-crypto",
 ]

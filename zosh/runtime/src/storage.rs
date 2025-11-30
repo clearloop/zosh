@@ -2,12 +2,32 @@
 
 use anyhow::Result;
 use std::sync::Arc;
-use zcore::{Block, State, TrieKey};
+use zcore::{state::key, Block, State, TrieKey};
 
 /// The storage for the zosh bridge
 pub trait Storage: Send + Sync + 'static {
     /// Batch the zosh state
-    fn state(&self) -> State;
+    fn state(&self) -> Result<State> {
+        let mut state = State::default();
+        if let Some(value) = self.get(&key::ACCUMULATOR_KEY)? {
+            state.accumulator = value
+                .try_into()
+                .map_err(|e| anyhow::anyhow!("Invalid accumulator: {e:?}"))?;
+        }
+
+        if let Some(value) = self.get(&key::BFT_KEY)? {
+            state.bft = postcard::from_bytes(&value)?;
+        }
+
+        if let Some(value) = self.get(&key::PRESENT_KEY)? {
+            state.present = postcard::from_bytes(&value)?;
+        }
+
+        Ok(state)
+    }
+
+    /// Get the value of the key
+    fn get(&self, key: &[u8]) -> Result<Option<Vec<u8>>>;
 
     /// Batch the operations to the storage
     fn commit(&self, commit: Commit) -> Result<()>;
@@ -28,8 +48,12 @@ pub trait Storage: Send + Sync + 'static {
 }
 
 impl<S: Storage> Storage for Arc<S> {
-    fn state(&self) -> State {
+    fn state(&self) -> Result<State> {
         self.as_ref().state()
+    }
+
+    fn get(&self, key: &[u8]) -> Result<Option<Vec<u8>>> {
+        self.as_ref().get(key)
     }
 
     fn commit(&self, commit: Commit) -> Result<()> {
