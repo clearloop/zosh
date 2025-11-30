@@ -1,6 +1,6 @@
 //! The subscription of the zcash light client
 
-use crate::zcash::Light;
+use crate::zcash::light::ZcashClient;
 use anyhow::Result;
 use orchard::keys::Scope;
 use std::time::Duration;
@@ -23,7 +23,7 @@ use zcore::{
 /// The block time of zcash in seconds
 pub const ZCASH_BLOCK_TIME: u64 = 75;
 
-impl Light {
+impl ZcashClient {
     /// Subscribe to the zcash light client
     ///
     /// FIXME: write new query of the walletdb to fetch the

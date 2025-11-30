@@ -1,6 +1,6 @@
 //! Light client APIs
 
-use crate::zcash::{Light, CONFIRMATIONS};
+use crate::zcash::{light::ZcashClient, CONFIRMATIONS};
 use anyhow::Result;
 use orchard::Note;
 use std::time::Duration;
@@ -22,7 +22,7 @@ use zcash_protocol::{
     ShieldedProtocol,
 };
 
-impl Light {
+impl ZcashClient {
     /// Sync the wallet
     pub async fn sync(&mut self) -> Result<()> {
         sync::run(

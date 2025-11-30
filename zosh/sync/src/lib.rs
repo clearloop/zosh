@@ -4,7 +4,7 @@ use crate::solana::SolanaClient;
 use anyhow::Result;
 use tokio::sync::mpsc;
 use zcore::ex::Bridge;
-pub use {config::Config, solana::ZoshClient, zcash::Light};
+pub use {config::Config, solana::ZoshClient, zcash::ZcashClient};
 
 pub mod config;
 pub mod solana;
@@ -14,7 +14,7 @@ pub mod zcash;
 /// The sync data source
 pub struct Sync {
     /// The zcash light client
-    pub zcash: Light,
+    pub zcash: ZcashClient,
 
     /// The solana client
     pub solana: SolanaClient,
@@ -30,7 +30,7 @@ impl Sync {
     /// Create a new sync instance
     pub async fn new(config: &Config) -> Result<Self> {
         let zconf = config.zcash()?;
-        let zcash = Light::new(&zconf).await?;
+        let zcash = ZcashClient::new(&zconf).await?;
         let solana = SolanaClient::new(config).await?;
         Ok(Self { zcash, solana })
     }

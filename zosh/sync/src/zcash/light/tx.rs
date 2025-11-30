@@ -1,6 +1,6 @@
 //! Transaction related interfaces
 
-use crate::zcash::{signer::GroupSigners, Light};
+use crate::zcash::{light::ZcashClient, signer::GroupSigners};
 use anyhow::Result;
 use incrementalmerkletree::MerklePath;
 use orchard::{
@@ -32,7 +32,7 @@ const BRIDGE_MEMO: [u8; 31] = *b"Bridged from solana via zosh.io";
 /// The memo for a change output
 const CHANGE_MEMO: [u8; 512] = [0; 512];
 
-impl Light {
+impl ZcashClient {
     /// Send a fund to a orchard address for development purposes
     pub async fn dev_send(
         &mut self,

@@ -20,7 +20,7 @@ mod sub;
 mod tx;
 
 /// Zcash light client
-pub struct Light {
+pub struct ZcashClient {
     /// Block database connection
     pub block: BlockDb,
 
@@ -37,7 +37,7 @@ pub struct Light {
     pub ufvk: UnifiedFullViewingKey,
 }
 
-impl Light {
+impl ZcashClient {
     /// Create a new light client
     pub async fn new(config: &Config) -> Result<Self> {
         if let Some(parent) = config.cache.parent() {

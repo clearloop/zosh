@@ -6,7 +6,7 @@ use orchard::circuit::ProvingKey;
 use zcash_client_backend::data_api::wallet::ConfirmationsPolicy;
 pub use {
     cmd::Zcash,
-    light::{Config, Light},
+    light::{Config, ZcashClient},
     orchard::Address,
     signer::{GroupSigners, ShareSigner, SignerInfo},
     zcash_keys::{address::UnifiedAddress, encoding::AddressCodec, keys::UnifiedFullViewingKey},
