@@ -13,6 +13,7 @@ pub use {
     zcash_protocol::consensus::BranchId,
 };
 
+mod bundle;
 mod cmd;
 mod light;
 mod signer;

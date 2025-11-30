@@ -63,6 +63,38 @@ impl Sync {
         Ok((bundles, receipts))
     }
 
+    /// Bundle the bridge requests for zcash
+    ///
+    /// TODO: prove then splitting data for passing the package on chain.
+    pub async fn bundle_zcash_bridges(
+        &mut self,
+        bridges: Vec<Bridge>,
+    ) -> Result<(Vec<BridgeBundle>, Vec<Receipt>)> {
+        let mut bundles = Vec::new();
+        let mut receipts = Vec::new();
+        for unbundled in bridges.windows(Chain::Zcash.max_bundle_size()) {
+            let (bundle, utx) = self.zcash.bundle(unbundled).await?;
+            let txid = self
+                .zcash
+                .dev_sign_and_send(utx, &self.dev_zcash_mpc)
+                .await?;
+
+            // sign the bundles
+            for bridge in unbundled {
+                receipts.push(Receipt {
+                    anchor: bridge.txid.clone(),
+                    coin: Coin::Zec,
+                    txid: txid.as_ref().to_vec(),
+                    source: Chain::Solana,
+                    target: Chain::Zcash,
+                });
+            }
+            bundles.push(bundle);
+        }
+
+        Ok((bundles, receipts))
+    }
+
     /// Validate the bridge request
     ///
     /// depends on the transaction id of the source chain.

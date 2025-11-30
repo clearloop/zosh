@@ -21,6 +21,7 @@ use zcash_primitives::transaction::{TransactionData, TxVersion, Unauthorized};
 use zcash_protocol::{
     consensus::{BlockHeight, BranchId},
     value::ZatBalance,
+    TxId,
 };
 
 /// The standard fee for a transaction
@@ -33,6 +34,38 @@ const BRIDGE_MEMO: [u8; 31] = *b"Bridged from solana via zosh.io";
 const CHANGE_MEMO: [u8; 512] = [0; 512];
 
 impl ZcashClient {
+    /// Sign and send a transaction for development purposes
+    pub async fn dev_sign_and_send(
+        &mut self,
+        utx: TransactionData<Unauthorized>,
+        signer: &GroupSigners,
+    ) -> Result<TxId> {
+        let tx = signer.sign_tx(utx)?.freeze()?;
+        let txid = tx.txid();
+        let mut data = Vec::new();
+        tx.write(&mut data)?;
+
+        // send the transaction
+        tracing::info!("Transaction ID: {}", txid);
+        let resp = self
+            .client
+            .send_transaction(RawTransaction { data, height: 0 })
+            .await?
+            .into_inner();
+
+        // Check if the transaction was successfully sent
+        if resp.error_code != 0 {
+            return Err(anyhow::anyhow!(
+                "Transaction send failed: {} - {}",
+                resp.error_code,
+                resp.error_message
+            ));
+        }
+
+        self.sync().await?;
+        Ok(txid)
+    }
+
     /// Send a fund to a orchard address for development purposes
     pub async fn dev_send(
         &mut self,

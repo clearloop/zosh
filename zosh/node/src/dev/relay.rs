@@ -21,6 +21,7 @@ pub async fn start(
     let mut now = Instant::now();
     let mut bridges = Vec::new();
     while let Some(bridge) = rx.recv().await {
+        tracing::info!("Received bridge request: {:?}", bridge);
         // skip if the transaction is already processed
         if parity.exists(&bridge.txid)? {
             continue;

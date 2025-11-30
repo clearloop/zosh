@@ -1,6 +1,6 @@
 //! The subscription of the zcash light client
 
-use crate::zcash::light::ZcashClient;
+use crate::zcash::ZcashClient;
 use anyhow::Result;
 use orchard::keys::Scope;
 use std::time::Duration;
@@ -29,6 +29,7 @@ impl ZcashClient {
     /// FIXME: write new query of the walletdb to fetch the
     /// latest transactions efficiently.
     pub async fn subscribe(&mut self, tx: mpsc::Sender<Bridge>) -> Result<()> {
+        tracing::info!("Subscribed to the zcash light client");
         loop {
             if let Err(e) = self.subscribe_inner(tx.clone()).await {
                 tracing::error!("{e:?}");
@@ -42,6 +43,7 @@ impl ZcashClient {
         let mut last_height = BlockHeight::from(0);
         loop {
             self.sync().await?;
+            tracing::info!("Synced to the zcash light client");
             let Ok((target, _anchor)) = self.heights() else {
                 tracing::error!(
                     "Failed to get max height and hash, retrying in {} seconds",
@@ -53,6 +55,7 @@ impl ZcashClient {
 
             // Get the spendable notes
             let notes = self.spendable_notes(0, target)?;
+            tracing::info!("Found {} spendable notes", notes.len());
             for note in notes.into_iter() {
                 let txid = note.txid();
                 let Some(mined_height) = note.mined_height() else {

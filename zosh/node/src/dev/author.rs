@@ -34,7 +34,7 @@ pub async fn start(mut runtime: Runtime<Development>) -> Result<()> {
             .insert(ident, signature.as_array().to_vec());
 
         runtime.import(block)?;
-        tracing::info!(
+        tracing::debug!(
             "Imported block: slot={slot} hash={}",
             bs58::encode(&hash).into_string()
         );
