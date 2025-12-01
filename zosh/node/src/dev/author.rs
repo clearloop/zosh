@@ -2,7 +2,7 @@
 
 use crate::dev::Development;
 use anyhow::Result;
-use runtime::Runtime;
+use runtime::{Hook, Runtime};
 use solana_signer::Signer;
 use std::time::{Duration, Instant};
 use sync::solana::dev;
@@ -43,6 +43,7 @@ pub async fn start(mut runtime: Runtime<Development>) -> Result<()> {
             block.extrinsic.bridge.len(),
             block.extrinsic.receipts.len()
         );
+        runtime.hook.on_block_finalized(&block).await?;
         runtime.import(block)?;
         now = Instant::now();
     }

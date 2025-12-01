@@ -27,8 +27,12 @@ impl SubscriptionManager {
     pub async fn dispatch_block(&self, block: &Block) -> Result<()> {
         let raw_value = serde_json::value::to_raw_value(&block)?;
         for sink in self.block_sub.lock().await.iter() {
-            sink.send(SubscriptionMessage::from(raw_value.clone()))
-                .await?;
+            if let Err(e) = sink
+                .send(SubscriptionMessage::from(raw_value.clone()))
+                .await
+            {
+                tracing::error!("Failed to send block to sink: {e:?}");
+            }
         }
         Ok(())
     }

@@ -48,15 +48,14 @@ impl Storage for Parity {
     }
 
     fn set_txs(&self, txs: Vec<Vec<u8>>) -> Result<()> {
-        self.0.commit_changes(txs.into_iter().map(|tx| {
-            tracing::debug!("setting tx: {:?}", bs58::encode(&tx).into_string());
-            (TRANSACTION_COLUMN, Op::Set(tx.to_vec(), vec![0]))
-        }))?;
+        self.0.commit_changes(
+            txs.into_iter()
+                .map(|tx| (TRANSACTION_COLUMN, Op::Set(tx.to_vec(), vec![0]))),
+        )?;
         Ok(())
     }
 
     fn exists(&self, key: &[u8]) -> Result<bool> {
-        tracing::debug!("checking tx: {:?}", bs58::encode(&key).into_string());
         self.0
             .get(TRANSACTION_COLUMN, key)
             .map(|value| value.is_some())
