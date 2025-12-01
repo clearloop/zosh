@@ -37,11 +37,13 @@ pub async fn start(mut runtime: Runtime<Development>) -> Result<()> {
             .votes
             .insert(ident, signature.as_array().to_vec());
 
-        runtime.import(block)?;
         tracing::debug!(
-            "Imported block: slot={slot} hash={}",
-            bs58::encode(&hash).into_string()
+            "Imported block: slot={slot} hash={} bundles={} receipts={}",
+            bs58::encode(&hash).into_string(),
+            block.extrinsic.bridge.len(),
+            block.extrinsic.receipts.len()
         );
+        runtime.import(block)?;
         now = Instant::now();
     }
 }

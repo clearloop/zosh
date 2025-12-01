@@ -29,7 +29,6 @@ impl ZcashClient {
     /// FIXME: write new query of the walletdb to fetch the
     /// latest transactions efficiently.
     pub async fn subscribe(&mut self, tx: mpsc::Sender<Bridge>) -> Result<()> {
-        tracing::info!("Subscribed to the zcash light client");
         loop {
             if let Err(e) = self.subscribe_inner(tx.clone()).await {
                 tracing::error!("{e:?}");
@@ -43,7 +42,7 @@ impl ZcashClient {
         let mut last_height = BlockHeight::from(0);
         loop {
             self.sync().await?;
-            tracing::info!("Synced to the zcash light client");
+            tracing::debug!("zcash synced");
             let Ok((target, _anchor)) = self.heights() else {
                 tracing::error!(
                     "Failed to get max height and hash, retrying in {} seconds",
@@ -55,7 +54,6 @@ impl ZcashClient {
 
             // Get the spendable notes
             let notes = self.spendable_notes(0, target)?;
-            tracing::info!("Found {} spendable notes", notes.len());
             for note in notes.into_iter() {
                 let txid = note.txid();
                 let Some(mined_height) = note.mined_height() else {
@@ -84,12 +82,17 @@ impl ZcashClient {
                 // TODO: check the address length is valid, if not, introduce
                 // a refund transaction to the node, since we'll recheck it
                 // on sending the transaction, not doing it here for now.
+                //
+                // TODO: for non-bridge memo, we should blacklist them.
+                let Ok(recipient) = bs58::decode(text.trim()).into_vec() else {
+                    continue;
+                };
                 tracing::debug!(
                     "Received bridge memo={}, amount={}",
                     &text.to_string().trim(),
                     note.value().into_u64() as f32 / 100_000_000.0
                 );
-                let recipient = bs58::decode(text.trim()).into_vec()?;
+
                 tx.send(Bridge {
                     coin: Coin::Zec,
                     recipient,

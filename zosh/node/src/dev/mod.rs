@@ -52,6 +52,7 @@ impl Dev {
 
     /// Start the development node
     pub async fn start(self, address: SocketAddr) -> Result<()> {
+        tracing::info!("Starting the development node");
         let Dev {
             parity,
             pool,
