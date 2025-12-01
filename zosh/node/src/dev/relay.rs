@@ -102,7 +102,7 @@ async fn bundler(
         let mut sync = sync.lock().await;
         let (bundles, receipts) = sync.bundle(mem::take(&mut bridges)).await?;
         let mut pool = pool.lock().await;
-        pool.bridge.queue(bundles)?;
+        pool.bridge.dev_pack(bundles)?;
         pool.receipt.extend_from_slice(&receipts);
         now = Instant::now();
     }

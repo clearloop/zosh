@@ -28,6 +28,15 @@ impl BridgePool {
     }
 
     /// Queue a bridge bundle
+    pub fn dev_pack(&mut self, bundles: Vec<BridgeBundle>) -> Result<()> {
+        for bundle in bundles {
+            let hash = bundle.hash()?;
+            self.completed.insert(hash, bundle);
+        }
+        Ok(())
+    }
+
+    /// Queue a bridge bundle
     pub fn queue(&mut self, bundles: Vec<BridgeBundle>) -> Result<()> {
         for bundle in bundles {
             let hash = bundle.hash()?;
