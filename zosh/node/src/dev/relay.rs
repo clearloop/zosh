@@ -43,7 +43,6 @@ async fn collector(
     while let Some(bridge) = rx.recv().await {
         // skip if the transaction is already processed
         if parity.exists(&bridge.txid)? {
-            tracing::warn!("Bridge request already processed: {:?}", bridge.txid);
             continue;
         }
 
@@ -98,12 +97,15 @@ async fn bundler(
             continue;
         }
 
-        tracing::debug!("Bundling {} bridge requests", bridges.len());
         let mut sync = sync.lock().await;
         let (bundles, receipts) = sync.bundle(mem::take(&mut bridges)).await?;
         let mut pool = pool.lock().await;
-        pool.bridge.dev_pack(bundles)?;
-        pool.receipt.extend_from_slice(&receipts);
+        if !bundles.is_empty() {
+            pool.bridge.dev_pack(bundles)?;
+        }
+        if !receipts.is_empty() {
+            pool.receipt.extend_from_slice(&receipts);
+        }
         now = Instant::now();
     }
 }

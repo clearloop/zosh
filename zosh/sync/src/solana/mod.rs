@@ -74,6 +74,7 @@ impl SolanaClient {
                 recipient,
                 amount: bridge.amount,
             });
+            bundle.bridge.push(bridge.clone());
         }
 
         let transaction = self.mint(mints).await?;

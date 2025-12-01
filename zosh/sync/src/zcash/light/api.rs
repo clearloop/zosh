@@ -98,6 +98,7 @@ impl ZcashClient {
         &self,
         amount: u64,
         target: TargetHeight,
+        exclude: &[ReceivedNoteId],
     ) -> Result<Vec<ReceivedNote<ReceivedNoteId, Note>>> {
         let Some(account) = self.wallet.get_account_for_ufvk(&self.ufvk)? else {
             return Err(anyhow::anyhow!("Account not found by provided ufvk"));
@@ -114,7 +115,7 @@ impl ZcashClient {
             &[ShieldedProtocol::Orchard],
             target,
             CONFIRMATIONS,
-            &[],
+            exclude,
         )?;
 
         Ok(notes.orchard().to_vec())

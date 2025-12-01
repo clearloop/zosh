@@ -42,7 +42,7 @@ impl ZcashClient {
         let mut last_height = BlockHeight::from(0);
         loop {
             self.sync().await?;
-            tracing::debug!("zcash synced");
+            tracing::trace!("zcash synced");
             let Ok((target, _anchor)) = self.heights() else {
                 tracing::error!(
                     "Failed to get max height and hash, retrying in {} seconds",
@@ -53,7 +53,7 @@ impl ZcashClient {
             };
 
             // Get the spendable notes
-            let notes = self.spendable_notes(0, target)?;
+            let notes = self.spendable_notes(0, target, &[])?;
             for note in notes.into_iter() {
                 let txid = note.txid();
                 let Some(mined_height) = note.mined_height() else {
@@ -88,7 +88,7 @@ impl ZcashClient {
                     continue;
                 };
                 tracing::debug!(
-                    "Received bridge memo={}, amount={}",
+                    "Received bridge request: memo={}, amount={}",
                     &text.to_string().trim(),
                     note.value().into_u64() as f32 / 100_000_000.0
                 );
@@ -106,7 +106,7 @@ impl ZcashClient {
 
             // The block time of zcash is 75 secs, using 30 secs is totally fine here.
             last_height = target.into();
-            time::sleep(Duration::from_secs(30)).await;
+            time::sleep(Duration::from_secs(10)).await;
         }
     }
 
