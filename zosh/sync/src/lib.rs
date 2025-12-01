@@ -51,9 +51,13 @@ impl Sync {
         })
     }
 
+    /// Spawn the sync service
+    pub fn spawn(self, tx: mpsc::Sender<Bridge>) {
+        tokio::spawn(async move { self.start(tx).await });
+    }
+
     /// Start the sync
-    pub async fn start(&mut self, tx: mpsc::Sender<Bridge>) -> Result<()> {
-        tracing::info!("Starting the sync services");
+    pub async fn start(mut self, tx: mpsc::Sender<Bridge>) {
         tokio::select! {
             r = self.zcash.subscribe(tx.clone()) => r,
             r = self.solana.subscribe(tx.clone()) => r

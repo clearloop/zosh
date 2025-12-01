@@ -13,6 +13,7 @@ mod pool;
 pub mod storage;
 
 /// The runtime of the zosh bridge
+#[derive(Clone)]
 pub struct Runtime<C: Config> {
     /// The hook for the runtime
     pub hook: C::Hook,

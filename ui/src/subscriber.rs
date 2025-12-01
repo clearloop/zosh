@@ -39,7 +39,6 @@ impl Subscriber {
                 .map(|bundle| bundle.bridge.len())
                 .sum();
             let receipt_count = block.extrinsic.receipts.len();
-
             if bridge_count > 0 || receipt_count > 0 {
                 tracing::info!(
                     "Block {} contains {} bridge transactions and {} receipts",

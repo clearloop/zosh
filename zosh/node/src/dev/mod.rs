@@ -59,18 +59,21 @@ impl Dev {
             rpc,
             runtime,
         } = self;
-        let mut sync = Sync::load().await?;
+        let sync = Sync::load().await?;
+        author::spawn(runtime)?;
+        rpc.spawn(address)?;
+
+        // spawn the sync service
         let (tx, rx) = mpsc::channel::<Bridge>(512);
-        tokio::select! {
-            r = relay::start(parity, pool, rx) => r,
-            r = author::start(runtime) => r,
-            r = rpc.start(address) => r,
-            r = sync.start(tx) => r,
-        }
+        sync.spawn(tx);
+        relay::spawn(parity, pool, rx).await?;
+        let _ = tokio::signal::ctrl_c().await;
+        Ok(())
     }
 }
 
 /// The development node configuration
+#[derive(Clone)]
 pub struct Development;
 
 impl Config for Development {

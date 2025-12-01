@@ -5,7 +5,7 @@ use std::sync::Arc;
 use zcore::{state::key, Block, State, TrieKey};
 
 /// The storage for the zosh bridge
-pub trait Storage: Send + Sync + 'static {
+pub trait Storage: Clone + Send + Sync + 'static {
     /// Batch the zosh state
     fn state(&self) -> Result<State> {
         let mut state = State::default();

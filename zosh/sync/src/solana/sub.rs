@@ -21,7 +21,16 @@ use zosh::{
 
 impl SolanaClient {
     /// Subscribe to the solana client
-    pub async fn subscribe(&self, tx: mpsc::Sender<Bridge>) -> Result<()> {
+    pub async fn subscribe(&self, tx: mpsc::Sender<Bridge>) {
+        loop {
+            if let Err(e) = self.subscribe_inner(tx.clone()).await {
+                tracing::error!("Solana log subscription error:{e:?}, retrying in 5 seconds");
+                tokio::time::sleep(tokio::time::Duration::from_secs(5)).await;
+            }
+        }
+    }
+    /// Subscribe to the solana client
+    pub async fn subscribe_inner(&self, tx: mpsc::Sender<Bridge>) -> Result<()> {
         let filter = RpcTransactionLogsFilter::Mentions(vec![zosh::ID.to_string()]);
         let config = RpcTransactionLogsConfig {
             commitment: Some(CommitmentConfig::confirmed()),

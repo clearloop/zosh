@@ -48,3 +48,16 @@ pub async fn start(mut runtime: Runtime<Development>) -> Result<()> {
         now = Instant::now();
     }
 }
+
+/// Spawn the authoring service
+pub fn spawn(runtime: Runtime<Development>) -> Result<()> {
+    tokio::spawn(async move {
+        loop {
+            if let Err(e) = start(runtime.clone()).await {
+                tracing::error!("authoring service error:{e:?}, restarting in 5 seconds");
+                tokio::time::sleep(tokio::time::Duration::from_secs(5)).await;
+            }
+        }
+    });
+    Ok(())
+}

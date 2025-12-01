@@ -28,10 +28,13 @@ impl ZcashClient {
     ///
     /// FIXME: write new query of the walletdb to fetch the
     /// latest transactions efficiently.
-    pub async fn subscribe(&mut self, tx: mpsc::Sender<Bridge>) -> Result<()> {
+    pub async fn subscribe(&mut self, tx: mpsc::Sender<Bridge>) {
         loop {
             if let Err(e) = self.subscribe_inner(tx.clone()).await {
-                tracing::error!("{e:?}");
+                tracing::error!(
+                    "Zcash light client subscription error:{e:?}, retrying in 5 seconds"
+                );
+                tokio::time::sleep(tokio::time::Duration::from_secs(5)).await;
             }
         }
     }

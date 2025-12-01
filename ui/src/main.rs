@@ -42,8 +42,6 @@ async fn main() -> Result<()> {
 
     // Clone database for web server
     let web_db = db.clone();
-
-    // Spawn subscriber task
     let subscriber = Subscriber::new(config.rpc_url.clone(), db);
     let subscriber_handle = tokio::spawn(async move {
         loop {
@@ -76,7 +74,6 @@ async fn main() -> Result<()> {
     // Abort tasks
     subscriber_handle.abort();
     web_handle.abort();
-
     tracing::info!("Shutdown complete");
     Ok(())
 }

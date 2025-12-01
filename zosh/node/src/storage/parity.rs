@@ -3,7 +3,7 @@
 use anyhow::Result;
 use parity_db::{BTreeIterator, ColumnOptions, Db, Operation as Op, Options};
 use runtime::storage::{Commit, Operation, Storage};
-use std::path::PathBuf;
+use std::{path::PathBuf, sync::Arc};
 use zcore::Block;
 
 /// The state column
@@ -16,7 +16,8 @@ pub const BLOCK_COLUMN: u8 = 1;
 pub const TRANSACTION_COLUMN: u8 = 2;
 
 /// The parity database storage
-pub struct Parity(Db);
+#[derive(Clone)]
+pub struct Parity(Arc<Db>);
 
 impl Parity {
     /// Commit the genesis state
@@ -110,6 +111,6 @@ impl TryFrom<PathBuf> for Parity {
             salt: None,
             compression_threshold: Default::default(),
         };
-        Ok(Parity(Db::open_or_create(&options)?))
+        Ok(Parity(Arc::new(Db::open_or_create(&options)?)))
     }
 }

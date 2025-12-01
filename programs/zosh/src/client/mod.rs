@@ -15,14 +15,14 @@ use solana_sdk::{
     signature::{Keypair, Signature},
     transaction::Transaction,
 };
-use std::rc::Rc;
+use std::sync::Arc;
 
 pub mod pda;
 
 /// Main client for interacting with the Zosh program
 pub struct ZoshClient {
     /// Anchor client program instance
-    pub program: Program<Rc<Keypair>>,
+    pub program: Program<Arc<Keypair>>,
 }
 
 impl ZoshClient {
@@ -30,7 +30,7 @@ impl ZoshClient {
     pub fn new(cluster_url: String, ws_url: String, authority: Keypair) -> Result<Self> {
         let client = Client::new_with_options(
             Cluster::Custom(cluster_url, ws_url),
-            Rc::new(authority),
+            Arc::new(authority),
             CommitmentConfig::confirmed(),
         );
 

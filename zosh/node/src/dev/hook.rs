@@ -6,6 +6,7 @@ use runtime::Hook;
 use zcore::Block;
 
 /// The development hook implementation
+#[derive(Clone)]
 pub struct DevHook {
     manager: SubscriptionManager,
 }
