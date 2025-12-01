@@ -87,11 +87,6 @@ impl ZcashClient {
                 let Ok(recipient) = bs58::decode(text.trim()).into_vec() else {
                     continue;
                 };
-                tracing::debug!(
-                    "Received bridge request: memo={}, amount={}",
-                    &text.to_string().trim(),
-                    note.value().into_u64() as f32 / 100_000_000.0
-                );
 
                 tx.send(Bridge {
                     coin: Coin::Zec,

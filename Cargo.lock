@@ -7644,6 +7644,7 @@ dependencies = [
  "futures-util",
  "hex",
  "jsonrpsee",
+ "postcard",
  "rusqlite",
  "serde",
  "serde_json",
@@ -8788,6 +8789,7 @@ version = "0.1.0"
 dependencies = [
  "anyhow",
  "jsonrpsee",
+ "postcard",
  "serde",
  "serde_json",
  "tokio",

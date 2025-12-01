@@ -20,13 +20,11 @@ pub struct AppState {
 /// Start the web service
 pub async fn serve(listen_addr: SocketAddr, db: Database) -> anyhow::Result<()> {
     let state = AppState { db };
-
     let app = Router::new()
-        .route("/txid/{txid}", get(get_transaction))
+        .route("/tx/{txid}", get(get_transaction))
         .with_state(state);
 
     tracing::info!("Starting web server on {}", listen_addr);
-
     let listener = tokio::net::TcpListener::bind(listen_addr).await?;
     axum::serve(listener, app).await?;
     Ok(())
@@ -37,10 +35,7 @@ async fn get_transaction(
     State(state): State<AppState>,
     Path(txid_str): Path<String>,
 ) -> Result<Json<serde_json::Value>, AppError> {
-    // Try to decode the txid
     let txid_bytes = decode_txid(&txid_str)?;
-
-    // Check the length to determine the chain
     let chain_type = match txid_bytes.len() {
         32 => "Zcash",
         64 => "Solana",
@@ -68,7 +63,7 @@ async fn get_transaction(
                 "recipient": tx.recipient,
                 "source": tx.source,
                 "target": tx.target,
-                "bundle_slot": tx.bundle_slot,
+                "slot": tx.slot,
                 "receipt": tx.receipt,
             });
             Ok(Json(response))
@@ -80,7 +75,8 @@ async fn get_transaction(
 /// Decode txid from hex or base58 string
 fn decode_txid(txid_str: &str) -> Result<Vec<u8>, AppError> {
     // Try hex first
-    if let Ok(bytes) = hex::decode(txid_str) {
+    if let Ok(mut bytes) = hex::decode(txid_str) {
+        bytes.reverse();
         return Ok(bytes);
     }
 

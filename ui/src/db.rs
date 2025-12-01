@@ -20,7 +20,7 @@ pub struct BridgeTransactionResult {
     pub recipient: String,
     pub source: String,
     pub target: String,
-    pub bundle_slot: u32,
+    pub slot: u32,
     pub receipt: Option<ReceiptInfo>,
 }
 
@@ -52,7 +52,7 @@ impl Database {
                 state BLOB NOT NULL,
                 accumulator BLOB NOT NULL,
                 extrinsic BLOB NOT NULL,
-                votes TEXT NOT NULL
+                votes BLOB NOT NULL
             )",
             [],
         )?;
@@ -110,8 +110,8 @@ impl Database {
     pub fn insert_block(&self, block: &Block) -> Result<()> {
         let conn = self.conn.lock().unwrap();
 
-        // Serialize votes as JSON
-        let votes_json = serde_json::to_string(&block.header.votes)?;
+        // Serialize votes using postcard (since BTreeMap keys are byte arrays, not JSON-compatible)
+        let votes_bytes = postcard::to_allocvec(&block.header.votes)?;
 
         // Insert block header
         conn.execute(
@@ -123,7 +123,7 @@ impl Database {
                 &block.header.state[..],
                 &block.header.accumulator[..],
                 &block.header.extrinsic[..],
-                votes_json,
+                &votes_bytes[..],
             ],
         )?;
 
@@ -228,7 +228,7 @@ impl Database {
             recipient: encode_recipient(&recipient),
             source,
             target,
-            bundle_slot: block_slot,
+            slot: block_slot,
             receipt,
         }))
     }

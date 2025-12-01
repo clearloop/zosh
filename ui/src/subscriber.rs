@@ -28,6 +28,7 @@ impl Subscriber {
         // Subscribe to blocks
         let mut subscription = client.subscribe_block().await?;
         while let Some(Ok(block)) = subscription.next().await {
+            let block = block.into_block()?;
             tracing::info!("Received block at slot {}", block.header.slot);
 
             // Count transactions

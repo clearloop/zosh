@@ -2,6 +2,7 @@
 
 use anyhow::Result;
 use jsonrpsee::{SubscriptionMessage, SubscriptionSink};
+use serde_json::json;
 use std::sync::Arc;
 use tokio::sync::Mutex;
 use zcore::Block;
@@ -25,14 +26,26 @@ pub struct SubscriptionManager {
 impl SubscriptionManager {
     /// Dispatch the best block
     pub async fn dispatch_block(&self, block: &Block) -> Result<()> {
-        let raw_value = serde_json::value::to_raw_value(&block)?;
+        let bytes = postcard::to_allocvec(block)?;
+        let raw_value = serde_json::value::to_raw_value(&json!( {
+            "block": bytes,
+        }))?;
+        let mut remove = Vec::new();
         for sink in self.block_sub.lock().await.iter() {
             if let Err(e) = sink
                 .send(SubscriptionMessage::from(raw_value.clone()))
                 .await
             {
-                tracing::error!("Failed to send block to sink: {e:?}");
+                tracing::warn!("Failed to send block to sink: {e:?}");
+                remove.push(sink.subscription_id());
             }
+        }
+
+        for id in remove {
+            self.block_sub
+                .lock()
+                .await
+                .retain(|sink| sink.subscription_id() != id);
         }
         Ok(())
     }
