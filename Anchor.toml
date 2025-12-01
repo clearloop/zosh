@@ -3,13 +3,20 @@ resolution = true
 skip-lint = false
 
 [programs.localnet]
-zosh = "5QXepWTdHmsQkroWnitvs55jR6TxWbE8DCf54fQaYcH1"
+zosh = "zosh4npemTuTj18MHgbn7NRihzMkTfgswTyP34LPaVx"
+
+[programs.devnet]
+zosh = "zosh4npemTuTj18MHgbn7NRihzMkTfgswTyP34LPaVx"
+
+[programs.testnet]
+zosh = "zosh4npemTuTj18MHgbn7NRihzMkTfgswTyP34LPaVx"
+
 
 [registry]
 url = "https://api.apr.dev"
 
 [provider]
-cluster = "localnet"
+cluster = "testnet"
 wallet = "~/.config/solana/id.json"
 
 [scripts]
