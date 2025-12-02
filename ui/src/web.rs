@@ -56,7 +56,7 @@ async fn get_transaction(
         }
     };
 
-    tracing::debug!("Querying {} transaction: {}", chain_type, txid_str);
+    tracing::trace!("Querying {} transaction: {}", chain_type, txid_str);
 
     // Query the database
     let result = state

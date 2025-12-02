@@ -1,9 +1,8 @@
 //! Validation interfaces for bridge bundles
 
-use std::mem;
-
-use crate::{ChainFormatEncoder, Sync};
+use crate::{zcash, ChainFormatEncoder, Sync};
 use anyhow::Result;
+use std::mem;
 use zcore::{
     ex::{Bridge, BridgeBundle, Receipt},
     registry::{Chain, Coin},
@@ -76,12 +75,13 @@ impl Sync {
 
                 tracing::info!(
                     "Fulfilled bridge request from Zcash({}) to Solana({})! amount={} recipient={}",
-                    bridge.txid.zcash_signature()?,
+                    bridge.txid.zcash_txid()?.to_string(),
                     signature,
                     bridge.amount,
                     bridge.recipient.solana_address()?
                 );
             }
+
             bundles.push(bundle);
         }
 
@@ -105,7 +105,7 @@ impl Sync {
         let mut bundles = Vec::new();
         let mut receipts = Vec::new();
         bridges.extend(mem::take(&mut self.unresolved));
-        for unbundled in bridges.windows(Chain::Zcash.max_bundle_size()) {
+        for unbundled in bridges.chunks(Chain::Zcash.max_bundle_size()) {
             let (bundle, utx) = self.zcash.bundle(unbundled).await?;
             let txid = match self.zcash.dev_sign_and_send(utx, &self.dev_zcash_mpc).await {
                 Ok(txid) => txid,
@@ -127,11 +127,14 @@ impl Sync {
                 });
 
                 tracing::info!(
-                    "Fulfilled bridge request from Solana({}) to Zcash({})! amount={} recipient={:?}",
+                    "Fulfilled bridge request from Solana({}) to Zcash({})! amount={} recipient={}",
                     bridge.txid.solana_signature()?,
                     txid,
                     bridge.amount,
-                    bridge.recipient.zcash_address(&self.zcash.network)?
+                    bridge
+                        .recipient
+                        .zcash_address(&self.zcash.network)?
+                        .encode(&zcash::Network::TestNetwork),
                 );
             }
             bundles.push(bundle);

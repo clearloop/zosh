@@ -74,7 +74,7 @@ impl ZcashClient {
 
         // import the account if it doesn't exist
         if this.wallet.get_account_for_ufvk(&config.ufvk)?.is_none() {
-            this.import("zosh", config.ufvk.clone(), 3_536_500).await?;
+            this.import("zosh", config.ufvk.clone(), 3710700).await?;
         }
 
         // wrap to the light client

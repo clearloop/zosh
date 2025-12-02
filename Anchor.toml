@@ -11,7 +11,6 @@ zosh = "zosh4npemTuTj18MHgbn7NRihzMkTfgswTyP34LPaVx"
 [programs.testnet]
 zosh = "zosh4npemTuTj18MHgbn7NRihzMkTfgswTyP34LPaVx"
 
-
 [registry]
 url = "https://api.apr.dev"
 

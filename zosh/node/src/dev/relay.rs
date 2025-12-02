@@ -84,13 +84,16 @@ async fn collector_internal(
             Chain::Solana => bridge.recipient.solana_address()?.to_string(),
             Chain::Zcash => format!(
                 "{:?}",
-                bridge.recipient.zcash_address(&Network::TestNetwork)?
+                bridge
+                    .recipient
+                    .zcash_address(&Network::TestNetwork)?
+                    .encode(&Network::TestNetwork)
             ),
         },
         bridge.amount,
         match bridge.source {
             Chain::Solana => bridge.txid.solana_signature()?.to_string(),
-            Chain::Zcash => bridge.txid.zcash_signature()?.to_string(),
+            Chain::Zcash => bridge.txid.zcash_txid()?.to_string(),
         }
     );
 
