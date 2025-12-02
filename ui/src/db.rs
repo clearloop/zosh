@@ -103,6 +103,15 @@ impl Database {
             [],
         )?;
 
+        // Create query_ids table for mapping query IDs to transaction IDs
+        conn.execute(
+            "CREATE TABLE IF NOT EXISTS query_ids (
+                query_id BLOB PRIMARY KEY,
+                tx_id BLOB NOT NULL
+            )",
+            [],
+        )?;
+
         Ok(())
     }
 
@@ -241,6 +250,16 @@ impl Database {
             params![query_id, tx_id],
         )?;
         Ok(())
+    }
+
+    /// Get tx_id by query_id
+    pub fn get_query_id(&self, query_id: &[u8]) -> Result<Option<Vec<u8>>> {
+        let conn = self.conn.lock().unwrap();
+        let mut stmt = conn.prepare("SELECT tx_id FROM query_ids WHERE query_id = ?1")?;
+        let result: Option<Vec<u8>> = stmt
+            .query_row(params![query_id], |row| row.get(0))
+            .optional()?;
+        Ok(result)
     }
 }
 

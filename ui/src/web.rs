@@ -22,6 +22,7 @@ pub async fn serve(listen_addr: SocketAddr, db: Database) -> anyhow::Result<()> 
     let state = AppState { db };
     let app = Router::new()
         .route("/tx/{txid}", get(get_transaction))
+        .route("/query/{qid}", get(get_query))
         .with_state(state);
 
     tracing::info!("Starting web server on {}", listen_addr);
@@ -69,6 +70,33 @@ async fn get_transaction(
             Ok(Json(response))
         }
         None => Err(AppError::NotFound("Transaction not found".to_string())),
+    }
+}
+
+/// Handler for GET /query/:qid
+async fn get_query(
+    State(state): State<AppState>,
+    Path(qid_str): Path<String>,
+) -> Result<Json<serde_json::Value>, AppError> {
+    let qid_bytes = hex::decode(&qid_str)
+        .map_err(|_| AppError::BadRequest("Invalid query ID: must be hex encoded".to_string()))?;
+
+    tracing::debug!("Querying query_id: {}", qid_str);
+
+    let result = state
+        .db
+        .get_query_id(&qid_bytes)
+        .map_err(|e| AppError::Internal(format!("Database error: {}", e)))?;
+
+    match result {
+        Some(tx_id) => {
+            let txid_str = hex::encode(&tx_id);
+            let response = json!({
+                "txid": txid_str,
+            });
+            Ok(Json(response))
+        }
+        None => Err(AppError::NotFound("Query ID not found".to_string())),
     }
 }
 
