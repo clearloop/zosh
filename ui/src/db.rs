@@ -53,7 +53,8 @@ impl Database {
                 state BLOB NOT NULL,
                 accumulator BLOB NOT NULL,
                 extrinsic BLOB NOT NULL,
-                votes BLOB NOT NULL
+                votes BLOB NOT NULL,
+                tx_count INTEGER NOT NULL DEFAULT 0
             )",
             [],
         )?;
@@ -123,13 +124,14 @@ impl Database {
         // Serialize votes using postcard (since BTreeMap keys are byte arrays, not JSON-compatible)
         let votes_bytes = postcard::to_allocvec(&block.header.votes)?;
 
-        // Compute block hash
+        // Compute block hash and tx count
         let hash = block.header.hash();
+        let tx_count = block.extrinsic.count() as u32;
 
         // Insert block header
         conn.execute(
-            "INSERT OR REPLACE INTO blocks (slot, hash, parent, state, accumulator, extrinsic, votes)
-             VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7)",
+            "INSERT OR REPLACE INTO blocks (slot, hash, parent, state, accumulator, extrinsic, votes, tx_count)
+             VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8)",
             params![
                 block.header.slot,
                 &hash[..],
@@ -138,6 +140,7 @@ impl Database {
                 &block.header.accumulator[..],
                 &block.header.extrinsic[..],
                 &votes_bytes[..],
+                tx_count,
             ],
         )?;
 
@@ -283,6 +286,179 @@ impl Database {
             .try_into()
             .map_err(|_| anyhow::anyhow!("Invalid hash length in database"))?;
         Ok(Some(Head { slot, hash }))
+    }
+
+    /// Get a block by slot
+    pub fn get_block_by_slot(&self, slot: u32) -> Result<Option<Block>> {
+        let conn = self.conn.lock().unwrap();
+        self.query_block(&conn, "SELECT slot, hash, parent, state, accumulator, extrinsic, votes FROM blocks WHERE slot = ?1", params![slot])
+    }
+
+    /// Get a block by hash
+    pub fn get_block_by_hash(&self, hash: &[u8]) -> Result<Option<Block>> {
+        let conn = self.conn.lock().unwrap();
+        self.query_block(&conn, "SELECT slot, hash, parent, state, accumulator, extrinsic, votes FROM blocks WHERE hash = ?1", params![hash])
+    }
+
+    /// Internal helper to query a block
+    fn query_block(&self, conn: &Connection, sql: &str, params: impl rusqlite::Params) -> Result<Option<Block>> {
+        let mut stmt = conn.prepare(sql)?;
+        let result: Option<(u32, Vec<u8>, Vec<u8>, Vec<u8>, Vec<u8>, Vec<u8>, Vec<u8>)> = stmt
+            .query_row(params, |row| {
+                Ok((
+                    row.get(0)?,
+                    row.get(1)?,
+                    row.get(2)?,
+                    row.get(3)?,
+                    row.get(4)?,
+                    row.get(5)?,
+                    row.get(6)?,
+                ))
+            })
+            .optional()?;
+
+        let Some((slot, _hash, parent, state, accumulator, extrinsic, votes_bytes)) = result else {
+            return Ok(None);
+        };
+
+        // Deserialize votes
+        let votes: std::collections::BTreeMap<[u8; 32], Vec<u8>> =
+            postcard::from_bytes(&votes_bytes)?;
+
+        // Query bridge transactions for this block
+        let mut bridge_stmt = conn.prepare(
+            "SELECT txid, coin, recipient, amount, source, target, bundle_hash FROM bridges WHERE block_slot = ?1",
+        )?;
+        let bridges: Vec<(Vec<u8>, String, Vec<u8>, u64, String, String, Vec<u8>)> = bridge_stmt
+            .query_map(params![slot], |row| {
+                Ok((
+                    row.get(0)?,
+                    row.get(1)?,
+                    row.get(2)?,
+                    row.get(3)?,
+                    row.get(4)?,
+                    row.get(5)?,
+                    row.get(6)?,
+                ))
+            })?
+            .collect::<Result<Vec<_>, _>>()?;
+
+        // Query receipts for this block
+        let mut receipt_stmt = conn.prepare(
+            "SELECT txid, anchor, coin, source, target FROM receipts WHERE block_slot = ?1",
+        )?;
+        let receipts: Vec<(Vec<u8>, Vec<u8>, String, String, String)> = receipt_stmt
+            .query_map(params![slot], |row| {
+                Ok((
+                    row.get(0)?,
+                    row.get(1)?,
+                    row.get(2)?,
+                    row.get(3)?,
+                    row.get(4)?,
+                ))
+            })?
+            .collect::<Result<Vec<_>, _>>()?;
+
+        // Reconstruct the block
+        use std::collections::BTreeMap;
+        use zcore::ex::{Bridge, BridgeBundle, Receipt};
+
+        // Group bridges by bundle_hash
+        let mut bridge_map: BTreeMap<[u8; 32], BridgeBundle> = BTreeMap::new();
+        for (txid, coin, recipient, amount, source, target, bundle_hash) in bridges {
+            let bundle_key: [u8; 32] = bundle_hash
+                .try_into()
+                .map_err(|_| anyhow::anyhow!("Invalid bundle hash length"))?;
+
+            let bundle = bridge_map.entry(bundle_key).or_insert_with(|| {
+                BridgeBundle::new(parse_chain(&target))
+            });
+
+            bundle.bridge.push(Bridge {
+                coin: parse_coin(&coin),
+                recipient,
+                amount,
+                source: parse_chain(&source),
+                target: parse_chain(&target),
+                txid,
+            });
+        }
+
+        // Convert receipts
+        let receipt_list: Vec<Receipt> = receipts
+            .into_iter()
+            .map(|(txid, anchor, coin, source, target)| Receipt {
+                anchor,
+                coin: parse_coin(&coin),
+                txid,
+                source: parse_chain(&source),
+                target: parse_chain(&target),
+            })
+            .collect();
+
+        let header = zcore::Header {
+            slot,
+            parent: parent.try_into().map_err(|_| anyhow::anyhow!("Invalid parent hash"))?,
+            state: state.try_into().map_err(|_| anyhow::anyhow!("Invalid state hash"))?,
+            accumulator: accumulator.try_into().map_err(|_| anyhow::anyhow!("Invalid accumulator"))?,
+            extrinsic: extrinsic.try_into().map_err(|_| anyhow::anyhow!("Invalid extrinsic hash"))?,
+            votes,
+        };
+
+        Ok(Some(Block {
+            header,
+            extrinsic: zcore::Extrinsic {
+                bridge: bridge_map,
+                receipts: receipt_list,
+            },
+        }))
+    }
+
+    /// Get paginated blocks with tx count
+    pub fn get_blocks_paged(&self, page: u32, row: u32) -> Result<(Vec<(Head, u32)>, u32)> {
+        let conn = self.conn.lock().unwrap();
+
+        // Get total count
+        let total: u32 = conn.query_row("SELECT COUNT(*) FROM blocks", [], |row| row.get(0))?;
+
+        // Get paginated blocks
+        let offset = page * row;
+        let mut stmt = conn.prepare(
+            "SELECT slot, hash, tx_count FROM blocks ORDER BY slot DESC LIMIT ?1 OFFSET ?2",
+        )?;
+
+        let blocks: Vec<(Head, u32)> = stmt
+            .query_map(params![row, offset], |row| {
+                let slot: u32 = row.get(0)?;
+                let hash_bytes: Vec<u8> = row.get(1)?;
+                let tx_count: u32 = row.get(2)?;
+                Ok((slot, hash_bytes, tx_count))
+            })?
+            .filter_map(|r| r.ok())
+            .filter_map(|(slot, hash_bytes, tx_count)| {
+                let hash: [u8; 32] = hash_bytes.try_into().ok()?;
+                Some((Head { slot, hash }, tx_count))
+            })
+            .collect();
+
+        Ok((blocks, total))
+    }
+}
+
+/// Parse chain from debug string
+fn parse_chain(s: &str) -> zcore::registry::Chain {
+    match s {
+        "Zcash" => zcore::registry::Chain::Zcash,
+        "Solana" => zcore::registry::Chain::Solana,
+        _ => zcore::registry::Chain::Zcash, // Default fallback
+    }
+}
+
+/// Parse coin from debug string
+fn parse_coin(s: &str) -> zcore::registry::Coin {
+    match s {
+        "Zec" => zcore::registry::Coin::Zec,
+        _ => zcore::registry::Coin::Zec, // Default fallback
     }
 }
 

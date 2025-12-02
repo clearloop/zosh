@@ -1,13 +1,15 @@
 //! Web service module
 
 use crate::db::Database;
+use crate::ui::{UIBlock, UIBlocksPage, UIHead};
 use axum::{
-    extract::{Path, State},
+    extract::{Path, Query, State},
     http::StatusCode,
     response::{IntoResponse, Json, Response},
     routing::get,
     Router,
 };
+use serde::Deserialize;
 use serde_json::json;
 use std::net::SocketAddr;
 
@@ -24,6 +26,8 @@ pub async fn serve(listen_addr: SocketAddr, db: Database) -> anyhow::Result<()> 
         .route("/tx/{txid}", get(get_transaction))
         .route("/query/{qid}", get(get_query))
         .route("/latest", get(get_latest))
+        .route("/block/{hash_or_slot}", get(get_block))
+        .route("/blocks", get(get_blocks))
         .with_state(state);
 
     tracing::info!("Starting web server on {}", listen_addr);
@@ -112,12 +116,85 @@ async fn get_latest(State(state): State<AppState>) -> Result<Json<serde_json::Va
         Some(head) => {
             let response = json!({
                 "slot": head.slot,
-                "hash": hex::encode(head.hash),
+                "hash": bs58::encode(head.hash).into_string(),
             });
             Ok(Json(response))
         }
         None => Err(AppError::NotFound("No blocks found".to_string())),
     }
+}
+
+/// Handler for GET /block/:hash_or_slot
+async fn get_block(
+    State(state): State<AppState>,
+    Path(hash_or_slot): Path<String>,
+) -> Result<Json<UIBlock>, AppError> {
+    // Try to parse as slot number first
+    let block = if let Ok(slot) = hash_or_slot.parse::<u32>() {
+        state
+            .db
+            .get_block_by_slot(slot)
+            .map_err(|e| AppError::Internal(format!("Database error: {}", e)))?
+    } else {
+        // Try to decode as base58 hash
+        let hash_bytes = bs58::decode(&hash_or_slot).into_vec().map_err(|_| {
+            AppError::BadRequest("Invalid hash: must be base58 encoded".to_string())
+        })?;
+
+        if hash_bytes.len() != 32 {
+            return Err(AppError::BadRequest(format!(
+                "Invalid hash length: expected 32 bytes, got {}",
+                hash_bytes.len()
+            )));
+        }
+
+        state
+            .db
+            .get_block_by_hash(&hash_bytes)
+            .map_err(|e| AppError::Internal(format!("Database error: {}", e)))?
+    };
+
+    match block {
+        Some(b) => Ok(Json(UIBlock::from_block(&b))),
+        None => Err(AppError::NotFound("Block not found".to_string())),
+    }
+}
+
+/// Query parameters for /blocks endpoint
+#[derive(Deserialize)]
+struct BlocksQuery {
+    page: Option<u32>,
+    row: Option<u32>,
+}
+
+/// Handler for GET /blocks?page={page}&row={row}
+async fn get_blocks(
+    State(state): State<AppState>,
+    Query(query): Query<BlocksQuery>,
+) -> Result<Json<UIBlocksPage>, AppError> {
+    let page = query.page.unwrap_or(0);
+    let row = query.row.unwrap_or(10).min(100); // Cap at 100 rows per page
+
+    let (blocks, total) = state
+        .db
+        .get_blocks_paged(page, row)
+        .map_err(|e| AppError::Internal(format!("Database error: {}", e)))?;
+
+    let ui_blocks: Vec<UIHead> = blocks
+        .into_iter()
+        .map(|(head, tx_count)| UIHead {
+            slot: head.slot,
+            hash: bs58::encode(head.hash).into_string(),
+            tx_count,
+        })
+        .collect();
+
+    Ok(Json(UIBlocksPage {
+        blocks: ui_blocks,
+        total,
+        page,
+        row,
+    }))
 }
 
 /// Decode txid from hex or base58 string
