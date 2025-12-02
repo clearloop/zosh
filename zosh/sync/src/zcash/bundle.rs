@@ -16,11 +16,11 @@ impl ZcashClient {
         &mut self,
         bridges: &[Bridge],
     ) -> Result<(BridgeBundle, TransactionData<Unauthorized>)> {
-        let bundle = BridgeBundle::new(Chain::Zcash);
+        let mut bundle = BridgeBundle::new(Chain::Zcash);
         let bridge = bridges[0].clone();
         let recipient = bridge.recipient.zcash_address(&self.network)?;
-
         let utx = self.tx(recipient, bridge.amount)?;
+        bundle.bridge.push(bridge.clone());
         Ok((bundle, utx))
     }
 }

@@ -2,7 +2,7 @@
 
 use crate::dev::Development;
 use anyhow::Result;
-use runtime::Runtime;
+use runtime::{Hook, Runtime};
 use solana_signer::Signer;
 use std::time::{Duration, Instant};
 use sync::solana::dev;
@@ -37,11 +37,27 @@ pub async fn start(mut runtime: Runtime<Development>) -> Result<()> {
             .votes
             .insert(ident, signature.as_array().to_vec());
 
-        runtime.import(block)?;
         tracing::debug!(
-            "Imported block: slot={slot} hash={}",
-            bs58::encode(&hash).into_string()
+            "Imported block: slot={slot} hash={} bundles={} receipts={}",
+            bs58::encode(&hash).into_string(),
+            block.extrinsic.bridge.len(),
+            block.extrinsic.receipts.len()
         );
+        runtime.import(&block)?;
+        runtime.hook.on_block_finalized(&block).await?;
         now = Instant::now();
     }
+}
+
+/// Spawn the authoring service
+pub fn spawn(runtime: Runtime<Development>) -> Result<()> {
+    tokio::spawn(async move {
+        loop {
+            if let Err(e) = start(runtime.clone()).await {
+                tracing::error!("authoring service error:{e:?}, restarting in 5 seconds");
+                tokio::time::sleep(tokio::time::Duration::from_secs(5)).await;
+            }
+        }
+    });
+    Ok(())
 }

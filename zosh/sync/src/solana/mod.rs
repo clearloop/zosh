@@ -28,8 +28,8 @@ pub struct SolanaClient {
     /// The transaction client
     pub tx: ZoshClient,
 
-    /// The subscription client
-    pub sub: PubsubClient,
+    /// The websocket URL for creating subscription clients
+    pub ws: String,
 
     /// The development MPC
     ///
@@ -49,12 +49,18 @@ impl SolanaClient {
             authority,
         )?;
 
-        let sub = PubsubClient::new(config.rpc.solana_ws.as_ref()).await?;
         Ok(Self {
             tx: solana,
-            sub,
+            ws: config.rpc.solana_ws.to_string(),
             dev_mpc,
         })
+    }
+
+    /// Create a new PubsubClient for subscriptions
+    ///
+    /// This should be called each time we need to (re)establish a websocket connection.
+    pub async fn pubsub(&self) -> Result<PubsubClient> {
+        PubsubClient::new(&self.ws).await.map_err(Into::into)
     }
 
     /// Bundle bridge transactions
@@ -74,6 +80,7 @@ impl SolanaClient {
                 recipient,
                 amount: bridge.amount,
             });
+            bundle.bridge.push(bridge.clone());
         }
 
         let transaction = self.mint(mints).await?;

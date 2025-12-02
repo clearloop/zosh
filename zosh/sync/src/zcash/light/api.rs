@@ -3,7 +3,6 @@
 use crate::zcash::{light::ZcashClient, CONFIRMATIONS};
 use anyhow::Result;
 use orchard::Note;
-use std::time::Duration;
 use zcash_client_backend::{
     data_api::{
         wallet::{ConfirmationsPolicy, TargetHeight},
@@ -16,11 +15,7 @@ use zcash_client_backend::{
 };
 use zcash_client_sqlite::ReceivedNoteId;
 use zcash_keys::keys::UnifiedFullViewingKey;
-use zcash_protocol::{
-    consensus::{BlockHeight, BranchId},
-    value::Zatoshis,
-    ShieldedProtocol,
-};
+use zcash_protocol::{consensus::BlockHeight, value::Zatoshis, ShieldedProtocol};
 
 impl ZcashClient {
     /// Sync the wallet
@@ -36,22 +31,13 @@ impl ZcashClient {
         .map_err(Into::into)
     }
 
-    /// Sync the wallet
-    pub async fn sync_forever(&mut self) -> Result<()> {
-        loop {
-            self.sync().await?;
-            tokio::time::sleep(Duration::from_secs(60)).await;
-        }
-    }
-
     /// Import a unified full viewing key
-    pub async fn import(&mut self, name: &str, ufvk: UnifiedFullViewingKey) -> Result<()> {
-        let birth = BranchId::Nu6_1
-            .height_bounds(&self.network)
-            .ok_or(anyhow::anyhow!("Invalid network"))?
-            .0
-            .into();
-
+    pub async fn import(
+        &mut self,
+        name: &str,
+        ufvk: UnifiedFullViewingKey,
+        birth: u64,
+    ) -> Result<()> {
         let block = self
             .client
             .get_block(BlockId {
@@ -98,6 +84,7 @@ impl ZcashClient {
         &self,
         amount: u64,
         target: TargetHeight,
+        exclude: &[ReceivedNoteId],
     ) -> Result<Vec<ReceivedNote<ReceivedNoteId, Note>>> {
         let Some(account) = self.wallet.get_account_for_ufvk(&self.ufvk)? else {
             return Err(anyhow::anyhow!("Account not found by provided ufvk"));
@@ -114,7 +101,7 @@ impl ZcashClient {
             &[ShieldedProtocol::Orchard],
             target,
             CONFIRMATIONS,
-            &[],
+            exclude,
         )?;
 
         Ok(notes.orchard().to_vec())

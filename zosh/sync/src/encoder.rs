@@ -19,7 +19,7 @@ pub trait ChainFormatEncoder {
     fn solana_signature(&self) -> Result<Signature>;
 
     /// Encode the zcash signature to the chain format
-    fn zcash_signature(&self) -> Result<TxId>;
+    fn zcash_txid(&self) -> Result<TxId>;
 }
 
 impl<T: AsRef<[u8]>> ChainFormatEncoder for T {
@@ -40,7 +40,7 @@ impl<T: AsRef<[u8]>> ChainFormatEncoder for T {
         ))
     }
 
-    fn zcash_signature(&self) -> Result<TxId> {
+    fn zcash_txid(&self) -> Result<TxId> {
         Ok(TxId::from_bytes(
             self.bytes32().context("Invalid zcash signature")?,
         ))

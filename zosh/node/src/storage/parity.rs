@@ -3,7 +3,7 @@
 use anyhow::Result;
 use parity_db::{BTreeIterator, ColumnOptions, Db, Operation as Op, Options};
 use runtime::storage::{Commit, Operation, Storage};
-use std::path::PathBuf;
+use std::{path::PathBuf, sync::Arc};
 use zcore::Block;
 
 /// The state column
@@ -16,7 +16,8 @@ pub const BLOCK_COLUMN: u8 = 1;
 pub const TRANSACTION_COLUMN: u8 = 2;
 
 /// The parity database storage
-pub struct Parity(Db);
+#[derive(Clone)]
+pub struct Parity(Arc<Db>);
 
 impl Parity {
     /// Commit the genesis state
@@ -39,7 +40,7 @@ impl Storage for Parity {
         Ok(())
     }
 
-    fn set_block(&self, block: Block) -> Result<()> {
+    fn set_block(&self, block: &Block) -> Result<()> {
         self.0.commit_changes(vec![(
             BLOCK_COLUMN,
             Op::Set(block.header.hash().to_vec(), postcard::to_allocvec(&block)?),
@@ -50,7 +51,7 @@ impl Storage for Parity {
     fn set_txs(&self, txs: Vec<Vec<u8>>) -> Result<()> {
         self.0.commit_changes(
             txs.into_iter()
-                .map(|tx| (TRANSACTION_COLUMN, Op::Set(tx.to_vec(), vec![]))),
+                .map(|tx| (TRANSACTION_COLUMN, Op::Set(tx.to_vec(), vec![0]))),
         )?;
         Ok(())
     }
@@ -110,6 +111,6 @@ impl TryFrom<PathBuf> for Parity {
             salt: None,
             compression_threshold: Default::default(),
         };
-        Ok(Parity(Db::open_or_create(&options)?))
+        Ok(Parity(Arc::new(Db::open_or_create(&options)?)))
     }
 }

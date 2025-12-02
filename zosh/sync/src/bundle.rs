@@ -1,7 +1,8 @@
 //! Validation interfaces for bridge bundles
 
-use crate::{ChainFormatEncoder, Sync};
+use crate::{zcash, ChainFormatEncoder, Sync};
 use anyhow::Result;
+use std::mem;
 use zcore::{
     ex::{Bridge, BridgeBundle, Receipt},
     registry::{Chain, Coin},
@@ -15,8 +16,9 @@ impl Sync {
     /// TODO: make the bundling process in parallel.
     pub async fn bundle(
         &mut self,
-        bridges: Vec<Bridge>,
+        mut bridges: Vec<Bridge>,
     ) -> Result<(Vec<BridgeBundle>, Vec<Receipt>)> {
+        bridges.extend(mem::take(&mut self.unresolved));
         let mut sol_bundles = Vec::new();
         let mut zcash_bundles = Vec::new();
         for bridge in bridges {
@@ -56,11 +58,24 @@ impl Sync {
         let mut bundles = Vec::new();
         let mut receipts = Vec::new();
         for unbundled in bridges.chunks(Chain::Solana.max_bundle_size()) {
-            let (bundle, transaction) = self.solana.bundle(unbundled).await?;
-            let signature = self
+            let Ok((bundle, transaction)) = self.solana.bundle(unbundled).await.inspect_err(|e| {
+                tracing::error!("Failed to bundle solana bridges: {:?}", e);
+            }) else {
+                self.unresolved.extend(unbundled.to_vec());
+                continue;
+            };
+
+            let Ok(signature) = self
                 .solana
                 .dev_sign_and_send(transaction, &self.dev_solana_mpc)
-                .await?;
+                .await
+                .inspect_err(|e| {
+                    tracing::error!("Failed to sign and send solana transaction: {:?}", e);
+                })
+            else {
+                self.unresolved.extend(unbundled.to_vec());
+                continue;
+            };
 
             // sign the bundles
             for bridge in unbundled {
@@ -74,12 +89,13 @@ impl Sync {
 
                 tracing::info!(
                     "Fulfilled bridge request from Zcash({}) to Solana({})! amount={} recipient={}",
-                    bridge.txid.zcash_signature()?,
+                    bridge.txid.zcash_txid()?.to_string(),
                     signature,
                     bridge.amount,
                     bridge.recipient.solana_address()?
                 );
             }
+
             bundles.push(bundle);
         }
 
@@ -89,18 +105,36 @@ impl Sync {
     /// Bundle the bridge requests for zcash
     ///
     /// TODO: prove then splitting data for passing the package on chain.
+    ///
+    /// FIXME: handle the mempool case, we may not have enough available notes
+    /// to bundle when we got a lot of redeem requests at the same time, and
+    /// there could be double spending problem for the same note.
+    ///
+    /// We need to subscribing the notes we are using to other nodes in the network
+    /// layer as well, to deduplicating the transactions in bundles.
     pub async fn bundle_zcash_bridges(
         &mut self,
         bridges: Vec<Bridge>,
     ) -> Result<(Vec<BridgeBundle>, Vec<Receipt>)> {
         let mut bundles = Vec::new();
         let mut receipts = Vec::new();
-        for unbundled in bridges.windows(Chain::Zcash.max_bundle_size()) {
-            let (bundle, utx) = self.zcash.bundle(unbundled).await?;
-            let txid = self
+        for unbundled in bridges.chunks(Chain::Zcash.max_bundle_size()) {
+            let Ok((bundle, utx)) = self.zcash.bundle(unbundled).await else {
+                self.unresolved.extend(unbundled.to_vec());
+                continue;
+            };
+
+            let Ok(txid) = self
                 .zcash
                 .dev_sign_and_send(utx, &self.dev_zcash_mpc)
-                .await?;
+                .await
+                .inspect_err(|e| {
+                    tracing::error!("Failed to sign and send zcash transaction: {:?}", e);
+                })
+            else {
+                self.unresolved.extend(unbundled.to_vec());
+                continue;
+            };
 
             // sign the bundles
             for bridge in unbundled {
@@ -113,11 +147,14 @@ impl Sync {
                 });
 
                 tracing::info!(
-                    "Fulfilled bridge request from Solana({}) to Zcash({})! amount={} recipient={:?}",
+                    "Fulfilled bridge request from Solana({}) to Zcash({})! amount={} recipient={}",
                     bridge.txid.solana_signature()?,
                     txid,
                     bridge.amount,
-                    bridge.recipient.zcash_address(&self.zcash.network)?
+                    bridge
+                        .recipient
+                        .zcash_address(&self.zcash.network)?
+                        .encode(&zcash::Network::TestNetwork),
                 );
             }
             bundles.push(bundle);

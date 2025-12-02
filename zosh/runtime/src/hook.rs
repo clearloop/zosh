@@ -5,7 +5,7 @@ use core::future::Future;
 use zcore::Block;
 
 /// The hook for the runtime
-pub trait Hook {
+pub trait Hook: Clone {
     /// The hook for the runtime
     fn on_block_finalized(&self, block: &Block) -> impl Future<Output = Result<()>>;
 }

@@ -21,13 +21,41 @@ use zosh::{
 
 impl SolanaClient {
     /// Subscribe to the solana client
-    pub async fn subscribe(&self, tx: mpsc::Sender<Bridge>) -> Result<()> {
+    ///
+    /// Creates a new websocket connection on each retry to handle network changes.
+    pub async fn subscribe(&self, tx: mpsc::Sender<Bridge>) {
+        loop {
+            // Create a fresh PubsubClient for each connection attempt
+            let sub = match self.pubsub().await {
+                Ok(sub) => sub,
+                Err(e) => {
+                    tracing::error!(
+                        "Failed to create Solana pubsub client: {e:?}, retrying in 5 seconds"
+                    );
+                    tokio::time::sleep(tokio::time::Duration::from_secs(5)).await;
+                    continue;
+                }
+            };
+
+            if let Err(e) = self.subscribe_inner(tx.clone(), sub).await {
+                tracing::error!("Solana log subscription error:{e:?}, retrying in 5 seconds");
+                tokio::time::sleep(tokio::time::Duration::from_secs(5)).await;
+            }
+        }
+    }
+
+    /// Subscribe to the solana client with a given PubsubClient
+    async fn subscribe_inner(
+        &self,
+        tx: mpsc::Sender<Bridge>,
+        sub: solana_pubsub_client::nonblocking::pubsub_client::PubsubClient,
+    ) -> Result<()> {
         let filter = RpcTransactionLogsFilter::Mentions(vec![zosh::ID.to_string()]);
         let config = RpcTransactionLogsConfig {
             commitment: Some(CommitmentConfig::confirmed()),
         };
 
-        let (mut noti, unsubscribe) = self.sub.logs_subscribe(filter, config).await?;
+        let (mut noti, unsubscribe) = sub.logs_subscribe(filter, config).await?;
         while let Some(response) = noti.next().await {
             let RpcLogsResponse {
                 signature,

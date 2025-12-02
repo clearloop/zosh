@@ -1,4 +1,5 @@
 //! RPC implementation for the zosh node
+#![cfg(feature = "rpc")]
 
 use anyhow::Result;
 use async_trait::async_trait;
@@ -17,6 +18,7 @@ use zcore::State;
 pub type Response<T> = core::result::Result<T, ErrorObjectOwned>;
 
 /// The RPC implementation
+#[derive(Clone)]
 pub struct Rpc<S: Storage> {
     /// The storage
     pub storage: Arc<S>,
@@ -43,6 +45,19 @@ impl<S: Storage> Rpc<S> {
         let addr = server.local_addr()?;
         tracing::info!("Listening RPC on {}", addr);
         server.start(self.into_rpc()).stopped().await;
+        Ok(())
+    }
+
+    /// Spawn the RPC server
+    pub fn spawn(self, addr: SocketAddr) -> Result<()> {
+        tokio::spawn(async move {
+            loop {
+                if let Err(e) = self.clone().start(addr).await {
+                    tracing::error!("rpc service error:{e:?}, restarting in 5 seconds");
+                    tokio::time::sleep(tokio::time::Duration::from_secs(5)).await;
+                }
+            }
+        });
         Ok(())
     }
 }

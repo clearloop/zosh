@@ -18,6 +18,15 @@ pub struct Extrinsic {
 }
 
 impl Extrinsic {
+    /// Get the number of transactions in the extrinsic
+    pub fn count(&self) -> usize {
+        self.bridge
+            .values()
+            .map(|bundle| bundle.bridge.len())
+            .sum::<usize>()
+            + self.receipts.len()
+    }
+
     /// Get the signatures of the extrinsic
     pub fn txs(&self) -> Vec<Vec<u8>> {
         let mut signatures = Vec::new();

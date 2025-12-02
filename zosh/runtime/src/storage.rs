@@ -5,7 +5,7 @@ use std::sync::Arc;
 use zcore::{state::key, Block, State, TrieKey};
 
 /// The storage for the zosh bridge
-pub trait Storage: Send + Sync + 'static {
+pub trait Storage: Clone + Send + Sync + 'static {
     /// Batch the zosh state
     fn state(&self) -> Result<State> {
         let mut state = State::default();
@@ -33,7 +33,7 @@ pub trait Storage: Send + Sync + 'static {
     fn commit(&self, commit: Commit) -> Result<()>;
 
     /// Set the block to the storage
-    fn set_block(&self, block: Block) -> Result<()>;
+    fn set_block(&self, block: &Block) -> Result<()>;
 
     /// Set the transactions to the storage
     ///
@@ -60,7 +60,7 @@ impl<S: Storage> Storage for Arc<S> {
         self.as_ref().commit(commit)
     }
 
-    fn set_block(&self, block: Block) -> Result<()> {
+    fn set_block(&self, block: &Block) -> Result<()> {
         self.as_ref().set_block(block)
     }
 

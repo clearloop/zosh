@@ -62,7 +62,6 @@ impl ZcashClient {
         tx.write(&mut data)?;
 
         // send the transaction
-        tracing::info!("Transaction ID: {}", txid);
         let resp = self
             .client
             .send_transaction(RawTransaction { data, height: 0 })
@@ -134,7 +133,7 @@ impl ZcashClient {
 
         // 1. Select notes to cover the total amount (which includes fee)
         let (target_height, anchor_height) = self.heights()?;
-        let notes = self.spendable_notes(amount, target_height)?;
+        let notes = self.spendable_notes(amount, target_height, &[])?;
         if notes.is_empty() {
             return Err(anyhow::anyhow!("No spendable notes found"));
         }
