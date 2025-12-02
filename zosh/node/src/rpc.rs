@@ -1,4 +1,5 @@
 //! RPC implementation for the zosh node
+#![cfg(feature = "rpc")]
 
 use anyhow::Result;
 use async_trait::async_trait;

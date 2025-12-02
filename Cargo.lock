@@ -7636,30 +7636,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "562d481066bde0658276a35467c4af00bdc6ee726305698a55b86e61d7ad82bb"
 
 [[package]]
-name = "ui"
-version = "0.1.0"
-dependencies = [
- "anyhow",
- "axum",
- "bs58",
- "dirs",
- "futures-util",
- "hex",
- "jsonrpsee",
- "postcard",
- "rusqlite",
- "serde",
- "serde_json",
- "tokio",
- "tracing",
- "tracing-subscriber",
- "zosh-core",
- "zosh-crypto",
- "zosh-rpc",
- "zosh-sync",
-]
-
-[[package]]
 name = "uint"
 version = "0.9.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -8768,6 +8744,7 @@ dependencies = [
  "zosh-rpc",
  "zosh-runtime",
  "zosh-sync",
+ "zosh-ui",
 ]
 
 [[package]]
@@ -8850,6 +8827,31 @@ dependencies = [
  "zcash_protocol",
  "zosh-core",
  "zosh-program",
+]
+
+[[package]]
+name = "zosh-ui"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "axum",
+ "bs58",
+ "dirs",
+ "futures-util",
+ "hex",
+ "jsonrpsee",
+ "postcard",
+ "rusqlite",
+ "serde",
+ "serde_json",
+ "tokio",
+ "tracing",
+ "tracing-subscriber",
+ "zosh-core",
+ "zosh-crypto",
+ "zosh-rpc",
+ "zosh-runtime",
+ "zosh-sync",
 ]
 
 [[package]]

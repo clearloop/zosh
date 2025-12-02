@@ -50,7 +50,7 @@ pub enum Zcash {
         /// The name of the account
         name: String,
 
-        /// The bithday of the wallet
+        /// The birthday of the wallet
         birth: u64,
     },
 

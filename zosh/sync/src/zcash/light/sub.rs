@@ -166,7 +166,7 @@ impl ZcashClient {
                 }
 
                 let data = data[32..].to_vec();
-                tx.send((data, txid.clone())).await?;
+                tx.send((data, *txid)).await?;
             }
 
             // The block time of zcash is 75 secs, using 30 secs is totally fine here.

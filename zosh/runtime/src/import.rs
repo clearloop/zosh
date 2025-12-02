@@ -13,7 +13,7 @@ impl<C: Config> Runtime<C> {
     /// the QC is satisfied, we can import the block directly.
     ///
     /// TODO: but we need to validate the rotation of the validators here.
-    pub fn import(&mut self, block: Block) -> Result<()> {
+    pub fn import(&mut self, block: &Block) -> Result<()> {
         let state = self.storage.state()?;
         state.bft.validate_votes(&block.header)?;
 

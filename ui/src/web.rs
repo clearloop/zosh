@@ -1,7 +1,7 @@
 //! Web service module
 
 use crate::{
-    db::Database,
+    db::{Database, Stats},
     ui::{UIBlock, UIBlocksPage, UIHead},
     util, AppError,
 };
@@ -30,6 +30,7 @@ pub async fn serve(listen_addr: SocketAddr, db: Database) -> anyhow::Result<()> 
         .route("/latest", get(get_latest))
         .route("/block/{hash_or_slot}", get(get_block))
         .route("/blocks", get(get_blocks))
+        .route("/stats", get(get_stats))
         .with_state(state);
 
     tracing::info!("Starting web server on {}", listen_addr);
@@ -197,4 +198,14 @@ async fn get_blocks(
         page,
         row,
     }))
+}
+
+/// Handler for GET /stats
+async fn get_stats(State(state): State<AppState>) -> Result<Json<Stats>, AppError> {
+    let stats = state
+        .db
+        .get_stats()
+        .map_err(|e| AppError::Internal(format!("Database error: {}", e)))?;
+
+    Ok(Json(stats))
 }

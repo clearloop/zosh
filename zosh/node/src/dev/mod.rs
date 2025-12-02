@@ -1,9 +1,7 @@
 //! The development node implementation
 
-use crate::{rpc::Rpc, storage::Parity};
+use crate::storage::Parity;
 use anyhow::Result;
-use hook::DevHook;
-use rpc::server::SubscriptionManager;
 use runtime::{Config, Pool, Runtime, Storage};
 use std::{net::SocketAddr, sync::Arc};
 use sync::{config::CACHE_DIR, Sync};
@@ -12,7 +10,6 @@ use zcore::ex::Bridge;
 
 mod author;
 mod genesis;
-mod hook;
 mod relay;
 
 /// The development node implementation
@@ -23,9 +20,6 @@ pub struct Dev {
     /// The pool of the development node
     pub pool: Arc<Mutex<Pool>>,
 
-    /// The RPC service
-    pub rpc: Rpc<Parity>,
-
     /// The runtime
     pub runtime: Runtime<Development>,
 }
@@ -33,19 +27,17 @@ pub struct Dev {
 impl Dev {
     /// Create a new development node
     pub async fn new() -> Result<Self> {
-        let manager = SubscriptionManager::default();
-        let hook = DevHook::new(manager.clone());
+        let uidb = zoshui::Database::new(CACHE_DIR.join("ui.db").as_ref())?;
         let parity = Arc::new(Parity::try_from(CACHE_DIR.join("chain"))?);
+        let hook = zoshui::UIHook::new(uidb);
         let runtime = Runtime::new(hook, parity.clone(), 1).await?;
         let pool = runtime.pool.clone();
-        let rpc = Rpc::new(parity.clone(), manager);
         if parity.is_empty()? {
             parity.commit(genesis::commit()?)?;
         }
         Ok(Self {
             runtime,
             pool,
-            rpc,
             parity,
         })
     }
@@ -56,12 +48,11 @@ impl Dev {
         let Dev {
             parity,
             pool,
-            rpc,
             runtime,
         } = self;
         let sync = Sync::load().await?;
+        zoshui::spawn(runtime.hook.db.clone(), address);
         author::spawn(runtime)?;
-        rpc.spawn(address)?;
 
         // spawn the sync service
         let (tx, rx) = mpsc::channel::<Bridge>(512);
@@ -77,6 +68,6 @@ impl Dev {
 pub struct Development;
 
 impl Config for Development {
-    type Hook = DevHook;
+    type Hook = zoshui::UIHook;
     type Storage = Arc<Parity>;
 }

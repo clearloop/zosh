@@ -43,8 +43,8 @@ pub async fn start(mut runtime: Runtime<Development>) -> Result<()> {
             block.extrinsic.bridge.len(),
             block.extrinsic.receipts.len()
         );
+        runtime.import(&block)?;
         runtime.hook.on_block_finalized(&block).await?;
-        runtime.import(block)?;
         now = Instant::now();
     }
 }

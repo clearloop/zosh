@@ -1,9 +1,13 @@
 //! Database module for storing blocks and transactions
+#![allow(clippy::type_complexity)]
 
 use anyhow::Result;
 use rusqlite::{params, Connection, OptionalExtension};
 use serde::{Deserialize, Serialize};
-use std::sync::{Arc, Mutex};
+use std::{
+    path::Path,
+    sync::{Arc, Mutex},
+};
 use zcore::{Block, Head};
 
 /// Thread-safe database connection wrapper
@@ -31,9 +35,28 @@ pub struct ReceiptInfo {
     pub slot: u32,
 }
 
+/// Network statistics
+#[derive(Debug, Serialize, Deserialize)]
+pub struct Stats {
+    /// Total number of blocks
+    pub blocks: u32,
+    /// Total number of transactions
+    pub txns: u32,
+    /// Latest block hash (base58)
+    pub head: String,
+    /// Latest block slot
+    pub slot: u32,
+    /// Accumulated ZEC bridged to Solana (in zatoshi)
+    pub zec_to_solana: u64,
+    /// Accumulated ZEC bridged back to Zcash (in zatoshi)
+    pub zozec_to_zcash: u64,
+    /// Total number of receipts
+    pub receipts: u32,
+}
+
 impl Database {
     /// Create a new database connection
-    pub fn new(db_path: &str) -> Result<Self> {
+    pub fn new(db_path: &Path) -> Result<Self> {
         let conn = Connection::open(db_path)?;
         Ok(Self {
             conn: Arc::new(Mutex::new(conn)),
@@ -114,6 +137,28 @@ impl Database {
             [],
         )?;
 
+        // Create stats table (single row with id=1)
+        conn.execute(
+            "CREATE TABLE IF NOT EXISTS stats (
+                id INTEGER PRIMARY KEY CHECK (id = 1),
+                blocks INTEGER NOT NULL DEFAULT 0,
+                txns INTEGER NOT NULL DEFAULT 0,
+                head TEXT NOT NULL DEFAULT '',
+                slot INTEGER NOT NULL DEFAULT 0,
+                zec_to_solana INTEGER NOT NULL DEFAULT 0,
+                zozec_to_zcash INTEGER NOT NULL DEFAULT 0,
+                receipts INTEGER NOT NULL DEFAULT 0
+            )",
+            [],
+        )?;
+
+        // Initialize stats row if not exists
+        conn.execute(
+            "INSERT OR IGNORE INTO stats (id, blocks, txns, head, slot, zec_to_solana, zozec_to_zcash, receipts)
+             VALUES (1, 0, 0, '', 0, 0, 0, 0)",
+            [],
+        )?;
+
         Ok(())
     }
 
@@ -189,6 +234,51 @@ impl Database {
                 ],
             )?;
         }
+
+        // Calculate bridge amounts for stats update
+        let mut zec_to_solana: u64 = 0;
+        let mut zozec_to_zcash: u64 = 0;
+
+        for bundle in block.extrinsic.bridge.values() {
+            for bridge in &bundle.bridge {
+                // Check if this is ZEC and determine direction
+                if matches!(bridge.coin, zcore::registry::Coin::Zec) {
+                    if matches!(bridge.source, zcore::registry::Chain::Zcash)
+                        && matches!(bridge.target, zcore::registry::Chain::Solana)
+                    {
+                        zec_to_solana += bridge.amount;
+                    } else if matches!(bridge.source, zcore::registry::Chain::Solana)
+                        && matches!(bridge.target, zcore::registry::Chain::Zcash)
+                    {
+                        zozec_to_zcash += bridge.amount;
+                    }
+                }
+            }
+        }
+
+        let receipts_count = block.extrinsic.receipts.len() as u32;
+        let head_base58 = bs58::encode(&hash).into_string();
+
+        // Update stats
+        conn.execute(
+            "UPDATE stats SET
+                blocks = blocks + 1,
+                txns = txns + ?1,
+                head = ?2,
+                slot = ?3,
+                zec_to_solana = zec_to_solana + ?4,
+                zozec_to_zcash = zozec_to_zcash + ?5,
+                receipts = receipts + ?6
+             WHERE id = 1",
+            params![
+                tx_count,
+                head_base58,
+                block.header.slot,
+                zec_to_solana as i64,
+                zozec_to_zcash as i64,
+                receipts_count,
+            ],
+        )?;
 
         Ok(())
     }
@@ -425,6 +515,28 @@ impl Database {
                 receipts: receipt_list,
             },
         }))
+    }
+
+    /// Get current stats
+    pub fn get_stats(&self) -> Result<Stats> {
+        let conn = self.conn.lock().unwrap();
+        let mut stmt = conn.prepare(
+            "SELECT blocks, txns, head, slot, zec_to_solana, zozec_to_zcash, receipts FROM stats WHERE id = 1",
+        )?;
+
+        let stats = stmt.query_row([], |row| {
+            Ok(Stats {
+                blocks: row.get(0)?,
+                txns: row.get(1)?,
+                head: row.get(2)?,
+                slot: row.get(3)?,
+                zec_to_solana: row.get(4)?,
+                zozec_to_zcash: row.get(5)?,
+                receipts: row.get(6)?,
+            })
+        })?;
+
+        Ok(stats)
     }
 
     /// Get paginated blocks with tx count

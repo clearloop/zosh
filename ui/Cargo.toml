@@ -1,12 +1,8 @@
 [package]
-name = "ui"
+name = "zosh-ui"
 version.workspace = true
 edition.workspace = true
 description = "Zosh UI backend"
-
-[[bin]]
-name = "zoshui"
-path = "src/bin/zoshui.rs"
 
 [dependencies]
 crypto.workspace = true
@@ -23,6 +19,7 @@ futures-util.workspace = true
 hex.workspace = true
 jsonrpsee = { workspace = true, features = ["client", "ws-client"] }
 postcard.workspace = true
+runtime.workspace = true
 rusqlite.workspace = true
 serde.workspace = true
 serde_json.workspace = true

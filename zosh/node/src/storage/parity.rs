@@ -40,7 +40,7 @@ impl Storage for Parity {
         Ok(())
     }
 
-    fn set_block(&self, block: Block) -> Result<()> {
+    fn set_block(&self, block: &Block) -> Result<()> {
         self.0.commit_changes(vec![(
             BLOCK_COLUMN,
             Op::Set(block.header.hash().to_vec(), postcard::to_allocvec(&block)?),

@@ -26,6 +26,7 @@ sync = { path = "zosh/sync", package = "zosh-sync" }
 zcore = { path = "zosh/core", package = "zosh-core" }
 solana = { path = "chain/solana", package = "zosh-solana" }
 zosh = { path = "programs/zosh", package = "zosh-program" }
+zoshui = { path = "ui", package = "zosh-ui" }
 
 # crates-io dependencies
 anchor-client = { version = "0.32.1", features = ["async"] }
