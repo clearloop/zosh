@@ -5,14 +5,14 @@
 
 mod config;
 mod db;
-mod subscriber;
+mod sub;
 mod ui;
 mod web;
 
 use anyhow::Result;
 use config::Config;
 use db::Database;
-use subscriber::Subscriber;
+use sub::Subscriber;
 use tokio::signal;
 use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt};
 
@@ -57,7 +57,7 @@ async fn main() -> Result<()> {
 
     // Start query ID subscriber
     let query_id_handle = tokio::spawn(async move {
-        if let Err(e) = ui::subscribe(db).await {
+        if let Err(e) = sub::ui::subscribe(db).await {
             tracing::error!("Query ID subscriber error: {:?}", e);
         }
     });
