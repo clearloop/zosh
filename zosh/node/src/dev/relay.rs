@@ -33,7 +33,7 @@ pub async fn spawn(
     tokio::spawn(async move {
         loop {
             if let Err(e) = bundler(sync2.clone(), bridges2.clone(), pool.clone()).await {
-                tracing::error!("Bundler error:{e:?}, retrying in 5 seconds");
+                tracing::error!("Bundler error: {e:?}, retrying in 5 seconds");
                 tokio::time::sleep(tokio::time::Duration::from_secs(5)).await;
             }
         }

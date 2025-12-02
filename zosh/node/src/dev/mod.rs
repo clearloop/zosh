@@ -28,6 +28,8 @@ impl Dev {
     /// Create a new development node
     pub async fn new() -> Result<Self> {
         let uidb = zoshui::Database::new(CACHE_DIR.join("ui.db").as_ref())?;
+        uidb.init()?;
+
         let parity = Arc::new(Parity::try_from(CACHE_DIR.join("chain"))?);
         let hook = zoshui::UIHook::new(uidb);
         let runtime = Runtime::new(hook, parity.clone(), 1).await?;

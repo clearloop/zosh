@@ -45,7 +45,6 @@ impl ZcashClient {
         let mut last_height = BlockHeight::from(0);
         loop {
             self.sync().await?;
-            tracing::trace!("zcash synced");
             let Ok((target, _anchor)) = self.heights() else {
                 tracing::error!(
                     "Failed to get max height and hash, retrying in {} seconds",
@@ -122,8 +121,6 @@ impl ZcashClient {
         // TODO: we should get the latest height from the global on-chain state.
         let mut last_height = BlockHeight::from(0);
         loop {
-            self.sync().await?;
-            tracing::trace!("zcash synced");
             let Ok((target, _anchor)) = self.heights() else {
                 tracing::error!(
                     "Failed to get max height and hash, retrying in {} seconds",

@@ -1,5 +1,7 @@
 //! Validation interfaces for bridge bundles
 
+use std::mem;
+
 use crate::{ChainFormatEncoder, Sync};
 use anyhow::Result;
 use zcore::{
@@ -89,18 +91,30 @@ impl Sync {
     /// Bundle the bridge requests for zcash
     ///
     /// TODO: prove then splitting data for passing the package on chain.
+    ///
+    /// FIXME: handle the mempool case, we may not have enough available notes
+    /// to bundle when we got a lot of redeem requests at the same time, and
+    /// there could be double spending problem for the same note.
+    ///
+    /// We need to subscribing the notes we are using to other nodes in the network
+    /// layer as well, to deduplicating the transactions in bundles.
     pub async fn bundle_zcash_bridges(
         &mut self,
-        bridges: Vec<Bridge>,
+        mut bridges: Vec<Bridge>,
     ) -> Result<(Vec<BridgeBundle>, Vec<Receipt>)> {
         let mut bundles = Vec::new();
         let mut receipts = Vec::new();
+        bridges.extend(mem::take(&mut self.unresolved));
         for unbundled in bridges.windows(Chain::Zcash.max_bundle_size()) {
             let (bundle, utx) = self.zcash.bundle(unbundled).await?;
-            let txid = self
-                .zcash
-                .dev_sign_and_send(utx, &self.dev_zcash_mpc)
-                .await?;
+            let txid = match self.zcash.dev_sign_and_send(utx, &self.dev_zcash_mpc).await {
+                Ok(txid) => txid,
+                Err(e) => {
+                    tracing::error!("Failed to sign and send zcash transaction: {:?}", e);
+                    self.unresolved.extend(unbundled.to_vec());
+                    continue;
+                }
+            };
 
             // sign the bundles
             for bridge in unbundled {

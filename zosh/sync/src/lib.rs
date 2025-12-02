@@ -6,10 +6,10 @@ use tokio::sync::mpsc;
 use zcore::ex::Bridge;
 pub use {config::Config, encoder::ChainFormatEncoder, solana::ZoshClient, zcash::ZcashClient};
 
+mod bundle;
 pub mod config;
 mod encoder;
 pub mod solana;
-mod validate;
 pub mod zcash;
 
 /// The sync data source
@@ -25,6 +25,9 @@ pub struct Sync {
 
     /// The zcash light client
     pub zcash: ZcashClient,
+
+    /// unresolved bundles
+    pub unresolved: Vec<Bridge>,
 }
 
 impl Sync {
@@ -48,6 +51,7 @@ impl Sync {
             dev_zcash_mpc,
             zcash,
             solana,
+            unresolved: Default::default(),
         })
     }
 

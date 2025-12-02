@@ -62,7 +62,6 @@ impl ZcashClient {
         tx.write(&mut data)?;
 
         // send the transaction
-        tracing::info!("Transaction ID: {}", txid);
         let resp = self
             .client
             .send_transaction(RawTransaction { data, height: 0 })
