@@ -95,18 +95,18 @@ async fn get_query(
     State(state): State<AppState>,
     Path(qid_str): Path<String>,
 ) -> Result<Json<serde_json::Value>, AppError> {
-    let qid_bytes = hex::decode(&qid_str)
-        .map_err(|_| AppError::BadRequest("Invalid query ID: must be hex encoded".to_string()))?;
-
-    tracing::debug!("Querying query_id: {}", qid_str);
-
+    let qid_bytes = bs58::decode(&qid_str).into_vec().map_err(|_| {
+        AppError::BadRequest("Invalid query ID: must be base58 encoded".to_string())
+    })?;
+    tracing::trace!("Querying query_id: {}", qid_str);
     let result = state
         .db
         .get_query_id(&qid_bytes)
         .map_err(|e| AppError::Internal(format!("Database error: {}", e)))?;
 
     match result {
-        Some(tx_id) => {
+        Some(mut tx_id) => {
+            tx_id.reverse();
             let txid_str = hex::encode(&tx_id);
             let response = json!({
                 "txid": txid_str,

@@ -9,7 +9,7 @@ use tonic::transport::{Channel, ClientTlsConfig};
 use zcash_client_backend::{
     data_api::WalletRead, proto::service::compact_tx_streamer_client::CompactTxStreamerClient,
 };
-use zcash_client_sqlite::{util::SystemClock, wallet, WalletDb};
+use zcash_client_sqlite::{util::SystemClock, wallet, ReceivedNoteId, WalletDb};
 use zcash_keys::keys::UnifiedFullViewingKey;
 use zcash_protocol::consensus::Network;
 
@@ -35,6 +35,11 @@ pub struct ZcashClient {
 
     /// The unified full viewing key of the light client
     pub ufvk: UnifiedFullViewingKey,
+
+    /// The blacklist of the light client
+    ///
+    /// NOTE: should not use this in production, only for development.
+    pub blacklist: Vec<ReceivedNoteId>,
 }
 
 impl ZcashClient {
@@ -70,6 +75,7 @@ impl ZcashClient {
             client,
             network: config.network,
             ufvk: config.ufvk.clone(),
+            blacklist: vec![],
         };
 
         // import the account if it doesn't exist

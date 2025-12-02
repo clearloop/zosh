@@ -59,11 +59,12 @@ impl ZcashClient {
 
             // Get the spendable notes and send them all.
             // The relay layer deduplicates using parity.exists(&bridge.txid).
-            let notes = self.spendable_notes(0, target, &[])?;
+            let notes = self.spendable_notes(0, target, &self.blacklist)?;
             for note in notes.into_iter() {
                 let txid = note.txid();
                 let Some(mined_height) = note.mined_height() else {
                     tracing::warn!("Note mined height is not found for note of {}", &txid);
+                    self.blacklist.push(*note.internal_note_id());
                     continue;
                 };
 
@@ -75,8 +76,16 @@ impl ZcashClient {
                     })
                 else {
                     // TODO: raise a refund event to the node.
+                    self.blacklist.push(*note.internal_note_id());
                     continue;
                 };
+
+                // split the memo into parts
+                let parts = text.trim().split(':').collect::<Vec<&str>>();
+                if parts.is_empty() {
+                    self.blacklist.push(*note.internal_note_id());
+                    continue;
+                }
 
                 // NOTE: support solana only
                 //
@@ -85,19 +94,20 @@ impl ZcashClient {
                 // on sending the transaction, not doing it here for now.
                 //
                 // TODO: for non-bridge memo, we should blacklist them.
-                let Ok(recipient) = bs58::decode(text.trim()).into_vec() else {
+                let Ok(recipient) = bs58::decode(parts[0]).into_vec() else {
+                    self.blacklist.push(*note.internal_note_id());
                     continue;
                 };
 
                 // NOTE: Invalid recipient address, skip it.
-                if recipient.len() < 32 {
+                if recipient.len() != 32 {
+                    self.blacklist.push(*note.internal_note_id());
                     continue;
                 }
 
                 // NOTE: we support solana address only here, for the bytes
                 // after 32, they will be used for the builders to enhance
                 // the user experience.
-                let recipient = recipient[..32].to_vec();
                 tx.send(Bridge {
                     coin: Coin::Zec,
                     recipient,
@@ -136,6 +146,7 @@ impl ZcashClient {
                 let txid = note.txid();
                 let Some(mined_height) = note.mined_height() else {
                     tracing::warn!("Note mined height is not found for note of {}", &txid);
+                    self.blacklist.push(*note.internal_note_id());
                     continue;
                 };
 
@@ -146,19 +157,21 @@ impl ZcashClient {
                         tracing::warn!("Failed to fetch memo for note of {}: {:?}", &txid, e);
                     })
                 else {
+                    self.blacklist.push(*note.internal_note_id());
                     continue;
                 };
 
-                let Ok(data) = bs58::decode(text.trim()).into_vec() else {
-                    continue;
-                };
-
-                // NOTE: Invalid recipient address, skip it.
-                if data.len() < 32 {
+                let parts = text.trim().split(':').collect::<Vec<&str>>();
+                if parts.len() != 2 {
+                    self.blacklist.push(*note.internal_note_id());
                     continue;
                 }
 
-                let data = data[32..].to_vec();
+                let Ok(data) = bs58::decode(parts[1]).into_vec() else {
+                    self.blacklist.push(*note.internal_note_id());
+                    continue;
+                };
+
                 tx.send((data, *txid)).await?;
             }
         }
