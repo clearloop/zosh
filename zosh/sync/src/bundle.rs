@@ -16,8 +16,9 @@ impl Sync {
     /// TODO: make the bundling process in parallel.
     pub async fn bundle(
         &mut self,
-        bridges: Vec<Bridge>,
+        mut bridges: Vec<Bridge>,
     ) -> Result<(Vec<BridgeBundle>, Vec<Receipt>)> {
+        bridges.extend(mem::take(&mut self.unresolved));
         let mut sol_bundles = Vec::new();
         let mut zcash_bundles = Vec::new();
         for bridge in bridges {
@@ -57,11 +58,24 @@ impl Sync {
         let mut bundles = Vec::new();
         let mut receipts = Vec::new();
         for unbundled in bridges.chunks(Chain::Solana.max_bundle_size()) {
-            let (bundle, transaction) = self.solana.bundle(unbundled).await?;
-            let signature = self
+            let Ok((bundle, transaction)) = self.solana.bundle(unbundled).await.inspect_err(|e| {
+                tracing::error!("Failed to bundle solana bridges: {:?}", e);
+            }) else {
+                self.unresolved.extend(unbundled.to_vec());
+                continue;
+            };
+
+            let Ok(signature) = self
                 .solana
                 .dev_sign_and_send(transaction, &self.dev_solana_mpc)
-                .await?;
+                .await
+                .inspect_err(|e| {
+                    tracing::error!("Failed to sign and send solana transaction: {:?}", e);
+                })
+            else {
+                self.unresolved.extend(unbundled.to_vec());
+                continue;
+            };
 
             // sign the bundles
             for bridge in unbundled {
@@ -100,20 +114,26 @@ impl Sync {
     /// layer as well, to deduplicating the transactions in bundles.
     pub async fn bundle_zcash_bridges(
         &mut self,
-        mut bridges: Vec<Bridge>,
+        bridges: Vec<Bridge>,
     ) -> Result<(Vec<BridgeBundle>, Vec<Receipt>)> {
         let mut bundles = Vec::new();
         let mut receipts = Vec::new();
-        bridges.extend(mem::take(&mut self.unresolved));
         for unbundled in bridges.chunks(Chain::Zcash.max_bundle_size()) {
-            let (bundle, utx) = self.zcash.bundle(unbundled).await?;
-            let txid = match self.zcash.dev_sign_and_send(utx, &self.dev_zcash_mpc).await {
-                Ok(txid) => txid,
-                Err(e) => {
+            let Ok((bundle, utx)) = self.zcash.bundle(unbundled).await else {
+                self.unresolved.extend(unbundled.to_vec());
+                continue;
+            };
+
+            let Ok(txid) = self
+                .zcash
+                .dev_sign_and_send(utx, &self.dev_zcash_mpc)
+                .await
+                .inspect_err(|e| {
                     tracing::error!("Failed to sign and send zcash transaction: {:?}", e);
-                    self.unresolved.extend(unbundled.to_vec());
-                    continue;
-                }
+                })
+            else {
+                self.unresolved.extend(unbundled.to_vec());
+                continue;
             };
 
             // sign the bundles

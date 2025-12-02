@@ -20,10 +20,7 @@ impl ZcashClient {
         let bridge = bridges[0].clone();
         let recipient = bridge.recipient.zcash_address(&self.network)?;
         let utx = self.tx(recipient, bridge.amount)?;
-        for bridge in bridges {
-            bundle.bridge.push(bridge.clone());
-        }
-
+        bundle.bridge.push(bridge.clone());
         Ok((bundle, utx))
     }
 }
