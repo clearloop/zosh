@@ -14,6 +14,7 @@ use axum::{
 use serde::Deserialize;
 use serde_json::json;
 use std::net::SocketAddr;
+use tower_http::cors::{Any, CorsLayer};
 
 /// Application state shared across handlers
 #[derive(Clone)]
@@ -24,6 +25,13 @@ pub struct AppState {
 /// Start the web service
 pub async fn serve(listen_addr: SocketAddr, db: Database) -> anyhow::Result<()> {
     let state = AppState { db };
+
+    // Configure CORS to allow requests from any origin
+    let cors = CorsLayer::new()
+        .allow_origin(Any)
+        .allow_methods(Any)
+        .allow_headers(Any);
+
     let app = Router::new()
         .route("/tx/{txid}", get(get_transaction))
         .route("/query/{qid}", get(get_query))
@@ -31,6 +39,7 @@ pub async fn serve(listen_addr: SocketAddr, db: Database) -> anyhow::Result<()> 
         .route("/block/{hash_or_slot}", get(get_block))
         .route("/blocks", get(get_blocks))
         .route("/stats", get(get_stats))
+        .layer(cors)
         .with_state(state);
 
     tracing::info!("Starting web server on {}", listen_addr);
