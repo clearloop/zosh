@@ -30,14 +30,6 @@ WORKDIR /home/zosh
 # Expose the default development server port
 EXPOSE 1439
 
-# Set environment variables
-ENV RUST_LOG=info
-ENV ZOSH_CONFIG_DIR=/home/zosh/.config/zosh
-ENV ZOSH_CACHE_DIR=/home/zosh/.cache/zosh
-
-# Volume mounts for persistent data
-VOLUME ["/home/zosh/.config/zosh", "/home/zosh/.cache/zosh"]
-
 # Default command
 ENTRYPOINT ["zoshd"]
 CMD ["dev"]

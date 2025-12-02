@@ -9,16 +9,9 @@ services:
     ports:
       - "1439:1439"
     volumes:
-      - zosh-config:/home/zosh/.config/zosh
-      - zosh-cache:/home/zosh/.cache/zosh
-    environment:
-      - RUST_LOG=info
-      - ZOSH_CONFIG_DIR=/home/zosh/.config/zosh
-      - ZOSH_CACHE_DIR=/home/zosh/.cache/zosh
-      # Uncomment and set these to override default RPC endpoints
-      # - ZOSH_RPC_SOLANA=https://api.mainnet-beta.solana.com
-      # - ZOSH_RPC_SOLANA_WS=wss://api.mainnet-beta.solana.com
-      # - ZOSH_RPC_LIGHTWALLETD=http://127.0.0.1:9067
+      - ./config.toml:/home/zosh/.config/zosh/config.toml
+      - ./solana.json:/home/zosh/.config/solana/id.json
+      - ./cache:/home/zosh/.cache/zosh
     healthcheck:
       test: [ "CMD", "zoshd", "--version" ]
       interval: 30s
@@ -30,9 +23,3 @@ services:
       options:
         max-size: "10m"
         max-file: "3"
-
-volumes:
-  zosh-config:
-    driver: local
-  zosh-cache:
-    driver: local

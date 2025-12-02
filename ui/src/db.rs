@@ -57,6 +57,9 @@ pub struct Stats {
 impl Database {
     /// Create a new database connection
     pub fn new(db_path: &Path) -> Result<Self> {
+        if let Some(parent) = db_path.parent() {
+            std::fs::create_dir_all(parent)?;
+        }
         let conn = Connection::open(db_path)?;
         Ok(Self {
             conn: Arc::new(Mutex::new(conn)),
