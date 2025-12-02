@@ -4,7 +4,7 @@ use super::{
     build_tx_response, decode_query_id, decode_txid, query_by_qid, query_by_txid, AppState,
 };
 use crate::{
-    db::Stats,
+    db::{Database, Stats},
     ui::{UIBlock, UIBlocksPage, UIHead},
     AppError,
 };
@@ -15,34 +15,39 @@ use axum::{
 use serde::Deserialize;
 use serde_json::{json, Value};
 
-/// Handler for GET /tx/{txid}
-pub async fn get_transaction(
-    State(state): State<AppState>,
-    Path(txid_str): Path<String>,
-) -> Result<Json<Value>, AppError> {
-    let (txid_bytes, chain_type) = decode_txid(&txid_str).map_err(AppError::BadRequest)?;
+// === Inner functions for unified handlers ===
 
-    tracing::trace!("Querying {} transaction: {}", chain_type, txid_str);
+/// HTTP handler logic for /tx/{txid}
+pub fn get_transaction_inner(db: &Database, txid_str: &str) -> Result<Json<Value>, AppError> {
+    let (txid_bytes, chain_type) = decode_txid(txid_str).map_err(AppError::BadRequest)?;
 
-    match query_by_txid(&state.db, &txid_bytes).map_err(AppError::Internal)? {
+    tracing::trace!("HTTP: Querying {} transaction: {}", chain_type, txid_str);
+
+    match query_by_txid(db, &txid_bytes).map_err(AppError::Internal)? {
         Some(tx) => Ok(Json(build_tx_response(&tx))),
         None => Err(AppError::NotFound("Transaction not found".to_string())),
     }
 }
 
-/// Handler for GET /query/{qid}
-pub async fn get_query(
-    State(state): State<AppState>,
-    Path(qid_str): Path<String>,
-) -> Result<Json<Value>, AppError> {
-    let qid_bytes = decode_query_id(&qid_str).map_err(AppError::BadRequest)?;
+/// HTTP handler logic for /query/{qid}
+pub fn get_query_inner(db: &Database, qid_str: &str) -> Result<Json<Value>, AppError> {
+    let qid_bytes = decode_query_id(qid_str).map_err(AppError::BadRequest)?;
 
-    tracing::trace!("Querying query_id: {}", qid_str);
+    tracing::trace!("HTTP: Querying query_id: {}", qid_str);
 
-    match query_by_qid(&state.db, &qid_bytes).map_err(AppError::Internal)? {
+    match query_by_qid(db, &qid_bytes).map_err(AppError::Internal)? {
         Some((txid_hex, _tx)) => Ok(Json(json!({ "txid": txid_hex }))),
         None => Err(AppError::NotFound("Query ID not found".to_string())),
     }
+}
+
+/// HTTP handler logic for /stats
+pub fn get_stats_inner(db: &Database) -> Result<Json<Stats>, AppError> {
+    let stats = db
+        .get_stats()
+        .map_err(|e| AppError::Internal(format!("Database error: {}", e)))?;
+
+    Ok(Json(stats))
 }
 
 /// Handler for GET /latest
@@ -135,14 +140,4 @@ pub async fn get_blocks(
         page,
         row,
     }))
-}
-
-/// Handler for GET /stats
-pub async fn get_stats(State(state): State<AppState>) -> Result<Json<Stats>, AppError> {
-    let stats = state
-        .db
-        .get_stats()
-        .map_err(|e| AppError::Internal(format!("Database error: {}", e)))?;
-
-    Ok(Json(stats))
 }

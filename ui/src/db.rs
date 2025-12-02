@@ -192,7 +192,7 @@ impl Database {
         // Insert bridge transactions
         for (bundle_hash, bundle) in &block.extrinsic.bridge {
             for bridge in &bundle.bridge {
-                let coin_str = format!("{:?}", bridge.coin);
+                let coin_str = format!("{}", bridge.coin);
                 let source_str = format!("{:?}", bridge.source);
                 let target_str = format!("{:?}", bridge.target);
 
@@ -589,7 +589,12 @@ fn parse_coin(s: &str) -> zcore::registry::Coin {
 /// Encode txid to appropriate string format based on length
 fn encode_txid(txid: &[u8]) -> String {
     match txid.len() {
-        32 => hex::encode(txid),                // Zcash
+        32 => {
+            // Zcash: DB stores original order, display needs reversed
+            let mut bytes = txid.to_vec();
+            bytes.reverse();
+            hex::encode(bytes)
+        }
         64 => bs58::encode(txid).into_string(), // Solana
         _ => hex::encode(txid),                 // Fallback to hex
     }
