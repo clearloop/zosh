@@ -48,6 +48,7 @@ impl Database {
         conn.execute(
             "CREATE TABLE IF NOT EXISTS blocks (
                 slot INTEGER PRIMARY KEY,
+                hash BLOB NOT NULL,
                 parent BLOB NOT NULL,
                 state BLOB NOT NULL,
                 accumulator BLOB NOT NULL,
@@ -122,12 +123,16 @@ impl Database {
         // Serialize votes using postcard (since BTreeMap keys are byte arrays, not JSON-compatible)
         let votes_bytes = postcard::to_allocvec(&block.header.votes)?;
 
+        // Compute block hash
+        let hash = block.header.hash();
+
         // Insert block header
         conn.execute(
-            "INSERT OR REPLACE INTO blocks (slot, parent, state, accumulator, extrinsic, votes)
-             VALUES (?1, ?2, ?3, ?4, ?5, ?6)",
+            "INSERT OR REPLACE INTO blocks (slot, hash, parent, state, accumulator, extrinsic, votes)
+             VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7)",
             params![
                 block.header.slot,
+                &hash[..],
                 &block.header.parent[..],
                 &block.header.state[..],
                 &block.header.accumulator[..],
@@ -265,35 +270,18 @@ impl Database {
     /// Get the latest block head (highest slot)
     pub fn get_latest_head(&self) -> Result<Option<Head>> {
         let conn = self.conn.lock().unwrap();
-        let mut stmt = conn.prepare(
-            "SELECT slot, parent, state, accumulator, extrinsic FROM blocks ORDER BY slot DESC LIMIT 1",
-        )?;
-
-        let result: Option<(u32, Vec<u8>, Vec<u8>, Vec<u8>, Vec<u8>)> = stmt
-            .query_row([], |row| {
-                Ok((
-                    row.get(0)?,
-                    row.get(1)?,
-                    row.get(2)?,
-                    row.get(3)?,
-                    row.get(4)?,
-                ))
-            })
+        let mut stmt = conn.prepare("SELECT slot, hash FROM blocks ORDER BY slot DESC LIMIT 1")?;
+        let result: Option<(u32, Vec<u8>)> = stmt
+            .query_row([], |row| Ok((row.get(0)?, row.get(1)?)))
             .optional()?;
 
-        let Some((slot, parent, state, accumulator, extrinsic)) = result else {
+        let Some((slot, hash_bytes)) = result else {
             return Ok(None);
         };
 
-        // Compute the block hash: blake3(slot || parent || state || extrinsic)
-        //
-        // TODO: cache the head
-        let mut data = slot.to_le_bytes().to_vec();
-        data.extend_from_slice(&parent);
-        data.extend_from_slice(&state);
-        data.extend_from_slice(&accumulator);
-        data.extend_from_slice(&extrinsic);
-        let hash = crypto::blake3(&data);
+        let hash: [u8; 32] = hash_bytes
+            .try_into()
+            .map_err(|_| anyhow::anyhow!("Invalid hash length in database"))?;
         Ok(Some(Head { slot, hash }))
     }
 }
