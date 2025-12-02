@@ -6,6 +6,7 @@
 mod config;
 mod db;
 mod subscriber;
+mod ui;
 mod web;
 
 use anyhow::Result;
@@ -42,7 +43,7 @@ async fn main() -> Result<()> {
 
     // Clone database for web server
     let web_db = db.clone();
-    let subscriber = Subscriber::new(config.rpc_url.clone(), db);
+    let subscriber = Subscriber::new(config.rpc_url.clone(), db.clone());
     let subscriber_handle = tokio::spawn(async move {
         loop {
             tracing::info!("Starting block subscriber...");
@@ -51,6 +52,13 @@ async fn main() -> Result<()> {
                 tracing::info!("Reconnecting in 5 seconds...");
                 tokio::time::sleep(tokio::time::Duration::from_secs(5)).await;
             }
+        }
+    });
+
+    // Start query ID subscriber
+    let query_id_handle = tokio::spawn(async move {
+        if let Err(e) = ui::subscribe(db).await {
+            tracing::error!("Query ID subscriber error: {:?}", e);
         }
     });
 
@@ -74,6 +82,7 @@ async fn main() -> Result<()> {
     // Abort tasks
     subscriber_handle.abort();
     web_handle.abort();
+    query_id_handle.abort();
     tracing::info!("Shutdown complete");
     Ok(())
 }

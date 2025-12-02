@@ -232,6 +232,16 @@ impl Database {
             receipt,
         }))
     }
+
+    /// Insert a query ID and tx ID into the database
+    pub fn insert_query_id(&self, query_id: Vec<u8>, tx_id: &[u8]) -> Result<()> {
+        let conn = self.conn.lock().unwrap();
+        conn.execute(
+            "INSERT OR REPLACE INTO query_ids (query_id, tx_id) VALUES (?1, ?2)",
+            params![query_id, tx_id],
+        )?;
+        Ok(())
+    }
 }
 
 /// Encode txid to appropriate string format based on length

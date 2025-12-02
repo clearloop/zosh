@@ -7655,6 +7655,7 @@ dependencies = [
  "tracing-subscriber",
  "zosh-core",
  "zosh-rpc",
+ "zosh-sync",
 ]
 
 [[package]]
