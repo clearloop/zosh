@@ -4,7 +4,7 @@ use crate::{solana, zcash::SignerInfo};
 use anyhow::Result;
 use serde::{Deserialize, Serialize};
 use std::{
-    fs,
+    env, fs,
     path::{Path, PathBuf},
     sync::LazyLock,
 };
@@ -14,20 +14,47 @@ mod key;
 mod network;
 mod rpc;
 
+/// Environment variable for cache directory override
+const ENV_CACHE_DIR: &str = "ZOSH_CACHE_DIR";
+
+/// Environment variable for config directory override
+const ENV_CONFIG_DIR: &str = "ZOSH_CONFIG_DIR";
+
+/// Environment variable for Solana RPC endpoint override
+const ENV_RPC_SOLANA: &str = "ZOSH_RPC_SOLANA";
+
+/// Environment variable for Solana WebSocket endpoint override
+const ENV_RPC_SOLANA_WS: &str = "ZOSH_RPC_SOLANA_WS";
+
+/// Environment variable for Zcash lightwalletd endpoint override
+const ENV_RPC_LIGHTWALLETD: &str = "ZOSH_RPC_LIGHTWALLETD";
+
 /// The cache directory
+///
+/// Can be overridden via `ZOSH_CACHE_DIR` environment variable
 pub static CACHE_DIR: LazyLock<PathBuf> = LazyLock::new(|| {
-    dirs::home_dir()
-        .expect("home directory not found")
-        .join(".cache")
-        .join("zosh")
+    env::var(ENV_CACHE_DIR)
+        .map(PathBuf::from)
+        .unwrap_or_else(|_| {
+            dirs::home_dir()
+                .expect("home directory not found")
+                .join(".cache")
+                .join("zosh")
+        })
 });
 
 /// The configuration directory
+///
+/// Can be overridden via `ZOSH_CONFIG_DIR` environment variable
 pub static CONFIG_DIR: LazyLock<PathBuf> = LazyLock::new(|| {
-    dirs::home_dir()
-        .expect("home directory not found")
-        .join(".config")
-        .join("zosh")
+    env::var(ENV_CONFIG_DIR)
+        .map(PathBuf::from)
+        .unwrap_or_else(|_| {
+            dirs::home_dir()
+                .expect("home directory not found")
+                .join(".config")
+                .join("zosh")
+        })
 });
 
 /// The configuration file
@@ -48,12 +75,31 @@ pub struct Config {
 
 impl Config {
     /// Load the configuration from a file
+    ///
+    /// Environment variables can override config file values:
+    /// - `ZOSH_RPC_SOLANA` - Solana RPC endpoint
+    /// - `ZOSH_RPC_SOLANA_WS` - Solana WebSocket endpoint
+    /// - `ZOSH_RPC_LIGHTWALLETD` - Zcash lightwalletd endpoint
     pub fn load() -> Result<Self> {
-        if !CONFIG_FILE.exists() {
-            return Self::generate(CONFIG_FILE.as_path());
+        let mut config = if !CONFIG_FILE.exists() {
+            Self::generate(CONFIG_FILE.as_path())?
+        } else {
+            let file = fs::read_to_string(CONFIG_FILE.as_path())?;
+            toml::from_str(&file)?
+        };
+
+        // Apply environment variable overrides for RPC endpoints
+        if let Ok(solana) = env::var(ENV_RPC_SOLANA) {
+            config.rpc.solana = solana.parse()?;
         }
-        let file = fs::read_to_string(CONFIG_FILE.as_path())?;
-        Ok(toml::from_str(&file)?)
+        if let Ok(solana_ws) = env::var(ENV_RPC_SOLANA_WS) {
+            config.rpc.solana_ws = solana_ws.parse()?;
+        }
+        if let Ok(lightwalletd) = env::var(ENV_RPC_LIGHTWALLETD) {
+            config.rpc.lightwalletd = lightwalletd.parse()?;
+        }
+
+        Ok(config)
     }
 
     /// Get the zcash light client configuration

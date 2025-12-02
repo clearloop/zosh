@@ -5,6 +5,6 @@ use zosh_node::cmd::App;
 
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
-    let app = App::try_parse()?;
+    let app = App::parse();
     app.run().await
 }

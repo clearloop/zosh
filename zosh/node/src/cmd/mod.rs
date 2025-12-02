@@ -13,6 +13,7 @@ use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt, EnvFilte
 
 /// Command line interface for the ZorchBridge node
 #[derive(Parser)]
+#[clap(version = crate::VERSION)]
 pub struct App {
     #[clap(subcommand)]
     pub command: Command,
