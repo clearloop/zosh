@@ -185,10 +185,10 @@ async fn get_blocks(
 
     let ui_blocks: Vec<UIHead> = blocks
         .into_iter()
-        .map(|(head, tx_count)| UIHead {
+        .map(|(head, txns)| UIHead {
             slot: head.slot,
             hash: bs58::encode(head.hash).into_string(),
-            tx_count,
+            txns,
         })
         .collect();
 

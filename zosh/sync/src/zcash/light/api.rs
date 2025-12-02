@@ -3,7 +3,6 @@
 use crate::zcash::{light::ZcashClient, CONFIRMATIONS};
 use anyhow::Result;
 use orchard::Note;
-use std::time::Duration;
 use zcash_client_backend::{
     data_api::{
         wallet::{ConfirmationsPolicy, TargetHeight},
@@ -30,14 +29,6 @@ impl ZcashClient {
         )
         .await
         .map_err(Into::into)
-    }
-
-    /// Sync the wallet
-    pub async fn sync_forever(&mut self) -> Result<()> {
-        loop {
-            self.sync().await?;
-            tokio::time::sleep(Duration::from_secs(60)).await;
-        }
     }
 
     /// Import a unified full viewing key

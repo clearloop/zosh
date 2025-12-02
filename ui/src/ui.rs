@@ -141,7 +141,7 @@ impl UIReceipt {
 pub struct UIHead {
     pub slot: u32,
     pub hash: String,
-    pub tx_count: u32,
+    pub txns: u32,
 }
 
 /// UI representation of paginated blocks response

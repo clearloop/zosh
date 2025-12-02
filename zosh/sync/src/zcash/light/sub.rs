@@ -40,9 +40,11 @@ impl ZcashClient {
     }
 
     /// Subscribe to the zcash light client
+    ///
+    /// Note: Deduplication is handled by the relay layer using the database,
+    /// so we simply send all spendable notes. This avoids memory issues from
+    /// tracking processed txids and ensures no notes are missed.
     pub async fn subscribe_inner(&mut self, tx: mpsc::Sender<Bridge>) -> Result<()> {
-        // TODO: we should get the latest height from the global on-chain state.
-        let mut last_height = BlockHeight::from(0);
         loop {
             self.sync().await?;
             let Ok((target, _anchor)) = self.heights() else {
@@ -53,8 +55,10 @@ impl ZcashClient {
                 time::sleep(Duration::from_secs(ZCASH_BLOCK_TIME)).await;
                 continue;
             };
+            tracing::trace!("zcash light synced to height {}", u32::from(target));
 
-            // Get the spendable notes
+            // Get the spendable notes and send them all.
+            // The relay layer deduplicates using parity.exists(&bridge.txid).
             let notes = self.spendable_notes(0, target, &[])?;
             for note in notes.into_iter() {
                 let txid = note.txid();
@@ -62,10 +66,6 @@ impl ZcashClient {
                     tracing::warn!("Note mined height is not found for note of {}", &txid);
                     continue;
                 };
-
-                if mined_height <= last_height {
-                    continue;
-                }
 
                 let Ok(Memo::Text(text)) = self
                     .fetch_memo(mined_height, *txid, note.output_index() as u32)
@@ -75,7 +75,6 @@ impl ZcashClient {
                     })
                 else {
                     // TODO: raise a refund event to the node.
-                    // tracing::warn!("Memo is not found for note of {}", &txid);
                     continue;
                 };
 
@@ -110,23 +109,24 @@ impl ZcashClient {
                 .await?;
             }
 
-            // The block time of zcash is 75 secs, using 30 secs is totally fine here.
-            last_height = target.into();
+            // The block time of zcash is 75 secs, using 10 secs is fine here.
             time::sleep(Duration::from_secs(10)).await;
         }
     }
 
-    /// Subscribe to the zcash light client
+    /// Subscribe to the zcash light client for builder data
+    ///
+    /// Note: This is used by the UI layer which has its own deduplication
+    /// via insert_query_id's INSERT OR REPLACE.
     pub async fn dev_builder_subscribe(&mut self, tx: mpsc::Sender<(Vec<u8>, TxId)>) -> Result<()> {
-        // TODO: we should get the latest height from the global on-chain state.
-        let mut last_height = BlockHeight::from(0);
         loop {
+            // The block time of zcash is 75 secs, using 10 secs is fine here.
+            time::sleep(Duration::from_secs(10)).await;
             let Ok((target, _anchor)) = self.heights() else {
                 tracing::error!(
                     "Failed to get max height and hash, retrying in {} seconds",
                     ZCASH_BLOCK_TIME
                 );
-                time::sleep(Duration::from_secs(ZCASH_BLOCK_TIME)).await;
                 continue;
             };
 
@@ -138,10 +138,6 @@ impl ZcashClient {
                     tracing::warn!("Note mined height is not found for note of {}", &txid);
                     continue;
                 };
-
-                if mined_height <= last_height {
-                    continue;
-                }
 
                 let Ok(Memo::Text(text)) = self
                     .fetch_memo(mined_height, *txid, note.output_index() as u32)
@@ -165,10 +161,6 @@ impl ZcashClient {
                 let data = data[32..].to_vec();
                 tx.send((data, *txid)).await?;
             }
-
-            // The block time of zcash is 75 secs, using 30 secs is totally fine here.
-            last_height = target.into();
-            time::sleep(Duration::from_secs(10)).await;
         }
     }
 

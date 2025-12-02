@@ -77,7 +77,7 @@ impl Database {
                 accumulator BLOB NOT NULL,
                 extrinsic BLOB NOT NULL,
                 votes BLOB NOT NULL,
-                tx_count INTEGER NOT NULL DEFAULT 0
+                txns INTEGER NOT NULL DEFAULT 0
             )",
             [],
         )?;
@@ -171,11 +171,11 @@ impl Database {
 
         // Compute block hash and tx count
         let hash = block.header.hash();
-        let tx_count = block.extrinsic.count() as u32;
+        let txns = block.extrinsic.count() as u32;
 
         // Insert block header
         conn.execute(
-            "INSERT OR REPLACE INTO blocks (slot, hash, parent, state, accumulator, extrinsic, votes, tx_count)
+            "INSERT OR REPLACE INTO blocks (slot, hash, parent, state, accumulator, extrinsic, votes, txns)
              VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8)",
             params![
                 block.header.slot,
@@ -185,7 +185,7 @@ impl Database {
                 &block.header.accumulator[..],
                 &block.header.extrinsic[..],
                 &votes_bytes[..],
-                tx_count,
+                txns,
             ],
         )?;
 
@@ -271,7 +271,7 @@ impl Database {
                 receipts = receipts + ?6
              WHERE id = 1",
             params![
-                tx_count,
+                txns,
                 head_base58,
                 block.header.slot,
                 zec_to_solana as i64,
@@ -548,21 +548,20 @@ impl Database {
 
         // Get paginated blocks
         let offset = page * row;
-        let mut stmt = conn.prepare(
-            "SELECT slot, hash, tx_count FROM blocks ORDER BY slot DESC LIMIT ?1 OFFSET ?2",
-        )?;
+        let mut stmt = conn
+            .prepare("SELECT slot, hash, txns FROM blocks ORDER BY slot DESC LIMIT ?1 OFFSET ?2")?;
 
         let blocks: Vec<(Head, u32)> = stmt
             .query_map(params![row, offset], |row| {
                 let slot: u32 = row.get(0)?;
                 let hash_bytes: Vec<u8> = row.get(1)?;
-                let tx_count: u32 = row.get(2)?;
-                Ok((slot, hash_bytes, tx_count))
+                let txns: u32 = row.get(2)?;
+                Ok((slot, hash_bytes, txns))
             })?
             .filter_map(|r| r.ok())
-            .filter_map(|(slot, hash_bytes, tx_count)| {
+            .filter_map(|(slot, hash_bytes, txns)| {
                 let hash: [u8; 32] = hash_bytes.try_into().ok()?;
-                Some((Head { slot, hash }, tx_count))
+                Some((Head { slot, hash }, txns))
             })
             .collect();
 
@@ -581,8 +580,8 @@ fn parse_chain(s: &str) -> zcore::registry::Chain {
 
 /// Parse coin from debug string
 fn parse_coin(s: &str) -> zcore::registry::Coin {
-    match s {
-        "Zec" => zcore::registry::Coin::Zec,
+    match s.to_uppercase().as_str() {
+        "ZEC" => zcore::registry::Coin::Zec,
         _ => zcore::registry::Coin::Zec, // Default fallback
     }
 }
