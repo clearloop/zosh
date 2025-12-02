@@ -34,7 +34,7 @@ anchor-lang = "0.32.1"
 anchor-spl = "0.32.1"
 anyhow = "1.0.100"
 async-trait = "0.1.89"
-axum = "0.8.7"
+axum = { version = "0.8.7", features = ["ws"] }
 base64 = "0.21.7"
 blake3 = "1.8.2"
 borsh = "1.5.7"

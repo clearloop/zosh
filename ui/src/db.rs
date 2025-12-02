@@ -36,7 +36,7 @@ pub struct ReceiptInfo {
 }
 
 /// Network statistics
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Stats {
     /// Total number of blocks
     pub blocks: u32,

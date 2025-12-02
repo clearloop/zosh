@@ -5,7 +5,7 @@ use anyhow::Result;
 use runtime::{Config, Pool, Runtime, Storage};
 use std::{net::SocketAddr, sync::Arc};
 use sync::{config::CACHE_DIR, Sync};
-use tokio::sync::{mpsc, Mutex};
+use tokio::sync::{broadcast, mpsc, Mutex};
 use zcore::ex::Bridge;
 
 mod author;
@@ -22,6 +22,9 @@ pub struct Dev {
 
     /// The runtime
     pub runtime: Runtime<Development>,
+
+    /// Stats broadcast sender for WebSocket subscriptions
+    pub stats_tx: broadcast::Sender<zoshui::db::Stats>,
 }
 
 impl Dev {
@@ -30,8 +33,11 @@ impl Dev {
         let uidb = zoshui::Database::new(CACHE_DIR.join("ui.db").as_ref())?;
         uidb.init()?;
 
+        // Create broadcast channel for stats updates
+        let (stats_tx, _) = broadcast::channel(16);
+
         let parity = Arc::new(Parity::try_from(CACHE_DIR.join("chain"))?);
-        let hook = zoshui::UIHook::new(uidb);
+        let hook = zoshui::UIHook::new(uidb, stats_tx.clone());
         let runtime = Runtime::new(hook, parity.clone(), 1).await?;
         let pool = runtime.pool.clone();
         if parity.is_empty()? {
@@ -41,6 +47,7 @@ impl Dev {
             runtime,
             pool,
             parity,
+            stats_tx,
         })
     }
 
@@ -51,9 +58,10 @@ impl Dev {
             parity,
             pool,
             runtime,
+            stats_tx,
         } = self;
         let sync = Sync::load().await?;
-        zoshui::spawn(runtime.hook.db.clone(), address);
+        zoshui::spawn(runtime.hook.db.clone(), address, stats_tx);
         author::spawn(runtime)?;
 
         // spawn the sync service
