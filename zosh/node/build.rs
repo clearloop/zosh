@@ -48,7 +48,6 @@ fn main() {
     println!("cargo:rustc-env=GIT_HASH={}{}", git_hash, dirty_suffix);
     println!("cargo:rustc-env=GIT_BRANCH={}", git_branch);
 
-    // Rerun if git HEAD changes
+    // Rerun if git HEAD changes (but not index, as it changes too frequently)
     println!("cargo:rerun-if-changed=.git/HEAD");
-    println!("cargo:rerun-if-changed=.git/index");
 }

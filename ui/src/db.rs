@@ -57,10 +57,15 @@ pub struct Stats {
 impl Database {
     /// Create a new database connection
     pub fn new(db_path: &Path) -> Result<Self> {
+        // Ensure parent directory exists
         if let Some(parent) = db_path.parent() {
-            std::fs::create_dir_all(parent)?;
+            std::fs::create_dir_all(parent).map_err(|e| {
+                anyhow::anyhow!("Failed to create directory {}: {}", parent.display(), e)
+            })?;
         }
-        let conn = Connection::open(db_path)?;
+        let conn = Connection::open(db_path).map_err(|e| {
+            anyhow::anyhow!("Failed to open database at {}: {}", db_path.display(), e)
+        })?;
         Ok(Self {
             conn: Arc::new(Mutex::new(conn)),
         })

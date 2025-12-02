@@ -9,9 +9,9 @@ services:
     ports:
       - "1439:1439"
     volumes:
-      - ./config.toml:/home/zosh/.config/zosh/config.toml
-      - ./solana.json:/home/zosh/.config/solana/id.json
-      - ./cache:/home/zosh/.cache/zosh
+      - ./config.toml:/.config/zosh/config.toml
+      - ./solana.json:/.config/solana/id.json
+      - ./cache:/.cache/zosh
     healthcheck:
       test: [ "CMD", "zoshd", "--version" ]
       interval: 30s
