@@ -3,18 +3,12 @@
 //! This service subscribes to Zosh blocks via RPC, stores them in SQLite,
 //! and provides a web API to query bridge transactions.
 
-mod config;
-mod db;
-mod sub;
-mod ui;
-mod web;
-
 use anyhow::Result;
-use config::Config;
-use db::Database;
-use sub::Subscriber;
 use tokio::signal;
 use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt};
+use ui::config::Config;
+use ui::db::Database;
+use ui::sub::Subscriber;
 
 #[tokio::main]
 async fn main() -> Result<()> {
@@ -57,14 +51,14 @@ async fn main() -> Result<()> {
 
     // Start query ID subscriber
     let query_id_handle = tokio::spawn(async move {
-        if let Err(e) = sub::ui::subscribe(db).await {
+        if let Err(e) = ui::sub::ui::subscribe(db).await {
             tracing::error!("Query ID subscriber error: {:?}", e);
         }
     });
 
     // Start web server
     let web_handle = tokio::spawn(async move {
-        if let Err(e) = web::serve(config.listen_addr, web_db).await {
+        if let Err(e) = ui::web::serve(config.listen_addr, web_db).await {
             tracing::error!("Web server error: {:?}", e);
         }
     });

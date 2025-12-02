@@ -1,11 +1,13 @@
 //! Web service module
 
-use crate::db::Database;
-use crate::ui::{UIBlock, UIBlocksPage, UIHead};
+use crate::{
+    db::Database,
+    ui::{UIBlock, UIBlocksPage, UIHead},
+    util, AppError,
+};
 use axum::{
     extract::{Path, Query, State},
-    http::StatusCode,
-    response::{IntoResponse, Json, Response},
+    response::Json,
     routing::get,
     Router,
 };
@@ -41,7 +43,7 @@ async fn get_transaction(
     State(state): State<AppState>,
     Path(txid_str): Path<String>,
 ) -> Result<Json<serde_json::Value>, AppError> {
-    let txid_bytes = decode_txid(&txid_str)?;
+    let txid_bytes = util::decode_txid(&txid_str)?;
     let chain_type = match txid_bytes.len() {
         32 => "Zcash",
         64 => "Solana",
@@ -195,46 +197,4 @@ async fn get_blocks(
         page,
         row,
     }))
-}
-
-/// Decode txid from hex or base58 string
-fn decode_txid(txid_str: &str) -> Result<Vec<u8>, AppError> {
-    // Try hex first
-    if let Ok(mut bytes) = hex::decode(txid_str) {
-        bytes.reverse();
-        return Ok(bytes);
-    }
-
-    // Try base58
-    if let Ok(bytes) = bs58::decode(txid_str).into_vec() {
-        return Ok(bytes);
-    }
-
-    Err(AppError::BadRequest(
-        "Invalid txid format: must be hex or base58 encoded".to_string(),
-    ))
-}
-
-/// Application error type
-#[derive(Debug)]
-enum AppError {
-    BadRequest(String),
-    NotFound(String),
-    Internal(String),
-}
-
-impl IntoResponse for AppError {
-    fn into_response(self) -> Response {
-        let (status, message) = match self {
-            AppError::BadRequest(msg) => (StatusCode::BAD_REQUEST, msg),
-            AppError::NotFound(msg) => (StatusCode::NOT_FOUND, msg),
-            AppError::Internal(msg) => (StatusCode::INTERNAL_SERVER_ERROR, msg),
-        };
-
-        let body = Json(json!({
-            "error": message,
-        }));
-
-        (status, body).into_response()
-    }
 }

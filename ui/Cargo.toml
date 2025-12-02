@@ -5,8 +5,8 @@ edition.workspace = true
 description = "Zosh UI backend"
 
 [[bin]]
-name = "zosh-ui"
-path = "src/main.rs"
+name = "zoshui"
+path = "src/bin/zoshui.rs"
 
 [dependencies]
 crypto.workspace = true

@@ -1,5 +1,6 @@
 //! UI types for the Zosh UI
 
+use crate::util;
 use serde::{Deserialize, Serialize};
 use std::collections::BTreeMap;
 use zcore::{ex::BridgeBundle, Block, Hash};
@@ -104,11 +105,11 @@ impl UIBridge {
     pub fn from_bridge(bridge: &zcore::ex::Bridge) -> Self {
         Self {
             coin: format!("{:?}", bridge.coin),
-            recipient: encode_recipient(&bridge.recipient),
+            recipient: util::encode_recipient(&bridge.recipient),
             amount: bridge.amount,
             source: format!("{:?}", bridge.source),
             target: format!("{:?}", bridge.target),
-            txid: encode_txid(&bridge.txid),
+            txid: util::encode_txid(&bridge.txid),
         }
     }
 }
@@ -126,9 +127,9 @@ pub struct UIReceipt {
 impl UIReceipt {
     pub fn from_receipt(receipt: &zcore::ex::Receipt) -> Self {
         Self {
-            anchor: encode_txid(&receipt.anchor),
+            anchor: util::encode_txid(&receipt.anchor),
             coin: format!("{:?}", receipt.coin),
-            txid: encode_txid(&receipt.txid),
+            txid: util::encode_txid(&receipt.txid),
             source: format!("{:?}", receipt.source),
             target: format!("{:?}", receipt.target),
         }
@@ -150,25 +151,4 @@ pub struct UIBlocksPage {
     pub total: u32,
     pub page: u32,
     pub row: u32,
-}
-
-/// Encode txid to appropriate string format based on length
-/// Zcash (32 bytes) -> hex, Solana (64 bytes) -> base58
-fn encode_txid(txid: &[u8]) -> String {
-    match txid.len() {
-        32 => hex::encode(txid),                // Zcash
-        64 => bs58::encode(txid).into_string(), // Solana
-        _ => hex::encode(txid),                 // Fallback to hex
-    }
-}
-
-/// Encode recipient address
-fn encode_recipient(recipient: &[u8]) -> String {
-    if recipient.len() == 32 {
-        // Likely a Solana address
-        bs58::encode(recipient).into_string()
-    } else {
-        // Try as UTF-8 string (for Zcash unified addresses)
-        String::from_utf8(recipient.to_vec()).unwrap_or_else(|_| hex::encode(recipient))
-    }
 }

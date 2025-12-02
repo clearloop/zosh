@@ -301,7 +301,12 @@ impl Database {
     }
 
     /// Internal helper to query a block
-    fn query_block(&self, conn: &Connection, sql: &str, params: impl rusqlite::Params) -> Result<Option<Block>> {
+    fn query_block(
+        &self,
+        conn: &Connection,
+        sql: &str,
+        params: impl rusqlite::Params,
+    ) -> Result<Option<Block>> {
         let mut stmt = conn.prepare(sql)?;
         let result: Option<(u32, Vec<u8>, Vec<u8>, Vec<u8>, Vec<u8>, Vec<u8>, Vec<u8>)> = stmt
             .query_row(params, |row| {
@@ -370,9 +375,9 @@ impl Database {
                 .try_into()
                 .map_err(|_| anyhow::anyhow!("Invalid bundle hash length"))?;
 
-            let bundle = bridge_map.entry(bundle_key).or_insert_with(|| {
-                BridgeBundle::new(parse_chain(&target))
-            });
+            let bundle = bridge_map
+                .entry(bundle_key)
+                .or_insert_with(|| BridgeBundle::new(parse_chain(&target)));
 
             bundle.bridge.push(Bridge {
                 coin: parse_coin(&coin),
@@ -398,10 +403,18 @@ impl Database {
 
         let header = zcore::Header {
             slot,
-            parent: parent.try_into().map_err(|_| anyhow::anyhow!("Invalid parent hash"))?,
-            state: state.try_into().map_err(|_| anyhow::anyhow!("Invalid state hash"))?,
-            accumulator: accumulator.try_into().map_err(|_| anyhow::anyhow!("Invalid accumulator"))?,
-            extrinsic: extrinsic.try_into().map_err(|_| anyhow::anyhow!("Invalid extrinsic hash"))?,
+            parent: parent
+                .try_into()
+                .map_err(|_| anyhow::anyhow!("Invalid parent hash"))?,
+            state: state
+                .try_into()
+                .map_err(|_| anyhow::anyhow!("Invalid state hash"))?,
+            accumulator: accumulator
+                .try_into()
+                .map_err(|_| anyhow::anyhow!("Invalid accumulator"))?,
+            extrinsic: extrinsic
+                .try_into()
+                .map_err(|_| anyhow::anyhow!("Invalid extrinsic hash"))?,
             votes,
         };
 
