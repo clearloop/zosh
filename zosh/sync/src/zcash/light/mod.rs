@@ -5,7 +5,7 @@ use cache::BlockDb;
 pub use config::Config;
 use rusqlite::Connection;
 use std::{fs, path::Path};
-use tonic::transport::Channel;
+use tonic::transport::{Channel, ClientTlsConfig};
 use zcash_client_backend::{
     data_api::WalletRead, proto::service::compact_tx_streamer_client::CompactTxStreamerClient,
 };
@@ -58,7 +58,9 @@ impl ZcashClient {
         // Initialize the wallet database schema (creates all required tables)
         // The seed parameter is None since we're not using a seed for this wallet
         wallet::init::init_wallet_db(&mut wallet, None)?;
+        let tls = ClientTlsConfig::new().with_native_roots();
         let channel = Channel::from_shared(config.lightwalletd.to_string())?
+            .tls_config(tls)?
             .connect()
             .await?;
         let client = CompactTxStreamerClient::new(channel);
