@@ -23,6 +23,7 @@ pub async fn serve(listen_addr: SocketAddr, db: Database) -> anyhow::Result<()> 
     let app = Router::new()
         .route("/tx/{txid}", get(get_transaction))
         .route("/query/{qid}", get(get_query))
+        .route("/latest", get(get_latest))
         .with_state(state);
 
     tracing::info!("Starting web server on {}", listen_addr);
@@ -97,6 +98,25 @@ async fn get_query(
             Ok(Json(response))
         }
         None => Err(AppError::NotFound("Query ID not found".to_string())),
+    }
+}
+
+/// Handler for GET /latest
+async fn get_latest(State(state): State<AppState>) -> Result<Json<serde_json::Value>, AppError> {
+    let result = state
+        .db
+        .get_latest_head()
+        .map_err(|e| AppError::Internal(format!("Database error: {}", e)))?;
+
+    match result {
+        Some(head) => {
+            let response = json!({
+                "slot": head.slot,
+                "hash": hex::encode(head.hash),
+            });
+            Ok(Json(response))
+        }
+        None => Err(AppError::NotFound("No blocks found".to_string())),
     }
 }
 

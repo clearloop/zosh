@@ -4,7 +4,7 @@ use anyhow::Result;
 use rusqlite::{params, Connection, OptionalExtension};
 use serde::{Deserialize, Serialize};
 use std::sync::{Arc, Mutex};
-use zcore::Block;
+use zcore::{Block, Head};
 
 /// Thread-safe database connection wrapper
 #[derive(Clone)]
@@ -260,6 +260,41 @@ impl Database {
             .query_row(params![query_id], |row| row.get(0))
             .optional()?;
         Ok(result)
+    }
+
+    /// Get the latest block head (highest slot)
+    pub fn get_latest_head(&self) -> Result<Option<Head>> {
+        let conn = self.conn.lock().unwrap();
+        let mut stmt = conn.prepare(
+            "SELECT slot, parent, state, accumulator, extrinsic FROM blocks ORDER BY slot DESC LIMIT 1",
+        )?;
+
+        let result: Option<(u32, Vec<u8>, Vec<u8>, Vec<u8>, Vec<u8>)> = stmt
+            .query_row([], |row| {
+                Ok((
+                    row.get(0)?,
+                    row.get(1)?,
+                    row.get(2)?,
+                    row.get(3)?,
+                    row.get(4)?,
+                ))
+            })
+            .optional()?;
+
+        let Some((slot, parent, state, accumulator, extrinsic)) = result else {
+            return Ok(None);
+        };
+
+        // Compute the block hash: blake3(slot || parent || state || extrinsic)
+        //
+        // TODO: cache the head
+        let mut data = slot.to_le_bytes().to_vec();
+        data.extend_from_slice(&parent);
+        data.extend_from_slice(&state);
+        data.extend_from_slice(&accumulator);
+        data.extend_from_slice(&extrinsic);
+        let hash = crypto::blake3(&data);
+        Ok(Some(Head { slot, hash }))
     }
 }
 

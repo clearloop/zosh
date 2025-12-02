@@ -9,6 +9,7 @@ name = "zosh-ui"
 path = "src/main.rs"
 
 [dependencies]
+crypto.workspace = true
 dirs.workspace = true
 rpc.workspace = true
 sync.workspace = true

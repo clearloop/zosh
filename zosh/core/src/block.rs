@@ -42,6 +42,7 @@ impl Header {
         let mut data = self.slot.to_le_bytes().to_vec();
         data.extend_from_slice(&self.parent);
         data.extend_from_slice(&self.state);
+        data.extend_from_slice(&self.accumulator);
         data.extend_from_slice(&self.extrinsic);
         crypto::blake3(&data)
     }
