@@ -16,11 +16,7 @@ use zcash_client_backend::{
 };
 use zcash_client_sqlite::ReceivedNoteId;
 use zcash_keys::keys::UnifiedFullViewingKey;
-use zcash_protocol::{
-    consensus::{BlockHeight, BranchId},
-    value::Zatoshis,
-    ShieldedProtocol,
-};
+use zcash_protocol::{consensus::BlockHeight, value::Zatoshis, ShieldedProtocol};
 
 impl ZcashClient {
     /// Sync the wallet
@@ -45,13 +41,12 @@ impl ZcashClient {
     }
 
     /// Import a unified full viewing key
-    pub async fn import(&mut self, name: &str, ufvk: UnifiedFullViewingKey) -> Result<()> {
-        let birth = BranchId::Nu6_1
-            .height_bounds(&self.network)
-            .ok_or(anyhow::anyhow!("Invalid network"))?
-            .0
-            .into();
-
+    pub async fn import(
+        &mut self,
+        name: &str,
+        ufvk: UnifiedFullViewingKey,
+        birth: u64,
+    ) -> Result<()> {
         let block = self
             .client
             .get_block(BlockId {

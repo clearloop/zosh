@@ -91,6 +91,15 @@ impl ZcashClient {
                     continue;
                 };
 
+                // NOTE: Invalid recipient address, skip it.
+                if recipient.len() < 32 {
+                    continue;
+                }
+
+                // NOTE: we support solana address only here, for the bytes
+                // after 32, they will be used for the builders to enhance
+                // the user experience.
+                let recipient = recipient[..32].to_vec();
                 tx.send(Bridge {
                     coin: Coin::Zec,
                     recipient,
@@ -100,6 +109,64 @@ impl ZcashClient {
                     target: Chain::Solana,
                 })
                 .await?;
+            }
+
+            // The block time of zcash is 75 secs, using 30 secs is totally fine here.
+            last_height = target.into();
+            time::sleep(Duration::from_secs(10)).await;
+        }
+    }
+
+    /// Subscribe to the zcash light client
+    pub async fn dev_builder_subscribe(&mut self, tx: mpsc::Sender<(Vec<u8>, TxId)>) -> Result<()> {
+        // TODO: we should get the latest height from the global on-chain state.
+        let mut last_height = BlockHeight::from(0);
+        loop {
+            self.sync().await?;
+            tracing::trace!("zcash synced");
+            let Ok((target, _anchor)) = self.heights() else {
+                tracing::error!(
+                    "Failed to get max height and hash, retrying in {} seconds",
+                    ZCASH_BLOCK_TIME
+                );
+                time::sleep(Duration::from_secs(ZCASH_BLOCK_TIME)).await;
+                continue;
+            };
+
+            // Get the spendable notes
+            let notes = self.spendable_notes(0, target, &[])?;
+            for note in notes.into_iter() {
+                let txid = note.txid();
+                let Some(mined_height) = note.mined_height() else {
+                    tracing::warn!("Note mined height is not found for note of {}", &txid);
+                    continue;
+                };
+
+                if mined_height <= last_height {
+                    continue;
+                }
+
+                let Ok(Memo::Text(text)) = self
+                    .fetch_memo(mined_height, *txid, note.output_index() as u32)
+                    .await
+                    .inspect_err(|e| {
+                        tracing::warn!("Failed to fetch memo for note of {}: {:?}", &txid, e);
+                    })
+                else {
+                    continue;
+                };
+
+                let Ok(data) = bs58::decode(text.trim()).into_vec() else {
+                    continue;
+                };
+
+                // NOTE: Invalid recipient address, skip it.
+                if data.len() < 32 {
+                    continue;
+                }
+
+                let data = data[32..].to_vec();
+                tx.send((data, txid.clone())).await?;
             }
 
             // The block time of zcash is 75 secs, using 30 secs is totally fine here.

@@ -49,6 +49,9 @@ pub enum Zcash {
 
         /// The name of the account
         name: String,
+
+        /// The bithday of the wallet
+        birth: u64,
     },
 
     Send {
@@ -71,7 +74,7 @@ impl Zcash {
             Self::Sync => self.sync(&cfg).await,
             Self::Info => self.info(config),
             Self::Summary => self.summary(&cfg).await,
-            Self::Import { ufvk, name } => self.import(&cfg, ufvk, name).await,
+            Self::Import { ufvk, name, birth } => self.import(&cfg, ufvk, name, *birth).await,
             Self::Send { recipient, amount } => {
                 self.send(&cfg, &config.key.zcash, recipient, *amount).await
             }
@@ -110,13 +113,20 @@ impl Zcash {
     }
 
     /// Import a unified full viewing key
-    async fn import(&self, cfg: &zcash::light::Config, ufvk: &str, name: &str) -> Result<()> {
+    async fn import(
+        &self,
+        cfg: &zcash::light::Config,
+        ufvk: &str,
+        name: &str,
+        birth: u64,
+    ) -> Result<()> {
         let mut light = ZcashClient::new(cfg).await?;
         light
             .import(
                 name,
                 UnifiedFullViewingKey::decode(&light.network, ufvk)
                     .map_err(|e| anyhow::anyhow!(e))?,
+                birth,
             )
             .await?;
         Ok(())
