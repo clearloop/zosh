@@ -51,3 +51,20 @@ pub fn decode_txid(txid_str: &str) -> Result<Vec<u8>, AppError> {
         "Invalid txid format: must be hex or base58 encoded".to_string(),
     ))
 }
+
+/// Parse chain from debug string
+pub fn parse_chain(s: &str) -> zcore::registry::Chain {
+    match s {
+        "Zcash" => zcore::registry::Chain::Zcash,
+        "Solana" => zcore::registry::Chain::Solana,
+        _ => zcore::registry::Chain::Zcash, // Default fallback
+    }
+}
+
+/// Parse coin from debug string
+pub fn parse_coin(s: &str) -> zcore::registry::Coin {
+    match s.to_uppercase().as_str() {
+        "ZEC" => zcore::registry::Coin::Zec,
+        _ => zcore::registry::Coin::Zec, // Default fallback
+    }
+}
