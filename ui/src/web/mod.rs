@@ -217,6 +217,7 @@ pub fn build_tx_response(tx: BridgeTransactionResult) -> UITxn {
             txid: r.txid,
             source: r.source,
             target: r.target,
+            slot: r.slot,
         }),
     }
 }

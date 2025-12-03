@@ -33,9 +33,9 @@ impl Database {
                 amount INTEGER NOT NULL,
                 source TEXT NOT NULL,
                 target TEXT NOT NULL,
-                block_slot INTEGER NOT NULL,
+                slot INTEGER NOT NULL,
                 bundle_hash BLOB NOT NULL,
-                FOREIGN KEY (block_slot) REFERENCES blocks(slot)
+                FOREIGN KEY (slot) REFERENCES blocks(slot)
             )",
             [],
         )?;
@@ -48,15 +48,15 @@ impl Database {
                 coin TEXT NOT NULL,
                 source TEXT NOT NULL,
                 target TEXT NOT NULL,
-                block_slot INTEGER NOT NULL,
-                FOREIGN KEY (block_slot) REFERENCES blocks(slot)
+                slot INTEGER NOT NULL,
+                FOREIGN KEY (slot) REFERENCES blocks(slot)
             )",
             [],
         )?;
 
         // Create indexes for efficient querying
         conn.execute(
-            "CREATE INDEX IF NOT EXISTS idx_bridges_block_slot ON bridges(block_slot)",
+            "CREATE INDEX IF NOT EXISTS idx_bridges_slot ON bridges(slot)",
             [],
         )?;
 
@@ -66,7 +66,7 @@ impl Database {
         )?;
 
         conn.execute(
-            "CREATE INDEX IF NOT EXISTS idx_receipts_block_slot ON receipts(block_slot)",
+            "CREATE INDEX IF NOT EXISTS idx_receipts_slot ON receipts(slot)",
             [],
         )?;
 

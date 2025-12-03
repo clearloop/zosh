@@ -174,6 +174,7 @@ pub async fn get_txns(
                 txid: r.txid,
                 source: r.source,
                 target: r.target,
+                slot: r.slot,
             }),
         })
         .collect();

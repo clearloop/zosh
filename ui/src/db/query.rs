@@ -13,7 +13,7 @@ impl Database {
 
         // Query the bridge transaction
         let mut stmt = conn.prepare(
-            "SELECT coin, recipient, amount, source, target, block_slot
+            "SELECT coin, recipient, amount, source, target, slot
              FROM bridges
              WHERE txid = ?1",
         )?;
@@ -31,13 +31,13 @@ impl Database {
             })
             .optional()?;
 
-        let Some((coin, recipient, amount, source, target, block_slot)) = result else {
+        let Some((coin, recipient, amount, source, target, slot)) = result else {
             return Ok(None);
         };
 
         // Query for receipt where anchor matches the txid
         let mut receipt_stmt = conn.prepare(
-            "SELECT txid, anchor, coin, source, target, block_slot
+            "SELECT txid, anchor, coin, source, target, slot
              FROM receipts
              WHERE anchor = ?1",
         )?;
@@ -68,7 +68,7 @@ impl Database {
             recipient: encode_recipient(&recipient),
             source,
             target,
-            slot: block_slot,
+            slot: slot,
             receipt,
         }))
     }
@@ -145,7 +145,7 @@ impl Database {
 
         // Query bridge transactions for this block
         let mut bridge_stmt = conn.prepare(
-            "SELECT txid, coin, recipient, amount, source, target, bundle_hash FROM bridges WHERE block_slot = ?1",
+            "SELECT txid, coin, recipient, amount, source, target, bundle_hash FROM bridges WHERE slot = ?1",
         )?;
         let bridges: Vec<(Vec<u8>, String, Vec<u8>, u64, String, String, Vec<u8>)> = bridge_stmt
             .query_map(params![slot], |row| {
@@ -162,9 +162,8 @@ impl Database {
             .collect::<Result<Vec<_>, _>>()?;
 
         // Query receipts for this block
-        let mut receipt_stmt = conn.prepare(
-            "SELECT txid, anchor, coin, source, target FROM receipts WHERE block_slot = ?1",
-        )?;
+        let mut receipt_stmt = conn
+            .prepare("SELECT txid, anchor, coin, source, target FROM receipts WHERE slot = ?1")?;
         let receipts: Vec<(Vec<u8>, Vec<u8>, String, String, String)> = receipt_stmt
             .query_map(params![slot], |row| {
                 Ok((
@@ -305,12 +304,12 @@ impl Database {
         // Get paginated bridges with LEFT JOIN to receipts
         let offset = page * row;
         let mut stmt = conn.prepare(
-            "SELECT b.txid, b.coin, b.recipient, b.amount, b.source, b.target, b.block_slot,
+            "SELECT b.txid, b.coin, b.recipient, b.amount, b.source, b.target, b.slot,
                     r.txid as receipt_txid, r.anchor as receipt_anchor, r.coin as receipt_coin,
-                    r.source as receipt_source, r.target as receipt_target, r.block_slot as receipt_slot
+                    r.source as receipt_source, r.target as receipt_target, r.slot as receipt_slot
              FROM bridges b
              LEFT JOIN receipts r ON r.anchor = b.txid
-             ORDER BY b.block_slot DESC
+             ORDER BY b.slot DESC
              LIMIT ?1 OFFSET ?2",
         )?;
 
