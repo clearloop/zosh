@@ -16,7 +16,7 @@ zosh is a Solana L2 built for Zcash that focus on privacy and scalability.
 
 zosh uses a custom consensus algorithm called [zoshBFT](/zoshbft.md) inspired by Hotstuff and
 its successors. Both the algorithm and networking stack are optimized from the ground up to
-support the unique demands of the crossing chain liqudity and privacy.
+support the unique demands of the crossing chain liquidity and privacy.
 
 ```mermaid
 flowchart LR

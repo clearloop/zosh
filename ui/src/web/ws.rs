@@ -81,7 +81,7 @@ pub async fn handle_query_subscription(socket: WebSocket, state: AppState, qid_s
 
     tracing::trace!("WebSocket subscription for query_id: {}", qid_str);
     poll_until_found(socket, || match query_by_qid(&state.db, &qid_bytes) {
-        Ok(Some((_txid_hex, tx))) => PollResult::Found(build_tx_response(tx)),
+        Ok(Some((_txid_hex, tx))) => PollResult::Found(Box::new(build_tx_response(tx))),
         Ok(None) => PollResult::NotFound,
         Err(e) => PollResult::Error(e),
     })
@@ -109,7 +109,7 @@ pub async fn handle_tx_subscription(socket: WebSocket, state: AppState, txid_str
     );
 
     poll_until_found(socket, || match query_by_txid(&state.db, &txid_bytes) {
-        Ok(Some(tx)) => PollResult::Found(build_tx_response(tx)),
+        Ok(Some(tx)) => PollResult::Found(Box::new(build_tx_response(tx))),
         Ok(None) => PollResult::NotFound,
         Err(e) => PollResult::Error(e),
     })
@@ -119,7 +119,7 @@ pub async fn handle_tx_subscription(socket: WebSocket, state: AppState, txid_str
 /// Result of a poll operation
 enum PollResult {
     /// Data found
-    Found(UITxn),
+    Found(Box<UITxn>),
     /// Not found yet
     NotFound,
     /// Error occurred

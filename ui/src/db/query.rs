@@ -68,7 +68,7 @@ impl Database {
             recipient: encode_recipient(&recipient),
             source,
             target,
-            slot: slot,
+            slot,
             receipt,
         }))
     }
@@ -370,19 +370,19 @@ impl Database {
                         receipt_slot,
                     ) {
                         (
-                            Some(rtxid),
-                            Some(ranchor),
-                            Some(rcoin),
-                            Some(rsource),
-                            Some(rtarget),
-                            Some(rslot),
+                            Some(txid),
+                            Some(anchor),
+                            Some(coin),
+                            Some(source),
+                            Some(target),
+                            Some(slot),
                         ) => Some(ReceiptInfo {
-                            anchor: encode_txid(&ranchor),
-                            coin: rcoin,
-                            txid: encode_txid(&rtxid),
-                            source: rsource,
-                            target: rtarget,
-                            slot: rslot,
+                            anchor: encode_txid(&anchor),
+                            coin,
+                            txid: encode_txid(&txid),
+                            source,
+                            target,
+                            slot,
                         }),
                         _ => None,
                     };
