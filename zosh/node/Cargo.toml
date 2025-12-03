@@ -19,6 +19,7 @@ postcard.workspace = true
 rand_core.workspace = true
 reddsa.workspace = true
 runtime.workspace = true
+rustls.workspace = true
 serde.workspace = true
 shadow-rs.workspace = true
 solana-signer.workspace = true
