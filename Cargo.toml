@@ -63,6 +63,7 @@ reddsa = { version = "0.5.1", features = ["frost", "serde"] }
 rusqlite = "0.37.0"
 serde = "1.0.228"
 serde_json = "1.0.145"
+shadow-rs = "1.4.0"
 solana-account = "2.2.1"
 solana-client = "2.3.13"
 solana-program = "2.2.1"

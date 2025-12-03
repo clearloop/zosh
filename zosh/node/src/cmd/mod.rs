@@ -1,19 +1,33 @@
 //! Command line interface for the zorch node
 
-use std::net::SocketAddr;
-
 use crate::dev::Dev;
 use anyhow::Result;
 use clap::Parser;
+use shadow_rs::{concatcp, shadow};
+use std::net::SocketAddr;
 use sync::{
     config::{Config, CACHE_DIR, CONFIG_DIR},
     solana, zcash,
 };
 use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt, EnvFilter};
 
+shadow!(build);
+
+const VERSION: &str = concatcp!(
+    build::PKG_VERSION,
+    "\nbranch:",
+    build::BRANCH,
+    "\ncommit_hash:",
+    build::SHORT_COMMIT,
+    "\nbuild_time:",
+    build::BUILD_TIME,
+    "\nbuild_env:",
+    build::RUST_VERSION,
+);
+
 /// Command line interface for the ZorchBridge node
 #[derive(Parser)]
-#[clap(version = crate::VERSION)]
+#[clap(version = VERSION)]
 pub struct App {
     #[clap(subcommand)]
     pub command: Command,
