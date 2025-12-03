@@ -7,7 +7,7 @@ use zosh_node::cmd::App;
 async fn main() -> anyhow::Result<()> {
     // Initialize rustls crypto provider for TLS connections
     let _ = rustls::crypto::ring::default_provider().install_default();
-    
+
     let app = App::parse();
     app.run().await
 }
