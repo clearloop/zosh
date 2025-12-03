@@ -5,7 +5,7 @@ use super::{
 };
 use crate::{
     db::{Database, Stats},
-    ui::{UIBlock, UIBlocksPage, UIHead},
+    ui::{UIBlock, UIBlocksPage, UIHead, UIReceipt, UITxn, UITxnsPage},
     AppError,
 };
 use axum::{
@@ -20,9 +20,7 @@ use serde_json::{json, Value};
 /// HTTP handler logic for /tx/{txid}
 pub fn get_transaction_inner(db: &Database, txid_str: &str) -> Result<Json<Value>, AppError> {
     let (txid_bytes, chain_type) = decode_txid(txid_str).map_err(AppError::BadRequest)?;
-
     tracing::trace!("HTTP: Querying {} transaction: {}", chain_type, txid_str);
-
     match query_by_txid(db, &txid_bytes).map_err(AppError::Internal)? {
         Some(tx) => Ok(Json(build_tx_response(&tx))),
         None => Err(AppError::NotFound("Transaction not found".to_string())),
@@ -32,9 +30,7 @@ pub fn get_transaction_inner(db: &Database, txid_str: &str) -> Result<Json<Value
 /// HTTP handler logic for /query/{qid}
 pub fn get_query_inner(db: &Database, qid_str: &str) -> Result<Json<Value>, AppError> {
     let qid_bytes = decode_query_id(qid_str).map_err(AppError::BadRequest)?;
-
     tracing::trace!("HTTP: Querying query_id: {}", qid_str);
-
     match query_by_qid(db, &qid_bytes).map_err(AppError::Internal)? {
         Some((txid_hex, _tx)) => Ok(Json(json!({ "txid": txid_hex }))),
         None => Err(AppError::NotFound("Query ID not found".to_string())),
@@ -136,6 +132,54 @@ pub async fn get_blocks(
 
     Ok(Json(UIBlocksPage {
         blocks: ui_blocks,
+        total,
+        page,
+        row,
+    }))
+}
+
+/// Query parameters for /txns endpoint
+#[derive(Deserialize)]
+pub struct TxnsQuery {
+    page: Option<u32>,
+    row: Option<u32>,
+}
+
+/// Handler for GET /txns?page={page}&row={row}
+pub async fn get_txns(
+    State(state): State<AppState>,
+    Query(query): Query<TxnsQuery>,
+) -> Result<Json<UITxnsPage>, AppError> {
+    let page = query.page.unwrap_or(0);
+    let row = query.row.unwrap_or(10).min(100); // Cap at 100 rows per page
+
+    let (bridges, total) = state
+        .db
+        .get_bridges_paged(page, row)
+        .map_err(|e| AppError::Internal(format!("Database error: {}", e)))?;
+
+    let ui_txns: Vec<UITxn> = bridges
+        .into_iter()
+        .map(|tx| UITxn {
+            txid: tx.txid,
+            coin: tx.coin,
+            amount: tx.amount,
+            recipient: tx.recipient,
+            source: tx.source,
+            target: tx.target,
+            slot: tx.slot,
+            receipt: tx.receipt.map(|r| UIReceipt {
+                anchor: r.anchor,
+                coin: r.coin,
+                txid: r.txid,
+                source: r.source,
+                target: r.target,
+            }),
+        })
+        .collect();
+
+    Ok(Json(UITxnsPage {
+        txns: ui_txns,
         total,
         page,
         row,

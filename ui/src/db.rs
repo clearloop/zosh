@@ -19,6 +19,7 @@ pub struct Database {
 /// Query result for a bridge transaction
 #[derive(Debug, Serialize, Deserialize)]
 pub struct BridgeTransactionResult {
+    pub txid: String,
     pub coin: String,
     pub amount: u64,
     pub recipient: String,
@@ -31,7 +32,11 @@ pub struct BridgeTransactionResult {
 /// Receipt information
 #[derive(Debug, Serialize, Deserialize)]
 pub struct ReceiptInfo {
+    pub anchor: String,
+    pub coin: String,
     pub txid: String,
+    pub source: String,
+    pub target: String,
     pub slot: u32,
 }
 
@@ -94,6 +99,7 @@ impl Database {
         conn.execute(
             "CREATE TABLE IF NOT EXISTS bridges (
                 txid BLOB PRIMARY KEY,
+                hash BLOB NOT NULL,
                 coin TEXT NOT NULL,
                 recipient BLOB NOT NULL,
                 amount INTEGER NOT NULL,
@@ -200,16 +206,18 @@ impl Database {
         // Insert bridge transactions
         for (bundle_hash, bundle) in &block.extrinsic.bridge {
             for bridge in &bundle.bridge {
+                let bridge_hash = bridge.hash()?;
                 let coin_str = format!("{}", bridge.coin);
                 let source_str = format!("{:?}", bridge.source);
                 let target_str = format!("{:?}", bridge.target);
 
                 conn.execute(
                     "INSERT OR REPLACE INTO bridges 
-                     (txid, coin, recipient, amount, source, target, block_slot, bundle_hash)
-                     VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8)",
+                     (txid, hash, coin, recipient, amount, source, target, block_slot, bundle_hash)
+                     VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9)",
                     params![
                         &bridge.txid[..],
+                        &bridge_hash[..],
                         coin_str,
                         &bridge.recipient[..],
                         bridge.amount,
@@ -321,7 +329,7 @@ impl Database {
 
         // Query for receipt where anchor matches the txid
         let mut receipt_stmt = conn.prepare(
-            "SELECT txid, block_slot
+            "SELECT txid, anchor, coin, source, target, block_slot
              FROM receipts
              WHERE anchor = ?1",
         )?;
@@ -329,15 +337,24 @@ impl Database {
         let receipt: Option<ReceiptInfo> = receipt_stmt
             .query_row(params![txid], |row| {
                 let receipt_txid: Vec<u8> = row.get(0)?;
-                let receipt_slot: u32 = row.get(1)?;
+                let receipt_anchor: Vec<u8> = row.get(1)?;
+                let receipt_coin: String = row.get(2)?;
+                let receipt_source: String = row.get(3)?;
+                let receipt_target: String = row.get(4)?;
+                let receipt_slot: u32 = row.get(5)?;
                 Ok(ReceiptInfo {
+                    anchor: encode_txid(&receipt_anchor),
+                    coin: receipt_coin,
                     txid: encode_txid(&receipt_txid),
+                    source: receipt_source,
+                    target: receipt_target,
                     slot: receipt_slot,
                 })
             })
             .optional()?;
 
         Ok(Some(BridgeTransactionResult {
+            txid: encode_txid(txid),
             coin,
             amount,
             recipient: encode_recipient(&recipient),
@@ -574,6 +591,120 @@ impl Database {
             .collect();
 
         Ok((blocks, total))
+    }
+
+    /// Get paginated bridge transactions with optional receipt info
+    pub fn get_bridges_paged(
+        &self,
+        page: u32,
+        row: u32,
+    ) -> Result<(Vec<BridgeTransactionResult>, u32)> {
+        let conn = self.conn.lock().unwrap();
+
+        // Get total count
+        let total: u32 = conn.query_row("SELECT COUNT(*) FROM bridges", [], |row| row.get(0))?;
+
+        // Get paginated bridges with LEFT JOIN to receipts
+        let offset = page * row;
+        let mut stmt = conn.prepare(
+            "SELECT b.txid, b.coin, b.recipient, b.amount, b.source, b.target, b.block_slot,
+                    r.txid as receipt_txid, r.anchor as receipt_anchor, r.coin as receipt_coin,
+                    r.source as receipt_source, r.target as receipt_target, r.block_slot as receipt_slot
+             FROM bridges b
+             LEFT JOIN receipts r ON r.anchor = b.txid
+             ORDER BY b.block_slot DESC
+             LIMIT ?1 OFFSET ?2",
+        )?;
+
+        let bridges: Vec<BridgeTransactionResult> = stmt
+            .query_map(params![row, offset], |row| {
+                let txid: Vec<u8> = row.get(0)?;
+                let coin: String = row.get(1)?;
+                let recipient: Vec<u8> = row.get(2)?;
+                let amount: u64 = row.get(3)?;
+                let source: String = row.get(4)?;
+                let target: String = row.get(5)?;
+                let slot: u32 = row.get(6)?;
+                let receipt_txid: Option<Vec<u8>> = row.get(7)?;
+                let receipt_anchor: Option<Vec<u8>> = row.get(8)?;
+                let receipt_coin: Option<String> = row.get(9)?;
+                let receipt_source: Option<String> = row.get(10)?;
+                let receipt_target: Option<String> = row.get(11)?;
+                let receipt_slot: Option<u32> = row.get(12)?;
+                Ok((
+                    txid,
+                    coin,
+                    recipient,
+                    amount,
+                    source,
+                    target,
+                    slot,
+                    receipt_txid,
+                    receipt_anchor,
+                    receipt_coin,
+                    receipt_source,
+                    receipt_target,
+                    receipt_slot,
+                ))
+            })?
+            .filter_map(|r| r.ok())
+            .map(
+                |(
+                    txid,
+                    coin,
+                    recipient,
+                    amount,
+                    source,
+                    target,
+                    slot,
+                    receipt_txid,
+                    receipt_anchor,
+                    receipt_coin,
+                    receipt_source,
+                    receipt_target,
+                    receipt_slot,
+                )| {
+                    let receipt = match (
+                        receipt_txid,
+                        receipt_anchor,
+                        receipt_coin,
+                        receipt_source,
+                        receipt_target,
+                        receipt_slot,
+                    ) {
+                        (
+                            Some(rtxid),
+                            Some(ranchor),
+                            Some(rcoin),
+                            Some(rsource),
+                            Some(rtarget),
+                            Some(rslot),
+                        ) => Some(ReceiptInfo {
+                            anchor: encode_txid(&ranchor),
+                            coin: rcoin,
+                            txid: encode_txid(&rtxid),
+                            source: rsource,
+                            target: rtarget,
+                            slot: rslot,
+                        }),
+                        _ => None,
+                    };
+
+                    BridgeTransactionResult {
+                        txid: encode_txid(&txid),
+                        coin,
+                        amount,
+                        recipient: encode_recipient(&recipient),
+                        source,
+                        target,
+                        slot,
+                        receipt,
+                    }
+                },
+            )
+            .collect();
+
+        Ok((bridges, total))
     }
 }
 

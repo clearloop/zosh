@@ -152,3 +152,25 @@ pub struct UIBlocksPage {
     pub page: u32,
     pub row: u32,
 }
+
+/// UI representation of a transaction with optional receipt
+#[derive(Debug, Serialize, Deserialize)]
+pub struct UITxn {
+    pub txid: String,
+    pub coin: String,
+    pub amount: u64,
+    pub recipient: String,
+    pub source: String,
+    pub target: String,
+    pub slot: u32,
+    pub receipt: Option<UIReceipt>,
+}
+
+/// UI representation of paginated transactions response
+#[derive(Debug, Serialize, Deserialize)]
+pub struct UITxnsPage {
+    pub txns: Vec<UITxn>,
+    pub total: u32,
+    pub page: u32,
+    pub row: u32,
+}

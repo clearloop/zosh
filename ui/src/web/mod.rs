@@ -64,6 +64,7 @@ pub async fn serve(
         .route("/latest", get(http::get_latest))
         .route("/block/{hash_or_slot}", get(http::get_block))
         .route("/blocks", get(http::get_blocks))
+        .route("/txns", get(http::get_txns))
         .layer(cors)
         .with_state(state);
 
@@ -203,6 +204,7 @@ pub fn decode_txid(txid_str: &str) -> Result<(Vec<u8>, &'static str), String> {
 /// Build a JSON response for a bridge transaction
 pub fn build_tx_response(tx: &BridgeTransactionResult) -> Value {
     json!({
+        "txid": tx.txid,
         "coin": tx.coin,
         "amount": tx.amount,
         "recipient": tx.recipient,
