@@ -10,13 +10,13 @@ pub mod http;
 pub mod ws;
 
 use crate::db::{BridgeTransactionResult, Database, Stats};
+use crate::ui::{UIReceipt, UITxn};
 use axum::{
     extract::{ws::WebSocketUpgrade, FromRequest, Path, Request, State},
     response::{IntoResponse, Response},
     routing::get,
     Router,
 };
-use serde_json::{json, Value};
 use std::{net::SocketAddr, time::Duration};
 use tokio::sync::broadcast;
 use tower_http::cors::{Any, CorsLayer};
@@ -201,18 +201,24 @@ pub fn decode_txid(txid_str: &str) -> Result<(Vec<u8>, &'static str), String> {
     Ok((txid_bytes, chain_type))
 }
 
-/// Build a JSON response for a bridge transaction
-pub fn build_tx_response(tx: &BridgeTransactionResult) -> Value {
-    json!({
-        "txid": tx.txid,
-        "coin": tx.coin,
-        "amount": tx.amount,
-        "recipient": tx.recipient,
-        "source": tx.source,
-        "target": tx.target,
-        "slot": tx.slot,
-        "receipt": tx.receipt,
-    })
+/// Build a UITxn from a bridge transaction result
+pub fn build_tx_response(tx: BridgeTransactionResult) -> UITxn {
+    UITxn {
+        txid: tx.txid,
+        coin: tx.coin,
+        amount: tx.amount,
+        recipient: tx.recipient,
+        source: tx.source,
+        target: tx.target,
+        slot: tx.slot,
+        receipt: tx.receipt.map(|r| UIReceipt {
+            anchor: r.anchor,
+            coin: r.coin,
+            txid: r.txid,
+            source: r.source,
+            target: r.target,
+        }),
+    }
 }
 
 /// Query a transaction by query ID, returns (txid_hex, tx_info) if found

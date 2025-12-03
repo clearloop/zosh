@@ -18,11 +18,11 @@ use serde_json::{json, Value};
 // === Inner functions for unified handlers ===
 
 /// HTTP handler logic for /tx/{txid}
-pub fn get_transaction_inner(db: &Database, txid_str: &str) -> Result<Json<Value>, AppError> {
+pub fn get_transaction_inner(db: &Database, txid_str: &str) -> Result<Json<UITxn>, AppError> {
     let (txid_bytes, chain_type) = decode_txid(txid_str).map_err(AppError::BadRequest)?;
     tracing::trace!("HTTP: Querying {} transaction: {}", chain_type, txid_str);
     match query_by_txid(db, &txid_bytes).map_err(AppError::Internal)? {
-        Some(tx) => Ok(Json(build_tx_response(&tx))),
+        Some(tx) => Ok(Json(build_tx_response(tx))),
         None => Err(AppError::NotFound("Transaction not found".to_string())),
     }
 }
