@@ -20,5 +20,6 @@ RUN chmod +x /usr/local/bin/zoshd
 EXPOSE 1439
 
 # Default command
+# Use 0.0.0.0:1439 to bind to all interfaces so it's accessible from outside the container
 ENTRYPOINT ["zoshd"]
-CMD ["dev"]
+CMD ["dev", "--address", "0.0.0.0:1439"]

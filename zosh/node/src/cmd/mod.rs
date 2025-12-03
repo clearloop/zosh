@@ -95,7 +95,7 @@ pub enum Command {
     /// Development commanm
     Dev {
         /// The address to bind the development node to
-        #[clap(short, long, default_value = "127.0.0.1:1439")]
+        #[clap(short, long, default_value = "0.0.0.0:1439")]
         address: SocketAddr,
     },
 
