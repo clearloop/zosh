@@ -13,8 +13,10 @@
 
 # Protocol
 
-- [ZoshBFT](./protocol/zoshbft.md)
 - [MemPool](./protocol/mempool.md)
+- [Chain State](./protocol/state.md)
+- [Transaction](./protocol/transaction.md)
+- [ZoshBFT](./protocol/zoshbft.md)
 
 # Reference
 
