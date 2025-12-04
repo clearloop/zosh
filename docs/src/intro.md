@@ -2,17 +2,11 @@
 
 The trustless privacy bridge for Solana and Zcash.
 
-- **Security**: The funds in the [bridge](/bridge) are secured by [the zosh Protocol](/consensus.md).
+- **Privacy**: Zcash orchard pool integrated.
+- **Trustless**: No centralized custody, on-chain MPC
+- **Permissionless**: Any Solana holder can be a validator.
 
-  - No custody wallet, everything on-chain.
-  - [frost][frost] to manage the zcash orchard pool.
-  - `multi-sig` to manage the zoZEC on the solana side.
-
-- **Privacy**: The privacy is ensured by the [orchard][orchard] pool from zcash.
-  - On bridging ZEC to SOL, zosh doesn't know the depositor of ZEC.
-  - On bridging SOL to ZEC, zosh sends the funds back to the orchard pool.
-
-Check out [bridge](/bridge) and [demo](/demo.md) for more details.
+Check out [bridge](/bridge) for a step-to-step guide.
 
 ## Why Zosh?
 
@@ -24,9 +18,9 @@ Check out [bridge](/bridge) and [demo](/demo.md) for more details.
 
 ## Technical Overview
 
-zosh is a Solana L2 built for Zcash that focus on privacy and scalability.
+Zosh is a Solana L2 built for Zcash that focus on privacy and scalability.
 
-zosh uses a custom consensus algorithm called [zoshBFT](/zoshbft.md) inspired by Hotstuff and
+Zosh uses a custom consensus algorithm called [zoshBFT](/zoshbft.md) inspired by Hotstuff and
 its successors. Both the algorithm and networking stack are optimized from the ground up to
 support the unique demands of the crossing chain liquidity and privacy.
 
