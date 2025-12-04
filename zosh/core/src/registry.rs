@@ -4,7 +4,7 @@ use serde::{Deserialize, Serialize};
 use std::fmt::{self, Display};
 
 /// The supported chains
-#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq, Copy, PartialOrd, Ord)]
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq, Copy, PartialOrd, Ord, Hash)]
 pub enum Chain {
     /// Solana chain
     Solana,
@@ -24,7 +24,7 @@ impl Chain {
 }
 
 /// The supported tokens
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq, Copy, PartialOrd, Ord, Hash)]
 pub enum Coin {
     /// Zcash coin
     Zec,

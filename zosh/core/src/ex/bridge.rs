@@ -44,7 +44,7 @@ impl BridgeBundle {
 }
 
 /// The bridge transaction
-#[derive(Serialize, Deserialize, Clone, Debug)]
+#[derive(Serialize, Deserialize, Clone, Debug, Hash, PartialEq, Eq)]
 pub struct Bridge {
     /// The token of the transaction
     pub coin: Coin,
