@@ -19,76 +19,84 @@ enum MemoInstruction {
 
 > The sender will get refunded if the bridge can not decode the memo.
 
-## 2. Validators identify and pack the transaction
+## 2. Collectors detect and submit bridge requests
 
-Anyone can submit the transaction to the zosh chain with a `bridge` transaction.
+Collectors (off-chain services) watch the Zcash orchard pool for incoming deposits:
+
+1. Scan spendable notes using the bridge's viewing key
+2. Decode memo to extract Solana recipient address (32-byte pubkey, base58 encoded)
+3. Create bridge request and submit to the zosh mempool
 
 ```rust
-struct BridgeToSolana {
-    /// the recipient address on solana
-    recipient: Pubkey,
+struct Bridge {
+    /// The token of the transaction
+    coin: Coin::Zec,
 
-    /// the amount of the transaction
+    /// The recipient address (Solana pubkey from memo)
+    recipient: Vec<u8>,
+
+    /// The amount of the transaction
     amount: u64,
 
-    /// the zcash transaction id
-    id: [u8; 32],
+    /// The zcash transaction id
+    txid: Vec<u8>,
+
+    /// The source chain
+    source: Chain::Zcash,
+
+    /// The target chain
+    target: Chain::Solana,
 }
 ```
 
-The transactions will be packed into a block and get validated by all of the validators:
+Anyone can run a collector - it's permissionless. Invalid bridge requests (wrong memo format, invalid addresses) are automatically blacklisted.
 
-- Fetch spendable notes after the latest zcash height stored on the zosh chain.
-- Check if the amount and the recipient are matched with the transaction id.
-- Check if the notes have already been bridged.
+## 3. Validators aggregate threshold signatures
 
-> All bridged notes will be marked as bridged on the zosh chain, sort like the UTXO
-> design.
+Validators collect bridge requests in the mempool and create bundles:
 
-If everything are valid, the block will be committed to the chain.
-
-## 3. Validators aggregate signatures for solana
-
-At the commitment of a block, the network will aggregate signatures for a bundle of
-bridging notes.
+1. **Mempool queuing**: Bridge requests enter the mempool
+2. **Bundle creation**: Validators batch multiple bridge requests together
+3. **Threshold signing**: Each validator signs the bundle. When threshold (e.g., 2/3) is reached, bundle is ready
+4. **Consensus**: Bundle is committed to a zosh block
 
 ```rust
-struct BridgeBundleToSolana {
-    /// The unbridged requests.
-    txs: Vec<BridgeToSolana>,
+struct BridgeBundle {
+    /// The target chain of the bundle
+    target: Chain::Solana,
 
-    /// The merkle root of the requests.
-    root: [u8; 32],
+    /// The bridge transactions
+    bridge: Vec<Bridge>,
 
-    /// The nonce of the mint state
-    nonce: u64,
+    /// The data we need for reconstructing the outer transaction
+    data: Vec<u8>,
 
-    /// The signatures map of the merkle root.
-    signatures: BTreeMap<ValidatorId, Signature>,
+    /// The signatures for the upcoming outer transactions
+    signatures: Vec<Vec<u8>>,
 }
-
 ```
 
-1. Select all unbridged notes on chain.
-2. Append signatures to the bridge bundle.
-3. Pack the bridge bundle into a new block.
+Once enough validators sign, the bundle moves to completed status in the mempool and can be executed on Solana.
 
-Once this block get committed on chain, all notes inside of it will be transited to
-the bridged status.
+## 4. The recipient receives zoZEC on Solana
 
-## 4. The recipient get zoZEC on Solana
+After validators sign the bundle, **anyone** can submit the mint transaction to Solana:
+- The user themselves
+- A collector/relayer service
+- Any third party (permissionless)
 
-After the commitment of the bundle block, anyone can use the bundled data to mint
-zoZEC on solana, the user itself, a solver, a relayer, or anybody wants to do it,
-we likely need to do sort of incentive mechanism to encourage them to do it.
+The Solana program verifies:
 
-On the solana program side, we verify the following stuffs:
+1. **MPC signature**: Transaction must be signed by the validator MPC pubkey
+2. **Batch processing**: Up to 10 recipients can be minted in one transaction
+3. **ATA creation**: Automatically creates Associated Token Accounts if needed
 
-- all of the signatures are valid.
-- validated signatures are over the threshold of the validator set.
-- the nonce matches the one in the program
+```rust
+// Solana program validates MPC signature
+require!(payer.key() == bridge_state.mpc, InvalidMpcSigner);
+```
 
-> The solana program maintains a `nonce` to deduplicate the mint requests, each time
-> a bundle processed, the `nonce` will be incremented.
+The program mints **zoZEC** (8 decimals) directly to recipients' token accounts.
 
-Mint the zoZEC, bumps the nonce.
+> Validation is based on MPC threshold signatures, not nonces. The MPC pubkey represents
+> the collective signing authority of the validator set.
