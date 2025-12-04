@@ -1,7 +1,6 @@
-# ZorchBFT
+# ZoshBFT
 
-ZorchBFT is based on PoA with an optimized [hotstuff][hotstuff] implementation,
-shortly:
+ZoshBFT is based on PoS with an optimized [hotstuff][hotstuff] implementation, shortly:
 
 - No fixed block time
 - VRF for randomizing the leader selection

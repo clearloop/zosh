@@ -2,7 +2,7 @@
 
 use crate::{zcash, ChainFormatEncoder, Sync};
 use anyhow::Result;
-use std::mem;
+use std::{collections::HashSet, mem};
 use zcore::{
     ex::{Bridge, BridgeBundle, Receipt},
     registry::{Chain, Coin},
@@ -14,10 +14,14 @@ impl Sync {
     /// We need to sign the bundles after processed.
     ///
     /// TODO: make the bundling process in parallel.
+    ///
+    /// TODO: check the duplicates bridge requests, if it is
+    /// even possible?
     pub async fn bundle(
         &mut self,
-        mut bridges: Vec<Bridge>,
+        bridges: Vec<Bridge>,
     ) -> Result<(Vec<BridgeBundle>, Vec<Receipt>)> {
+        let mut bridges: HashSet<Bridge> = bridges.into_iter().collect();
         bridges.extend(mem::take(&mut self.unresolved));
         let mut sol_bundles = Vec::new();
         let mut zcash_bundles = Vec::new();

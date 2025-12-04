@@ -14,14 +14,20 @@ jobs:
       group: ${{ github.workflow }}-${{ github.ref }}
     steps:
       - uses: actions/checkout@v4
-
+      - name: Install Toolchain
+        run: rustup update stable && rustup default stable
       - name: Setup mdBook
         uses: peaceiris/actions-mdbook@v2
         with:
           mdbook-version: "latest"
+      - name: Install processors
+        run: cargo install mdbook-mermaid
 
       - name: Build the book
-        run: cd docs && mdbook build
+        run: |
+          cd docs
+          mdbook-mermaid install
+          mdbook build
 
       - name: Deploy
         uses: peaceiris/actions-gh-pages@v4
