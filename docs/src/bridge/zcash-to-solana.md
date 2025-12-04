@@ -6,7 +6,7 @@ make the funds on zcash secure and trustless.
 ## 1. User deposits ZEC to the shielded address
 
 User send ZEC to the shielded address of bridge with `memo` which includes
-a serialized `bridge` instruction of Zorch network.
+a serialized `bridge` instruction of Zosh network.
 
 ```rust
 enum MemoInstruction {
@@ -21,7 +21,7 @@ enum MemoInstruction {
 
 ## 2. Validators identify and pack the transaction
 
-Anyone can submit the transaction to the zorch chain with a `bridge` transaction.
+Anyone can submit the transaction to the zosh chain with a `bridge` transaction.
 
 ```rust
 struct BridgeToSolana {
@@ -38,11 +38,11 @@ struct BridgeToSolana {
 
 The transactions will be packed into a block and get validated by all of the validators:
 
-- Fetch spendable notes after the latest zcash height stored on the zorch chain.
+- Fetch spendable notes after the latest zcash height stored on the zosh chain.
 - Check if the amount and the recipient are matched with the transaction id.
 - Check if the notes have already been bridged.
 
-> All bridged notes will be marked as bridged on the zorch chain, sort like the UTXO
+> All bridged notes will be marked as bridged on the zosh chain, sort like the UTXO
 > design.
 
 If everything are valid, the block will be committed to the chain.

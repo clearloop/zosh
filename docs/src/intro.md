@@ -28,7 +28,7 @@ support the unique demands of the crossing chain liquidity and privacy.
 flowchart LR
     A[Zcash]
     B[Solana]
-    C[ZorshBFT <-> State Machine]
+    C[ZoshBFT <-> State Machine]
 
     A -.-> |Sync| C
     B -.-> |Sync| C

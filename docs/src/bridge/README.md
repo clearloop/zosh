@@ -1,6 +1,6 @@
 # Bridge
 
-This chapter explains how the bridge works in Zorch step by step.
+This chapter explains how the bridge works in Zosh step by step.
 
 - [Zcash to Solana](./zcash-to-solana.md)
 - [Solana to Zcash](./solana-to-zcash.md)

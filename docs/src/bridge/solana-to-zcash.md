@@ -19,7 +19,7 @@ User send the burn instruction to our solana program.
 ## 2. Validators identify and pack the transaction
 
 Same as what we do in the zcash to solana bridging, anyone can submit the
-transaction to zorch, the difference is that for packing this block, we
+transaction to zosh, the difference is that for packing this block, we
 need two-round signature aggregation with frost.
 
 ```rust

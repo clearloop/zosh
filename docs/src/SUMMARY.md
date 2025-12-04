@@ -1,6 +1,6 @@
 # Summary
 
-# Zorch
+# Zosh
 
 - [Intro](./intro.md)
 - [Bridge](./bridge/README.md)

@@ -12,9 +12,9 @@ The monorepo for Zosh, contains the node, program and UI service.
 
 ## Technical Overview
 
-zosh is a Solana L2 built for Zcash that focus on privacy and scalability.
+Zosh is a Solana L2 built for Zcash that focus on privacy and scalability.
 
-zosh uses a custom consensus algorithm called [zoshBFT](/zoshbft.md) inspired by Hotstuff and
+Zosh uses a custom consensus algorithm called [zoshBFT](/zoshbft.md) inspired by Hotstuff and
 its successors. Both the algorithm and networking stack are optimized from the ground up to
 support the unique demands of the crossing chain liquidity and privacy.
 
@@ -37,7 +37,7 @@ flowchart LR
 
 ```
 
-zosh state execution is heavily based on external transactions, all confirmed output transactions
+Zosh state execution is heavily based on external transactions, all confirmed output transactions
 will be committed on chain and finally can be executed by anyone.
 
 ## LICENSE

@@ -8,7 +8,7 @@ ZoshBFT is based on PoS with an optimized [hotstuff][hotstuff] implementation, s
 - Timeout conditions for force rotating leaders
 - Key refreshing for the orchard package
 
-> We will upgrade zorch to a PoS network after getting the product market fit.
+> We will upgrade zosh to a PoS network after getting the product market fit.
 
 ## Dual blocks
 
