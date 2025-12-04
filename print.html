@@ -36,10 +36,10 @@
             const path_to_root = "";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "searchindex-4df26cd7.js";
+            window.path_to_searchindex_js = "searchindex-a4ca29d1.js";
         </script>
         <!-- Start loading toc.js asap -->
-        <script src="toc-f2534e4e.js"></script>
+        <script src="toc-37462b22.js"></script>
     </head>
     <body>
     <div id="mdbook-help-container">
@@ -178,23 +178,11 @@
                         <h1 id="zosh"><a class="header" href="#zosh">Zosh</a></h1>
 <p>The trustless privacy bridge for Solana and Zcash.</p>
 <ul>
-<li>
-<p><strong>Security</strong>: The funds in the <a href="/bridge">bridge</a> are secured by <a href="/consensus.html">the zosh Protocol</a>.</p>
-<ul>
-<li>No custody wallet, everything on-chain.</li>
-<li><a href="https://frost.zfnd.org/">frost</a> to manage the zcash orchard pool.</li>
-<li><code>multi-sig</code> to manage the zoZEC on the solana side.</li>
+<li><strong>Privacy</strong>: Zcash orchard pool integrated.</li>
+<li><strong>Trustless</strong>: No centralized custody, on-chain MPC</li>
+<li><strong>Permissionless</strong>: Any Solana holder can be a validator.</li>
 </ul>
-</li>
-<li>
-<p><strong>Privacy</strong>: The privacy is ensured by the <a href="https://zcash.github.io/orchard/">orchard</a> pool from zcash.</p>
-<ul>
-<li>On bridging ZEC to SOL, zosh doesn’t know the depositor of ZEC.</li>
-<li>On bridging SOL to ZEC, zosh sends the funds back to the orchard pool.</li>
-</ul>
-</li>
-</ul>
-<p>Check out <a href="/bridge">bridge</a> and <a href="/demo.html">demo</a> for more details.</p>
+<p>Check out <a href="/bridge">bridge</a> for a step-to-step guide.</p>
 <h2 id="why-zosh"><a class="header" href="#why-zosh">Why Zosh?</a></h2>
 <div class="table-wrapper">
 <table>
@@ -209,8 +197,8 @@
 </table>
 </div>
 <h2 id="technical-overview"><a class="header" href="#technical-overview">Technical Overview</a></h2>
-<p>zosh is a Solana L2 built for Zcash that focus on privacy and scalability.</p>
-<p>zosh uses a custom consensus algorithm called <a href="/zoshbft.html">zoshBFT</a> inspired by Hotstuff and
+<p>Zosh is a Solana L2 built for Zcash that focus on privacy and scalability.</p>
+<p>Zosh uses a custom consensus algorithm called <a href="/zoshbft.html">zoshBFT</a> inspired by Hotstuff and
 its successors. Both the algorithm and networking stack are optimized from the ground up to
 support the unique demands of the crossing chain liquidity and privacy.</p>
 <pre class="mermaid">flowchart LR
@@ -248,7 +236,7 @@ will be committed on chain and finally can be executed by anyone.</p>
 <tr><th>Chain</th><th>Address</th></tr>
 </thead>
 <tbody>
-<tr><td>Solana Devnet</td><td>TBA</td></tr>
+<tr><td>Solana Devnet</td><td><a href="https://orb.helius.dev/address/zosh4npemTuTj18MHgbn7NRihzMkTfgswTyP34LPaVx/history?cluster=devnet">zosh4npemTuTj1NR…zMkTfgswTyP34LPaVx</a></td></tr>
 <tr><td>Zcash Testnet</td><td><a href="https://cipherscan.app/address/utest1fltxax64jr7nu5j4h9kszknm0hg929sxl69y02zlfsh4r8wp6fuxh2mzrlhznedfdz94z2089cdxc7zfd98wqhdsjxqth3unkqsas0nc">utest1fltxax64jr…dsjxqth3unkqsas0nc</a></td></tr>
 </tbody>
 </table>
@@ -389,20 +377,13 @@ address.</p>
 except the selected validator, anyone else can submit it to the zcash network
 as well!</p>
 <div style="break-before: page; page-break-before: always;"></div>
-<h1 id="demo"><a class="header" href="#demo">DEMO</a></h1>
-<p>DEMO in the article version.</p>
-<blockquote>
-<p>TBA</p>
-</blockquote>
-<div style="break-before: page; page-break-before: always;"></div>
 <h1 id="data-sources"><a class="header" href="#data-sources">Data Sources</a></h1>
-<p>Each zorch node wraps the following data sources:</p>
+<p>Each zosh node wraps the following data sources:</p>
 <ul>
 <li>Zcash light wallet for indexing/validating the incoming zcash transactions.</li>
 <li>Solana light client for indexing solana side operations.</li>
 </ul>
-<p>It’s currently okay using third-party API to fetch data sources since we’ll submit
-our results of the data on chain and get validated by other nodes finally.</p>
+<p>It’s currently okay using third-party API to fetch data sources since we’ll submit our results of the data on chain and get validated by other nodes finally.</p>
 <blockquote>
 <p>For the long-term plan, each of the nodes will be required to run</p>
 <ul>
@@ -411,9 +392,8 @@ our results of the data on chain and get validated by other nodes finally.</p>
 </ul>
 </blockquote>
 <div style="break-before: page; page-break-before: always;"></div>
-<h1 id="zorchbft"><a class="header" href="#zorchbft">ZorchBFT</a></h1>
-<p>ZorchBFT is based on PoA with an optimized <a href="https://arxiv.org/abs/2107.04947">hotstuff</a> implementation,
-shortly:</p>
+<h1 id="zoshbft"><a class="header" href="#zoshbft">ZoshBFT</a></h1>
+<p>ZoshBFT is based on PoS with an optimized <a href="https://arxiv.org/abs/2107.04947">hotstuff</a> implementation, shortly:</p>
 <ul>
 <li>No fixed block time</li>
 <li>VRF for randomizing the leader selection</li>
