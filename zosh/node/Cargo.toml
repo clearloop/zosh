@@ -19,7 +19,9 @@ postcard.workspace = true
 rand_core.workspace = true
 reddsa.workspace = true
 runtime.workspace = true
+rustls.workspace = true
 serde.workspace = true
+shadow-rs.workspace = true
 solana-signer.workspace = true
 tokio = { workspace = true, features = ["full"] }
 toml.workspace = true
@@ -31,6 +33,9 @@ zcore.workspace = true
 # optional dependencies
 zoshui = { workspace = true, optional = true }
 rpc = { workspace = true, optional = true }
+
+[build-dependencies]
+shadow-rs.workspace = true
 
 [features]
 default = ["ui"]

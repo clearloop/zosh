@@ -1,18 +1,33 @@
 //! Command line interface for the zorch node
 
-use std::net::SocketAddr;
-
 use crate::dev::Dev;
 use anyhow::Result;
 use clap::Parser;
+use shadow_rs::{concatcp, shadow};
+use std::net::SocketAddr;
 use sync::{
     config::{Config, CACHE_DIR, CONFIG_DIR},
     solana, zcash,
 };
 use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt, EnvFilter};
 
+shadow!(build);
+
+const VERSION: &str = concatcp!(
+    build::PKG_VERSION,
+    "\nbranch:",
+    build::BRANCH,
+    "\ncommit_hash:",
+    build::SHORT_COMMIT,
+    "\nbuild_time:",
+    build::BUILD_TIME,
+    "\nbuild_env:",
+    build::RUST_VERSION,
+);
+
 /// Command line interface for the ZorchBridge node
 #[derive(Parser)]
+#[clap(version = VERSION)]
 pub struct App {
     #[clap(subcommand)]
     pub command: Command,
@@ -80,7 +95,7 @@ pub enum Command {
     /// Development commanm
     Dev {
         /// The address to bind the development node to
-        #[clap(short, long, default_value = "127.0.0.1:1439")]
+        #[clap(short, long, default_value = "0.0.0.0:1439")]
         address: SocketAddr,
     },
 

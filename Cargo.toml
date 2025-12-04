@@ -10,6 +10,7 @@ edition = "2021"
 overflow-checks = true
 lto = "fat"
 codegen-units = 1
+strip = true
 
 [profile.release.build-override]
 opt-level = 3
@@ -62,6 +63,7 @@ reddsa = { version = "0.5.1", features = ["frost", "serde"] }
 rusqlite = "0.37.0"
 serde = "1.0.228"
 serde_json = "1.0.145"
+shadow-rs = "1.4.0"
 solana-account = "2.2.1"
 solana-client = "2.3.13"
 solana-program = "2.2.1"
@@ -77,6 +79,7 @@ spl-token = { version = "8.0.0", features = ["no-entrypoint"] }
 tokio = "1.48.0"
 toml = "0.9.8"
 tonic = { version = "0.14.2", features = ["tls-native-roots"] }
+rustls = { version = "0.23", default-features = false, features = ["ring"] }
 tower-http = { version = "0.6", features = ["cors"] }
 tracing = "0.1.41"
 tracing-subscriber = { version = "0.3.20", features = ["env-filter"] }

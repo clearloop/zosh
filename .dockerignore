@@ -1,0 +1,40 @@
+# Build artifacts (keep release binary)
+target/debug/
+target/.rustc_info.json
+target/.cargo-lock
+target/CACHEDIR.TAG
+*.swp
+*.swo
+
+# IDE
+.idea/
+.vscode/
+*.iml
+
+# Git
+.git/
+.gitignore
+
+# Documentation
+docs/
+*.md
+!README.md
+
+# CI/CD
+.github/
+
+# Misc
+*.log
+journey.log
+.DS_Store
+Thumbs.db
+
+# Test files
+*.test
+test/
+tests/
+
+# Local config (don't include in image)
+*.local
+.env*
+

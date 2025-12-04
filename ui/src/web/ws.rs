@@ -3,9 +3,10 @@
 use super::{
     build_tx_response, decode_query_id, decode_txid, query_by_qid, query_by_txid, AppState,
 };
+use crate::ui::UITxn;
 use axum::extract::ws::{Message, WebSocket};
 use futures_util::SinkExt;
-use serde_json::{json, Value};
+use serde_json::json;
 use std::time::Duration;
 use tokio::sync::broadcast;
 
@@ -80,11 +81,7 @@ pub async fn handle_query_subscription(socket: WebSocket, state: AppState, qid_s
 
     tracing::trace!("WebSocket subscription for query_id: {}", qid_str);
     poll_until_found(socket, || match query_by_qid(&state.db, &qid_bytes) {
-        Ok(Some((txid_hex, tx))) => {
-            let mut response = build_tx_response(&tx);
-            response["txid"] = json!(txid_hex);
-            PollResult::Found(response)
-        }
+        Ok(Some((_txid_hex, tx))) => PollResult::Found(Box::new(build_tx_response(tx))),
         Ok(None) => PollResult::NotFound,
         Err(e) => PollResult::Error(e),
     })
@@ -112,7 +109,7 @@ pub async fn handle_tx_subscription(socket: WebSocket, state: AppState, txid_str
     );
 
     poll_until_found(socket, || match query_by_txid(&state.db, &txid_bytes) {
-        Ok(Some(tx)) => PollResult::Found(build_tx_response(&tx)),
+        Ok(Some(tx)) => PollResult::Found(Box::new(build_tx_response(tx))),
         Ok(None) => PollResult::NotFound,
         Err(e) => PollResult::Error(e),
     })
@@ -122,7 +119,7 @@ pub async fn handle_tx_subscription(socket: WebSocket, state: AppState, txid_str
 /// Result of a poll operation
 enum PollResult {
     /// Data found
-    Found(Value),
+    Found(Box<UITxn>),
     /// Not found yet
     NotFound,
     /// Error occurred
@@ -139,7 +136,8 @@ where
     loop {
         match poll_fn() {
             PollResult::Found(response) => {
-                let _ = socket.send(text_msg(response.to_string())).await;
+                let msg = serde_json::to_string(&response).unwrap_or_default();
+                let _ = socket.send(text_msg(msg)).await;
                 let _ = socket.close().await;
                 return;
             }

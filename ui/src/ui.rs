@@ -37,6 +37,7 @@ impl UIBlock {
             extrinsic: UIExtrinsic::from_extrinsic(
                 &block.extrinsic.bridge,
                 &block.extrinsic.receipts,
+                block.header.slot,
             ),
         }
     }
@@ -53,13 +54,17 @@ impl UIExtrinsic {
     pub fn from_extrinsic(
         bridge: &BTreeMap<Hash, BridgeBundle>,
         receipts: &[zcore::ex::Receipt],
+        slot: u32,
     ) -> Self {
         Self {
             bridge: bridge
                 .iter()
                 .map(|(hash, bundle)| UIBridgeBundle::from_bundle(hash, bundle))
                 .collect(),
-            receipts: receipts.iter().map(UIReceipt::from_receipt).collect(),
+            receipts: receipts
+                .iter()
+                .map(|r| UIReceipt::from_receipt(r, slot))
+                .collect(),
         }
     }
 }
@@ -122,16 +127,18 @@ pub struct UIReceipt {
     pub txid: String,
     pub source: String,
     pub target: String,
+    pub slot: u32,
 }
 
 impl UIReceipt {
-    pub fn from_receipt(receipt: &zcore::ex::Receipt) -> Self {
+    pub fn from_receipt(receipt: &zcore::ex::Receipt, slot: u32) -> Self {
         Self {
             anchor: util::encode_txid(&receipt.anchor),
             coin: format!("{:?}", receipt.coin),
             txid: util::encode_txid(&receipt.txid),
             source: format!("{:?}", receipt.source),
             target: format!("{:?}", receipt.target),
+            slot,
         }
     }
 }
@@ -148,6 +155,28 @@ pub struct UIHead {
 #[derive(Debug, Serialize, Deserialize)]
 pub struct UIBlocksPage {
     pub blocks: Vec<UIHead>,
+    pub total: u32,
+    pub page: u32,
+    pub row: u32,
+}
+
+/// UI representation of a transaction with optional receipt
+#[derive(Debug, Serialize, Deserialize)]
+pub struct UITxn {
+    pub txid: String,
+    pub coin: String,
+    pub amount: u64,
+    pub recipient: String,
+    pub source: String,
+    pub target: String,
+    pub slot: u32,
+    pub receipt: Option<UIReceipt>,
+}
+
+/// UI representation of paginated transactions response
+#[derive(Debug, Serialize, Deserialize)]
+pub struct UITxnsPage {
+    pub txns: Vec<UITxn>,
     pub total: u32,
     pub page: u32,
     pub row: u32,

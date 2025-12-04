@@ -65,6 +65,14 @@ pub struct Bridge {
     pub txid: Vec<u8>,
 }
 
+impl Bridge {
+    /// Compute the hash of the bridge transaction
+    pub fn hash(&self) -> Result<Hash> {
+        let data = postcard::to_allocvec(&self)?;
+        Ok(crypto::blake3(&data))
+    }
+}
+
 /// The confirmation of the bridge transaction
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Receipt {

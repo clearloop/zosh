@@ -1,5 +1,45 @@
-## Zorch - Privacy Bridge for Solana and Zcash
+## Zosh - The Trustless Privacy Bridge for Solana and Zcash
 
-- [chain](chain) - light client and utils of chains.
-- [zorch](zorch) - threshold network implementation with block chain structure.
-- [programs/zorch](programs/zorch) - Solana side program that implements the consensus
+The monorepo for Zosh, contains the node, program and UI service.
+
+## Why Zosh?
+
+| Bridge       | Privacy | Open Source | Trustless | Permissionless | Scalability |
+| ------------ | ------- | ----------- | --------- | -------------- | ----------- |
+| Zosh         | 🟢      | 🟢          | 🟢        | 🟢             | 🟢          |
+| Near Intents | 🔴      | 🟡          | 🟡        | 🔴             | 🟢          |
+| Zenrock      | 🟢      | 🔴          | 🟡        | 🔴             | 🔴          |
+
+## Technical Overview
+
+zosh is a Solana L2 built for Zcash that focus on privacy and scalability.
+
+zosh uses a custom consensus algorithm called [zoshBFT](/zoshbft.md) inspired by Hotstuff and
+its successors. Both the algorithm and networking stack are optimized from the ground up to
+support the unique demands of the crossing chain liquidity and privacy.
+
+```mermaid
+flowchart LR
+    A[Zcash]
+    B[Solana]
+    C[ZorshBFT <-> State Machine]
+
+    A -.-> |Sync| C
+    B -.-> |Sync| C
+    C --> |Frost| A
+    C --> |Frost| B
+
+    subgraph The Privacy Bridge
+        direction LR
+        A
+        B
+    end
+
+```
+
+zosh state execution is heavily based on external transactions, all confirmed output transactions
+will be committed on chain and finally can be executed by anyone.
+
+## LICENSE
+
+GPL-3.0

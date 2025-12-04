@@ -15,6 +15,8 @@ mod network;
 mod rpc;
 
 /// The cache directory
+///
+/// Can be overridden via `ZOSH_CACHE_DIR` environment variable
 pub static CACHE_DIR: LazyLock<PathBuf> = LazyLock::new(|| {
     dirs::home_dir()
         .expect("home directory not found")
@@ -23,6 +25,8 @@ pub static CACHE_DIR: LazyLock<PathBuf> = LazyLock::new(|| {
 });
 
 /// The configuration directory
+///
+/// Can be overridden via `ZOSH_CONFIG_DIR` environment variable
 pub static CONFIG_DIR: LazyLock<PathBuf> = LazyLock::new(|| {
     dirs::home_dir()
         .expect("home directory not found")
@@ -48,12 +52,20 @@ pub struct Config {
 
 impl Config {
     /// Load the configuration from a file
+    ///
+    /// Environment variables can override config file values:
+    /// - `ZOSH_RPC_SOLANA` - Solana RPC endpoint
+    /// - `ZOSH_RPC_SOLANA_WS` - Solana WebSocket endpoint
+    /// - `ZOSH_RPC_LIGHTWALLETD` - Zcash lightwalletd endpoint
     pub fn load() -> Result<Self> {
-        if !CONFIG_FILE.exists() {
-            return Self::generate(CONFIG_FILE.as_path());
-        }
-        let file = fs::read_to_string(CONFIG_FILE.as_path())?;
-        Ok(toml::from_str(&file)?)
+        let config = if !CONFIG_FILE.exists() {
+            Self::generate(CONFIG_FILE.as_path())?
+        } else {
+            let file = fs::read_to_string(CONFIG_FILE.as_path())?;
+            toml::from_str(&file)?
+        };
+
+        Ok(config)
     }
 
     /// Get the zcash light client configuration
