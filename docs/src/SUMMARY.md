@@ -4,6 +4,7 @@
 
 - [Overview](./overview.md)
 - [Validators](./validators.md)
+- [Collectors](./collectors.md)
 
 # Bridge
 
@@ -13,7 +14,6 @@
 # Protocol
 
 - [ZoshBFT](./protocol/zoshbft.md)
-- [Collectors](./protocol/collectors.md)
 - [MemPool](./protocol/mempool.md)
 
 # Reference
