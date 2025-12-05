@@ -1,5 +1,7 @@
 # ZoshBFT
 
+> NOTE: The consensus design is still under research & confirmation, could be changed in the future.
+
 ZoshBFT is Zosh's BFT consensus algorithm combining [HotStuff](https://arxiv.org/abs/1803.05069) for BFT consensus with [Safrole](https://wiki.polkadot.network/docs/learn-safrole) (from Polkadot JAM) for VRF-based leader selection. The consensus achieves deterministic finality through 2/3 validator agreement with epoch-based block production.
 
 ## Design Principles
@@ -43,12 +45,14 @@ The state evolves through validator set updates (PoS staking/unstaking in future
 Leaders are selected via VRF (Verifiable Random Function) using an epoch-based mechanism inspired by Safrole:
 
 **Epoch System:**
+
 - Leader assignments are fixed for the entire epoch
 - Leaders determined in advance during the previous epoch
 - VRF tickets submitted by validators to compete for leader slots
 - Each slot in the epoch has a predetermined leader
 
 **VRF Process:**
+
 1. Validators submit VRF tickets during epoch N for epoch N+1
 2. VRF outputs are evaluated - smallest outputs win leader slots
 3. Leader schedule for epoch N+1 is finalized at end of epoch N
@@ -56,6 +60,7 @@ Leaders are selected via VRF (Verifiable Random Function) using an epoch-based m
 5. VRF output is verifiable by all validators
 
 **Security:**
+
 - Leaders predetermined but verifiable prevents targeted DoS
 - VRF ensures randomness and fairness in selection
 - No validator can manipulate future epoch assignments
@@ -88,6 +93,7 @@ flowchart LR
 6. **Timeout handling**: If leader offline or 2/3 not reached, timeout expires and skip to next slot
 
 **Leader Failure Handling:**
+
 - Leader offline: Timeout expires, slot skipped, next slot's leader produces block
 - Invalid block: Validators reject, timeout expires, move to next slot
 - Network partition: Timeout expires if 2/3 signatures not collected
@@ -109,11 +115,13 @@ ZoshBFT provides deterministic finality through threshold signatures:
 To prevent indefinite stalls, ZoshBFT uses timeout-based leader rotation:
 
 **Timeout Conditions:**
+
 - Leader fails to propose block within timeout
 - Proposed block is invalid
 - Network partition prevents signature aggregation
 
 **Timeout Behavior:**
+
 1. Validators wait for timeout period
 2. On timeout, validators move to next slot
 3. Next slot's predetermined leader (from epoch schedule) takes over
@@ -135,12 +143,14 @@ ZoshBFT ensures:
 ## Performance Characteristics
 
 **Block Latency:**
+
 - Proposal: ~100ms (block authoring + propagation)
 - Validation: ~50ms (verification + signature)
 - Signature aggregation: ~500ms - 2s (network-dependent)
 - Total: ~650ms - 2.15s per block
 
 **Throughput:**
+
 - Limited by transaction validation speed
 - Bridge bundles: 10 Solana transfers per bundle
 - Block size: Configurable based on network capacity
@@ -150,6 +160,7 @@ ZoshBFT ensures:
 > **Current Status:** PoA (Proof of Authority) with fixed validator set
 
 **Planned PoS Migration:**
+
 - Validators stake SOL to participate
 - Slashing for malicious behavior (invalid blocks, double-signing)
 - Rewards from transaction fees
@@ -160,16 +171,17 @@ See [Validators](../validators.md) for economics and staking details.
 
 ## Comparison to Base Protocols
 
-| Feature | HotStuff | Safrole | ZoshBFT |
-|---------|----------|---------|---------|
-| Consensus | 3-phase BFT | BABE-based | HotStuff-inspired |
-| Leader Selection | Round-robin | VRF tickets (ring VRF) | VRF tickets (epoch-based) |
-| Block Time | Dynamic (view-based) | Constant (6s in JAM) | Dynamic (slot-based) |
-| Finality | After 3 phases | GRANDPA (separate) | Immediate with 2/3 |
-| Signatures | Threshold or individual | Ring signatures | Threshold (Ed25519) |
-| Liveness | View change protocol | Fork-free by design | Timeout-based rotation |
+| Feature          | HotStuff                | Safrole                | ZoshBFT                   |
+| ---------------- | ----------------------- | ---------------------- | ------------------------- |
+| Consensus        | 3-phase BFT             | BABE-based             | HotStuff-inspired         |
+| Leader Selection | Round-robin             | VRF tickets (ring VRF) | VRF tickets (epoch-based) |
+| Block Time       | Dynamic (view-based)    | Constant (6s in JAM)   | Dynamic (slot-based)      |
+| Finality         | After 3 phases          | GRANDPA (separate)     | Immediate with 2/3        |
+| Signatures       | Threshold or individual | Ring signatures        | Threshold (Ed25519)       |
+| Liveness         | View change protocol    | Fork-free by design    | Timeout-based rotation    |
 
 **Innovations:**
+
 - Combines HotStuff's linear consensus with Safrole's epoch-based VRF leader selection
 - Simplified single-phase voting reduces latency compared to multi-phase HotStuff
 - Epoch-based leader scheduling prevents targeted DoS while maintaining verifiability

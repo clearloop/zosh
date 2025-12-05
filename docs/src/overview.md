@@ -6,8 +6,6 @@ The trustless privacy bridge for Solana and Zcash.
 - **Trustless**: No centralized custody, on-chain MPC
 - **Permissionless**: Any Solana holder can be a validator.
 
-Check out [bridge](/bridge) for a step-to-step guide.
-
 ## Why Zosh?
 
 | Bridge       | Privacy | Open Source | Trustless | Permissionless | Scalability |
@@ -20,7 +18,7 @@ Check out [bridge](/bridge) for a step-to-step guide.
 
 Zosh is a Solana L2 built for Zcash that focus on privacy and scalability.
 
-Zosh uses a custom consensus algorithm called [zoshBFT](/zoshbft.md) inspired by Hotstuff and
+Zosh uses a custom consensus algorithm called [zoshBFT](/./protocol/zoshbft.md) inspired by Hotstuff and
 its successors. Both the algorithm and networking stack are optimized from the ground up to
 support the unique demands of the crossing chain liquidity and privacy.
 
