@@ -2,7 +2,7 @@
 
 Blocks are the fundamental units of the Zosh blockchain, containing both consensus metadata and transaction data. Each block extends the chain through cryptographic commitments to previous state and new transactions.
 
-## Block Structure
+## Structure
 
 A block consists of two components:
 
@@ -20,7 +20,7 @@ The block header contains all consensus-critical metadata:
 - **extrinsic**: Merkle root of transactions included in this block (32 bytes)
 - **votes**: Map of validator public keys to Ed25519 signatures
 
-### Block Hash
+**Block Hash:**
 
 The block hash is computed as:
 
@@ -34,12 +34,14 @@ The votes field is excluded from the hash computation to allow validators to sig
 
 The extrinsic contains the actual transaction data:
 
-- **bridge**: Map of bundle hashes to bridge bundles (batch bridge requests)
-- **receipts**: Vector of receipt transactions (bridge confirmations)
+- **bridge**: Map of bundle hashes to [bridge bundles](./transaction.md#bridge) (batch bridge requests)
+- **receipts**: Vector of [receipt transactions](./transaction.md#receipt) (bridge confirmations)
 
 Transactions are organized into bundles for efficient processing. The extrinsic root is a Merkle tree commitment to all transaction IDs, allowing efficient verification without processing all transactions.
 
-## Block Production
+See [Transaction](./transaction.md) for detailed information about bridge requests and receipts.
+
+## Production
 
 1. Leader collects transactions from the mempool
 2. Leader computes the new accumulator from parent accumulator + new transaction IDs
@@ -48,7 +50,7 @@ Transactions are organized into bundles for efficient processing. The extrinsic 
 5. Validators sign the block hash if valid
 6. Once 2/3 threshold is reached, the block is finalized
 
-## Block Validation
+## Validation
 
 When receiving a block, validators verify:
 
