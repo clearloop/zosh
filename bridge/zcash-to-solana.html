@@ -35,10 +35,10 @@
             const path_to_root = "../";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "../searchindex-a4ca29d1.js";
+            window.path_to_searchindex_js = "../searchindex-fc89b35d.js";
         </script>
         <!-- Start loading toc.js asap -->
-        <script src="../toc-37462b22.js"></script>
+        <script src="../toc-2a8adc88.js"></script>
     </head>
     <body>
     <div id="mdbook-help-container">
@@ -179,7 +179,7 @@
 make the funds on zcash secure and trustless.</p>
 <h2 id="1-user-deposits-zec-to-the-shielded-address"><a class="header" href="#1-user-deposits-zec-to-the-shielded-address">1. User deposits ZEC to the shielded address</a></h2>
 <p>User send ZEC to the shielded address of bridge with <code>memo</code> which includes
-a serialized <code>bridge</code> instruction of Zorch network.</p>
+a serialized <code>bridge</code> instruction of Zosh network.</p>
 <pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
 </span><span class="boring">fn main() {
 </span>enum MemoInstruction {
@@ -192,80 +192,90 @@ a serialized <code>bridge</code> instruction of Zorch network.</p>
 <blockquote>
 <p>The sender will get refunded if the bridge can not decode the memo.</p>
 </blockquote>
-<h2 id="2-validators-identify-and-pack-the-transaction"><a class="header" href="#2-validators-identify-and-pack-the-transaction">2. Validators identify and pack the transaction</a></h2>
-<p>Anyone can submit the transaction to the zorch chain with a <code>bridge</code> transaction.</p>
+<h2 id="2-collectors-detect-and-submit-bridge-requests"><a class="header" href="#2-collectors-detect-and-submit-bridge-requests">2. Collectors detect and submit bridge requests</a></h2>
+<p>Collectors (off-chain services) watch the Zcash orchard pool for incoming deposits:</p>
+<ol>
+<li>Scan spendable notes using the bridge’s viewing key</li>
+<li>Decode memo to extract Solana recipient address (32-byte pubkey, base58 encoded)</li>
+<li>Create bridge request and submit to the zosh mempool</li>
+</ol>
 <pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
 </span><span class="boring">fn main() {
-</span>struct BridgeToSolana {
-    /// the recipient address on solana
-    recipient: Pubkey,
+</span>struct Bridge {
+    /// The token of the transaction
+    coin: Coin::Zec,
 
-    /// the amount of the transaction
+    /// The recipient address (Solana pubkey from memo)
+    recipient: Vec&lt;u8&gt;,
+
+    /// The amount of the transaction
     amount: u64,
 
-    /// the zcash transaction id
-    id: [u8; 32],
+    /// The zcash transaction id
+    txid: Vec&lt;u8&gt;,
+
+    /// The source chain
+    source: Chain::Zcash,
+
+    /// The target chain
+    target: Chain::Solana,
 }
 <span class="boring">}</span></code></pre>
-<p>The transactions will be packed into a block and get validated by all of the validators:</p>
-<ul>
-<li>Fetch spendable notes after the latest zcash height stored on the zorch chain.</li>
-<li>Check if the amount and the recipient are matched with the transaction id.</li>
-<li>Check if the notes have already been bridged.</li>
-</ul>
-<blockquote>
-<p>All bridged notes will be marked as bridged on the zorch chain, sort like the UTXO
-design.</p>
-</blockquote>
-<p>If everything are valid, the block will be committed to the chain.</p>
-<h2 id="3-validators-aggregate-signatures-for-solana"><a class="header" href="#3-validators-aggregate-signatures-for-solana">3. Validators aggregate signatures for solana</a></h2>
-<p>At the commitment of a block, the network will aggregate signatures for a bundle of
-bridging notes.</p>
+<p>Anyone can run a collector - it’s permissionless. Invalid bridge requests (wrong memo format, invalid addresses) are automatically blacklisted.</p>
+<h2 id="3-validators-aggregate-threshold-signatures"><a class="header" href="#3-validators-aggregate-threshold-signatures">3. Validators aggregate threshold signatures</a></h2>
+<p>Validators collect bridge requests in the mempool and create bundles:</p>
+<ol>
+<li><strong>Mempool queuing</strong>: Bridge requests enter the mempool</li>
+<li><strong>Bundle creation</strong>: Validators batch multiple bridge requests together</li>
+<li><strong>Threshold signing</strong>: Each validator signs the bundle. When threshold (e.g., 2/3) is reached, bundle is ready</li>
+<li><strong>Consensus</strong>: Bundle is committed to a zosh block</li>
+</ol>
 <pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
 </span><span class="boring">fn main() {
-</span>struct BridgeBundleToSolana {
-    /// The unbridged requests.
-    txs: Vec&lt;BridgeToSolana&gt;,
+</span>struct BridgeBundle {
+    /// The target chain of the bundle
+    target: Chain::Solana,
 
-    /// The merkle root of the requests.
-    root: [u8; 32],
+    /// The bridge transactions
+    bridge: Vec&lt;Bridge&gt;,
 
-    /// The nonce of the mint state
-    nonce: u64,
+    /// The data we need for reconstructing the outer transaction
+    data: Vec&lt;u8&gt;,
 
-    /// The signatures map of the merkle root.
-    signatures: BTreeMap&lt;ValidatorId, Signature&gt;,
+    /// The signatures for the upcoming outer transactions
+    signatures: Vec&lt;Vec&lt;u8&gt;&gt;,
 }
-
 <span class="boring">}</span></code></pre>
-<ol>
-<li>Select all unbridged notes on chain.</li>
-<li>Append signatures to the bridge bundle.</li>
-<li>Pack the bridge bundle into a new block.</li>
-</ol>
-<p>Once this block get committed on chain, all notes inside of it will be transited to
-the bridged status.</p>
-<h2 id="4-the-recipient-get-zozec-on-solana"><a class="header" href="#4-the-recipient-get-zozec-on-solana">4. The recipient get zoZEC on Solana</a></h2>
-<p>After the commitment of the bundle block, anyone can use the bundled data to mint
-zoZEC on solana, the user itself, a solver, a relayer, or anybody wants to do it,
-we likely need to do sort of incentive mechanism to encourage them to do it.</p>
-<p>On the solana program side, we verify the following stuffs:</p>
+<p>Once enough validators sign, the bundle moves to completed status in the mempool and can be executed on Solana.</p>
+<h2 id="4-the-recipient-receives-zozec-on-solana"><a class="header" href="#4-the-recipient-receives-zozec-on-solana">4. The recipient receives zoZEC on Solana</a></h2>
+<p>After validators sign the bundle, <strong>anyone</strong> can submit the mint transaction to Solana:</p>
 <ul>
-<li>all of the signatures are valid.</li>
-<li>validated signatures are over the threshold of the validator set.</li>
-<li>the nonce matches the one in the program</li>
+<li>The user themselves</li>
+<li>A collector/relayer service</li>
+<li>Any third party (permissionless)</li>
 </ul>
+<p>The Solana program verifies:</p>
+<ol>
+<li><strong>MPC signature</strong>: Transaction must be signed by the validator MPC pubkey</li>
+<li><strong>Batch processing</strong>: Up to 10 recipients can be minted in one transaction</li>
+<li><strong>ATA creation</strong>: Automatically creates Associated Token Accounts if needed</li>
+</ol>
+<pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>// Solana program validates MPC signature
+require!(payer.key() == bridge_state.mpc, InvalidMpcSigner);
+<span class="boring">}</span></code></pre>
+<p>The program mints <strong>zoZEC</strong> (8 decimals) directly to recipients’ token accounts.</p>
 <blockquote>
-<p>The solana program maintains a <code>nonce</code> to deduplicate the mint requests, each time
-a bundle processed, the <code>nonce</code> will be incremented.</p>
+<p>Validation is based on MPC threshold signatures, not nonces. The MPC pubkey represents
+the collective signing authority of the validator set.</p>
 </blockquote>
-<p>Mint the zoZEC, bumps the nonce.</p>
 
                     </main>
 
                     <nav class="nav-wrapper" aria-label="Page navigation">
                         <!-- Mobile navigation buttons -->
-                            <a rel="prev" href="../bridge/index.html" class="mobile-nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                            <a rel="prev" href="../collectors.html" class="mobile-nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
                                 <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M41.4 233.4c-12.5 12.5-12.5 32.8 0 45.3l160 160c12.5 12.5 32.8 12.5 45.3 0s12.5-32.8 0-45.3L109.3 256 246.6 118.6c12.5-12.5 12.5-32.8 0-45.3s-32.8-12.5-45.3 0l-160 160z"/></svg></span>
                             </a>
 
@@ -279,7 +289,7 @@ a bundle processed, the <code>nonce</code> will be incremented.</p>
             </div>
 
             <nav class="nav-wide-wrapper" aria-label="Page navigation">
-                    <a rel="prev" href="../bridge/index.html" class="nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                    <a rel="prev" href="../collectors.html" class="nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
                         <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M41.4 233.4c-12.5 12.5-12.5 32.8 0 45.3l160 160c12.5 12.5 32.8 12.5 45.3 0s12.5-32.8 0-45.3L109.3 256 246.6 118.6c12.5-12.5 12.5-32.8 0-45.3s-32.8-12.5-45.3 0l-160 160z"/></svg></span>
                     </a>
 

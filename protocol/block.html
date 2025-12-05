@@ -3,7 +3,7 @@
     <head>
         <!-- Book generated using mdBook -->
         <meta charset="UTF-8">
-        <title>Overview - Zosh - The trustless privacy bridge</title>
+        <title>Block - Zosh - The trustless privacy bridge</title>
 
 
         <!-- Custom HTML head -->
@@ -12,33 +12,33 @@
         <meta name="viewport" content="width=device-width, initial-scale=1">
         <meta name="theme-color" content="#ffffff">
 
-        <link rel="icon" href="favicon-de23e50b.svg">
-        <link rel="shortcut icon" href="favicon-8114d1fc.png">
-        <link rel="stylesheet" href="css/variables-8adf115d.css">
-        <link rel="stylesheet" href="css/general-2459343d.css">
-        <link rel="stylesheet" href="css/chrome-ae938929.css">
-        <link rel="stylesheet" href="css/print-9e4910d8.css" media="print">
+        <link rel="icon" href="../favicon-de23e50b.svg">
+        <link rel="shortcut icon" href="../favicon-8114d1fc.png">
+        <link rel="stylesheet" href="../css/variables-8adf115d.css">
+        <link rel="stylesheet" href="../css/general-2459343d.css">
+        <link rel="stylesheet" href="../css/chrome-ae938929.css">
+        <link rel="stylesheet" href="../css/print-9e4910d8.css" media="print">
 
         <!-- Fonts -->
-        <link rel="stylesheet" href="fonts/fonts-9644e21d.css">
+        <link rel="stylesheet" href="../fonts/fonts-9644e21d.css">
 
         <!-- Highlight.js Stylesheets -->
-        <link rel="stylesheet" id="mdbook-highlight-css" href="highlight-493f70e1.css">
-        <link rel="stylesheet" id="mdbook-tomorrow-night-css" href="tomorrow-night-4c0ae647.css">
-        <link rel="stylesheet" id="mdbook-ayu-highlight-css" href="ayu-highlight-3fdfc3ac.css">
+        <link rel="stylesheet" id="mdbook-highlight-css" href="../highlight-493f70e1.css">
+        <link rel="stylesheet" id="mdbook-tomorrow-night-css" href="../tomorrow-night-4c0ae647.css">
+        <link rel="stylesheet" id="mdbook-ayu-highlight-css" href="../ayu-highlight-3fdfc3ac.css">
 
         <!-- Custom theme stylesheets -->
 
 
         <!-- Provide site root and default themes to javascript -->
         <script>
-            const path_to_root = "";
+            const path_to_root = "../";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "searchindex-fc89b35d.js";
+            window.path_to_searchindex_js = "../searchindex-fc89b35d.js";
         </script>
         <!-- Start loading toc.js asap -->
-        <script src="toc-2a8adc88.js"></script>
+        <script src="../toc-2a8adc88.js"></script>
     </head>
     <body>
     <div id="mdbook-help-container">
@@ -105,7 +105,7 @@
             <!-- populated by js -->
             <mdbook-sidebar-scrollbox class="sidebar-scrollbox"></mdbook-sidebar-scrollbox>
             <noscript>
-                <iframe class="sidebar-iframe-outer" src="toc.html"></iframe>
+                <iframe class="sidebar-iframe-outer" src="../toc.html"></iframe>
             </noscript>
             <div id="mdbook-sidebar-resize-handle" class="sidebar-resize-handle">
                 <div class="sidebar-resize-indicator"></div>
@@ -140,7 +140,7 @@
                     <h1 class="menu-title">Zosh - The trustless privacy bridge</h1>
 
                     <div class="right-buttons">
-                        <a href="print.html" title="Print this book" aria-label="Print this book">
+                        <a href="../print.html" title="Print this book" aria-label="Print this book">
                             <span class=fa-svg id="print-button"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M128 0C92.7 0 64 28.7 64 64v96h64V64H354.7L384 93.3V160h64V93.3c0-17-6.7-33.3-18.7-45.3L400 18.7C388 6.7 371.7 0 354.7 0H128zM384 352v32 64H128V384 368 352H384zm64 32h32c17.7 0 32-14.3 32-32V256c0-35.3-28.7-64-64-64H64c-35.3 0-64 28.7-64 64v96c0 17.7 14.3 32 32 32H64v64c0 35.3 28.7 64 64 64H384c35.3 0 64-28.7 64-64V384zm-16-88c-13.3 0-24-10.7-24-24s10.7-24 24-24s24 10.7 24 24s-10.7 24-24 24z"/></svg></span>
                         </a>
 
@@ -174,58 +174,69 @@
 
                 <div id="mdbook-content" class="content">
                     <main>
-                        <h1 id="zosh"><a class="header" href="#zosh">Zosh</a></h1>
-<p>The trustless privacy bridge for Solana and Zcash.</p>
+                        <h1 id="block"><a class="header" href="#block">Block</a></h1>
+<p>Blocks are the fundamental units of the Zosh blockchain, containing both consensus metadata and transaction data. Each block extends the chain through cryptographic commitments to previous state and new transactions.</p>
+<h2 id="structure"><a class="header" href="#structure">Structure</a></h2>
+<p>A block consists of two components:</p>
 <ul>
-<li><strong>Privacy</strong>: Zcash orchard pool integrated.</li>
-<li><strong>Trustless</strong>: No centralized custody, on-chain MPC</li>
-<li><strong>Permissionless</strong>: Any Solana holder can be a validator.</li>
+<li><strong>Header</strong>: Consensus metadata and cryptographic commitments</li>
+<li><strong>Extrinsic</strong>: Transaction data (bridge bundles and receipts)</li>
 </ul>
-<h2 id="why-zosh"><a class="header" href="#why-zosh">Why Zosh?</a></h2>
-<div class="table-wrapper">
-<table>
-<thead>
-<tr><th>Bridge</th><th>Privacy</th><th>Open Source</th><th>Trustless</th><th>Permissionless</th><th>Scalability</th></tr>
-</thead>
-<tbody>
-<tr><td>Zosh</td><td>🟢</td><td>🟢</td><td>🟢</td><td>🟢</td><td>🟢</td></tr>
-<tr><td>Near Intents</td><td>🔴</td><td>🟡</td><td>🟡</td><td>🔴</td><td>🟢</td></tr>
-<tr><td>Zenrock</td><td>🟢</td><td>🔴</td><td>🟡</td><td>🔴</td><td>🔴</td></tr>
-</tbody>
-</table>
-</div>
-<h2 id="technical-overview"><a class="header" href="#technical-overview">Technical Overview</a></h2>
-<p>Zosh is a Solana L2 built for Zcash that focus on privacy and scalability.</p>
-<p>Zosh uses a custom consensus algorithm called <a href="/./protocol/zoshbft.html">zoshBFT</a> inspired by Hotstuff and
-its successors. Both the algorithm and networking stack are optimized from the ground up to
-support the unique demands of the crossing chain liquidity and privacy.</p>
-<pre class="mermaid">flowchart LR
-    A[Zcash]
-    B[Solana]
-    C[ZoshBFT &lt;-&gt; State Machine]
-
-    A -.-&gt; |Sync| C
-    B -.-&gt; |Sync| C
-    C --&gt; |Frost| A
-    C --&gt; |Frost| B
-
-    subgraph The Privacy Bridge
-        direction LR
-        A
-        B
-    end
-
-</pre>
-
-<p>zosh state execution is heavily based on external transactions, all confirmed output transactions
-will be committed on chain and finally can be executed by anyone.</p>
+<h2 id="header"><a class="header" href="#header">Header</a></h2>
+<p>The block header contains all consensus-critical metadata:</p>
+<ul>
+<li><strong>slot</strong>: Block height (incrementing sequence number starting from genesis)</li>
+<li><strong>parent</strong>: Hash of the previous block header (32 bytes)</li>
+<li><strong>state</strong>: Merkle root of the parent state (32 bytes)</li>
+<li><strong>accumulator</strong>: Cumulative hash of all transaction IDs up to this block (32 bytes)</li>
+<li><strong>extrinsic</strong>: Merkle root of transactions included in this block (32 bytes)</li>
+<li><strong>votes</strong>: Map of validator public keys to Ed25519 signatures</li>
+</ul>
+<p><strong>Block Hash:</strong></p>
+<p>The block hash is computed as:</p>
+<pre><code>BLAKE3(slot || parent || state || accumulator || extrinsic)
+</code></pre>
+<p>The votes field is excluded from the hash computation to allow validators to sign and aggregate their signatures after the block is proposed.</p>
+<h2 id="extrinsic"><a class="header" href="#extrinsic">Extrinsic</a></h2>
+<p>The extrinsic contains the actual transaction data:</p>
+<ul>
+<li><strong>bridge</strong>: Map of bundle hashes to <a href="./transaction.html#bridge">bridge bundles</a> (batch bridge requests)</li>
+<li><strong>receipts</strong>: Vector of <a href="./transaction.html#receipt">receipt transactions</a> (bridge confirmations)</li>
+</ul>
+<p>Transactions are organized into bundles for efficient processing. The extrinsic root is a Merkle tree commitment to all transaction IDs, allowing efficient verification without processing all transactions.</p>
+<p>See <a href="./transaction.html">Transaction</a> for detailed information about bridge requests and receipts.</p>
+<h2 id="production"><a class="header" href="#production">Production</a></h2>
+<ol>
+<li>Leader collects transactions from the mempool</li>
+<li>Leader computes the new accumulator from parent accumulator + new transaction IDs</li>
+<li>Leader builds the header with all commitments</li>
+<li>Leader proposes the block to validators</li>
+<li>Validators sign the block hash if valid</li>
+<li>Once 2/3 threshold is reached, the block is finalized</li>
+</ol>
+<h2 id="validation"><a class="header" href="#validation">Validation</a></h2>
+<p>When receiving a block, validators verify:</p>
+<ol>
+<li><strong>Parent hash</strong>: Block extends the correct parent</li>
+<li><strong>State root</strong>: Parent state root matches current storage</li>
+<li><strong>Accumulator</strong>: New accumulator correctly extends previous</li>
+<li><strong>Extrinsic root</strong>: Merkle root matches included transactions</li>
+<li><strong>Signatures</strong>: At least 2/3 validators signed the block hash</li>
+</ol>
+<p>Failed validation results in block rejection, preventing invalid blocks from entering the chain.</p>
+<h2 id="finality"><a class="header" href="#finality">Finality</a></h2>
+<p>Blocks achieve finality once they receive 2/3 validator signatures. Unlike probabilistic finality in Nakamoto consensus, zoshBFT provides deterministic finality - finalized blocks cannot be reverted.</p>
+<p>The votes field accumulates signatures until the threshold is met. Once finalized, the block is committed to storage and propagated to the network.</p>
 
                     </main>
 
                     <nav class="nav-wrapper" aria-label="Page navigation">
                         <!-- Mobile navigation buttons -->
+                            <a rel="prev" href="../bridge/solana-to-zcash.html" class="mobile-nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                                <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M41.4 233.4c-12.5 12.5-12.5 32.8 0 45.3l160 160c12.5 12.5 32.8 12.5 45.3 0s12.5-32.8 0-45.3L109.3 256 246.6 118.6c12.5-12.5 12.5-32.8 0-45.3s-32.8-12.5-45.3 0l-160 160z"/></svg></span>
+                            </a>
 
-                            <a rel="next prefetch" href="validators.html" class="mobile-nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                            <a rel="next prefetch" href="../protocol/bundle.html" class="mobile-nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
                                 <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M278.6 233.4c12.5 12.5 12.5 32.8 0 45.3l-160 160c-12.5 12.5-32.8 12.5-45.3 0s-12.5-32.8 0-45.3L210.7 256 73.4 118.6c-12.5-12.5-12.5-32.8 0-45.3s32.8-12.5 45.3 0l160 160z"/></svg></span>
                             </a>
 
@@ -235,8 +246,11 @@ will be committed on chain and finally can be executed by anyone.</p>
             </div>
 
             <nav class="nav-wide-wrapper" aria-label="Page navigation">
+                    <a rel="prev" href="../bridge/solana-to-zcash.html" class="nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                        <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M41.4 233.4c-12.5 12.5-12.5 32.8 0 45.3l160 160c12.5 12.5 32.8 12.5 45.3 0s12.5-32.8 0-45.3L109.3 256 246.6 118.6c12.5-12.5 12.5-32.8 0-45.3s-32.8-12.5-45.3 0l-160 160z"/></svg></span>
+                    </a>
 
-                    <a rel="next prefetch" href="validators.html" class="nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                    <a rel="next prefetch" href="../protocol/bundle.html" class="nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
                         <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M278.6 233.4c12.5 12.5 12.5 32.8 0 45.3l-160 160c-12.5 12.5-32.8 12.5-45.3 0s-12.5-32.8 0-45.3L210.7 256 73.4 118.6c-12.5-12.5-12.5-32.8 0-45.3s32.8-12.5 45.3 0l160 160z"/></svg></span>
                     </a>
             </nav>
@@ -256,17 +270,17 @@ will be committed on chain and finally can be executed by anyone.</p>
         </script>
 
 
-        <script src="elasticlunr-ef4e11c1.min.js"></script>
-        <script src="mark-09e88c2c.min.js"></script>
-        <script src="searcher-c2a407aa.js"></script>
+        <script src="../elasticlunr-ef4e11c1.min.js"></script>
+        <script src="../mark-09e88c2c.min.js"></script>
+        <script src="../searcher-c2a407aa.js"></script>
 
-        <script src="clipboard-1626706a.min.js"></script>
-        <script src="highlight-abc7f01d.js"></script>
-        <script src="book-a0b12cfe.js"></script>
+        <script src="../clipboard-1626706a.min.js"></script>
+        <script src="../highlight-abc7f01d.js"></script>
+        <script src="../book-a0b12cfe.js"></script>
 
         <!-- Custom JS scripts -->
-        <script src="mermaid-3a6b472a.min.js"></script>
-        <script src="mermaid-init-025d9952.js"></script>
+        <script src="../mermaid-3a6b472a.min.js"></script>
+        <script src="../mermaid-init-025d9952.js"></script>
 
 
 

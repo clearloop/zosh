@@ -3,7 +3,7 @@
     <head>
         <!-- Book generated using mdBook -->
         <meta charset="UTF-8">
-        <title>Bridge - Zosh - The trustless privacy bridge</title>
+        <title>Bundle - Zosh - The trustless privacy bridge</title>
 
 
         <!-- Custom HTML head -->
@@ -35,10 +35,10 @@
             const path_to_root = "../";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "../searchindex-a4ca29d1.js";
+            window.path_to_searchindex_js = "../searchindex-fc89b35d.js";
         </script>
         <!-- Start loading toc.js asap -->
-        <script src="../toc-37462b22.js"></script>
+        <script src="../toc-2a8adc88.js"></script>
     </head>
     <body>
     <div id="mdbook-help-container">
@@ -174,35 +174,209 @@
 
                 <div id="mdbook-content" class="content">
                     <main>
-                        <h1 id="bridge"><a class="header" href="#bridge">Bridge</a></h1>
-<p>This chapter explains how the bridge works in Zorch step by step.</p>
+                        <h1 id="bundle"><a class="header" href="#bundle">Bundle</a></h1>
+<p>Bridge transaction bundling is the end-to-end process of aggregating cross-chain transfer requests and executing them with validator consensus. This process involves collectors, validators, the mempool, and network coordination.</p>
+<h2 id="overview"><a class="header" href="#overview">Overview</a></h2>
+<p>Bundling transforms individual bridge requests into batched, threshold-signed transactions ready for execution on the target chain. The process ensures trustless operation - every validator independently verifies events, and 2/3 consensus is required before execution.</p>
+<h2 id="architecture"><a class="header" href="#architecture">Architecture</a></h2>
+<pre class="mermaid">flowchart LR
+    subgraph Collectors
+        A[Monitor Zcash&lt;br/&gt;Orchard Pool]
+        B[Monitor Solana&lt;br/&gt;Program Logs]
+    end
+    
+    subgraph Validators
+        C[Detect Bridge&lt;br/&gt;Events]
+        D[Create Bundles]
+        E[Sign Bundles]
+    end
+    
+    subgraph Network
+        F[Gossip Bundles]
+        G[Aggregate&lt;br/&gt;Signatures]
+    end
+    
+    subgraph Mempool
+        H[Queue Bundles]
+        I[Track Threshold]
+        J[Mark Completed]
+    end
+    
+    A --&gt; C
+    B --&gt; C
+    C --&gt; D
+    D --&gt; F
+    F --&gt; H
+    H --&gt; E
+    E --&gt; G
+    G --&gt; I
+    I --&gt;|2/3 reached| J
+    J --&gt; K[Leader Packs&lt;br/&gt;into Block]
+
+    style H fill:#4a5568,stroke:#718096,stroke-width:2px
+    style J fill:#2d3748,stroke:#48bb78,stroke-width:2px
+    style K fill:#2c5282,stroke:#63b3ed,stroke-width:2px
+</pre>
+
+<h2 id="workflow"><a class="header" href="#workflow">Workflow</a></h2>
+<h3 id="1-collection-phase"><a class="header" href="#1-collection-phase">1. Collection Phase</a></h3>
+<p><strong>Components:</strong> <a href="../collectors.html">Collectors</a></p>
+<p>Each validator runs collectors monitoring both chains:</p>
 <ul>
-<li><a href="./zcash-to-solana.html">Zcash to Solana</a></li>
-<li><a href="./solana-to-zcash.html">Solana to Zcash</a></li>
+<li><strong>Zcash collector</strong>: Scans orchard pool for shielded transactions with Zosh memo fields</li>
+<li><strong>Solana collector</strong>: Monitors program logs for zoZEC burn events</li>
 </ul>
-<h2 id="v010-poc"><a class="header" href="#v010-poc">v0.1.0 (POC)</a></h2>
-<p>The on-chain addresses of the bridge.</p>
-<div class="table-wrapper">
-<table>
-<thead>
-<tr><th>Chain</th><th>Address</th></tr>
-</thead>
-<tbody>
-<tr><td>Solana Devnet</td><td><a href="https://orb.helius.dev/address/zosh4npemTuTj18MHgbn7NRihzMkTfgswTyP34LPaVx/history?cluster=devnet">zosh4npemTuTj1NR…zMkTfgswTyP34LPaVx</a></td></tr>
-<tr><td>Zcash Testnet</td><td><a href="https://cipherscan.app/address/utest1fltxax64jr7nu5j4h9kszknm0hg929sxl69y02zlfsh4r8wp6fuxh2mzrlhznedfdz94z2089cdxc7zfd98wqhdsjxqth3unkqsas0nc">utest1fltxax64jr…dsjxqth3unkqsas0nc</a></td></tr>
-</tbody>
-</table>
-</div>
+<p>Collectors detect bridge events and convert them to bridge requests containing:</p>
+<ul>
+<li>Source transaction ID</li>
+<li>Target chain recipient address</li>
+<li>Transfer amount</li>
+<li>Chain routing (source/target)</li>
+</ul>
+<h3 id="2-bundle-creation"><a class="header" href="#2-bundle-creation">2. Bundle Creation</a></h3>
+<p><strong>Components:</strong> Validators</p>
+<p>Validators aggregate bridge requests into bundles:</p>
+<ul>
+<li><strong>Solana bundles</strong>: Maximum 10 requests per bundle (transaction size limit)</li>
+<li><strong>Zcash bundles</strong>: Limited by available notes in the orchard pool</li>
+</ul>
+<p>Each bundle includes:</p>
+<ul>
+<li>Array of bridge requests</li>
+<li>Target chain identifier</li>
+<li>Serialized transaction data</li>
+<li>Empty signatures array (to be filled)</li>
+</ul>
+<p>Bundle hash computed: <code>BLAKE3(bundle_data)</code></p>
+<h3 id="3-network-propagation"><a class="header" href="#3-network-propagation">3. Network Propagation</a></h3>
+<p><strong>Components:</strong> <a href="./network.html">Network</a></p>
+<p>Bundles gossiped to all validators via QUIC:</p>
+<ul>
+<li>Each validator receives bundle proposal</li>
+<li>Validators verify bundle validity (valid source txs, correct target chain)</li>
+<li>Network ensures all validators see consistent bundle set</li>
+<li>Invalid bundles rejected before mempool</li>
+</ul>
+<h3 id="4-signature-collection"><a class="header" href="#4-signature-collection">4. Signature Collection</a></h3>
+<p><strong>Components:</strong> <a href="./mempool.html">Mempool</a> + <a href="./network.html">Network</a></p>
+<p>Validators independently sign and propagate signatures:</p>
+<ol>
+<li>Bundle queued in mempool (in-progress state)</li>
+<li>Each validator computes bundle hash and signs with Ed25519 key</li>
+<li>Signatures broadcast via network to all validators</li>
+<li>Mempool tracks signature count per bundle hash</li>
+<li>Network aggregates signatures from multiple validators</li>
+</ol>
+<h3 id="5-threshold-achievement"><a class="header" href="#5-threshold-achievement">5. Threshold Achievement</a></h3>
+<p><strong>Components:</strong> <a href="./mempool.html">Mempool</a></p>
+<p>When bundle reaches 2/3 validator signatures:</p>
+<ul>
+<li>Bundle transitions: in-progress → completed</li>
+<li>Bundle ready for block inclusion</li>
+<li>Completed bundles stored in mempool until next block</li>
+</ul>
+<p><strong>Example threshold calculation:</strong></p>
+<ul>
+<li>4 validators: 3 signatures required</li>
+<li>7 validators: 5 signatures required</li>
+<li>10 validators: 7 signatures required</li>
+</ul>
+<h3 id="6-block-inclusion"><a class="header" href="#6-block-inclusion">6. Block Inclusion</a></h3>
+<p><strong>Components:</strong> <a href="./block.html">Block</a> Production</p>
+<p>Leader packs completed bundles into block:</p>
+<ol>
+<li>Leader selected via VRF</li>
+<li>Leader calls <code>mempool.pack()</code> to drain completed bundles</li>
+<li>Bundles included in block extrinsic</li>
+<li>Block propagated for consensus</li>
+<li>Once block finalized, bundles executed on target chain</li>
+</ol>
+<h2 id="bundle-execution"><a class="header" href="#bundle-execution">Bundle Execution</a></h2>
+<p>After block finalization, bundles execute on the target chain:</p>
+<ol>
+<li>Validator constructs target chain transaction with bundle data</li>
+<li>MPC signs transaction using threshold signatures (FROST for Zcash)</li>
+<li>Transaction submitted to target chain</li>
+<li>Target chain processes transfer (Solana: mint zoZEC, Zcash: create shielded output)</li>
+<li>Receipt generated linking source tx → target tx</li>
+</ol>
+<p><strong>Chain-specific limits:</strong></p>
+<ul>
+<li>Solana: Batch up to 10 recipients per transaction</li>
+<li>Zcash: Limited by available notes in orchard pool</li>
+</ul>
+<h2 id="failure-handling"><a class="header" href="#failure-handling">Failure Handling</a></h2>
+<p>Bundles may fail to complete for several reasons:</p>
+<h3 id="insufficient-signatures"><a class="header" href="#insufficient-signatures">Insufficient Signatures</a></h3>
+<ul>
+<li>Bundle remains in-progress if threshold not reached</li>
+<li>Persists across blocks until threshold met</li>
+<li>May be included in future block once signatures collected</li>
+</ul>
+<h3 id="execution-failure"><a class="header" href="#execution-failure">Execution Failure</a></h3>
+<ul>
+<li>Target chain rejects transaction (insufficient funds, invalid recipient, etc.)</li>
+<li>Bundle marked as unresolved</li>
+<li>Validators may retry in future block</li>
+<li>Dispute mechanism (planned) allows challenging failed bundles</li>
+</ul>
+<h3 id="invalid-bundle"><a class="header" href="#invalid-bundle">Invalid Bundle</a></h3>
+<ul>
+<li>Detected during verification phase</li>
+<li>Rejected before mempool queuing</li>
+<li>Never reaches signature collection</li>
+<li>Malicious bundler may be slashed (future)</li>
+</ul>
+<h2 id="security-properties"><a class="header" href="#security-properties">Security Properties</a></h2>
+<p>The bundling process ensures:</p>
+<ol>
+<li><strong>Trustless verification</strong>: Every validator independently verifies source chain events via collectors</li>
+<li><strong>Threshold security</strong>: 2/3 consensus required, tolerates up to 1/3 Byzantine validators</li>
+<li><strong>No single point of failure</strong>: Distributed collectors, no centralized oracle</li>
+<li><strong>Censorship resistance</strong>: Any validator can propose bundles, leader cannot censor</li>
+<li><strong>Execution atomicity</strong>: All requests in bundle execute together or none execute</li>
+</ol>
+<h2 id="performance-considerations"><a class="header" href="#performance-considerations">Performance Considerations</a></h2>
+<h3 id="batch-efficiency"><a class="header" href="#batch-efficiency">Batch Efficiency</a></h3>
+<ul>
+<li>Solana: 10 requests per bundle reduces transaction count 10x</li>
+<li>Zcash: Variable bundle size based on orchard pool state</li>
+<li>Larger batches reduce per-request overhead</li>
+</ul>
+<h3 id="latency"><a class="header" href="#latency">Latency</a></h3>
+<p>Bundle processing time:</p>
+<ol>
+<li>Collection: ~1 block confirmation (Zcash: ~75s, Solana: ~400ms)</li>
+<li>Bundling + signing: ~1-2 zoshBFT rounds</li>
+<li>Block inclusion: Next block slot</li>
+<li>Execution: Target chain confirmation time</li>
+</ol>
+<p>Total latency typically 2-5 minutes depending on chain confirmations.</p>
+<h3 id="throughput"><a class="header" href="#throughput">Throughput</a></h3>
+<p>Limited by:</p>
+<ul>
+<li>Target chain transaction size (Solana: 10 per bundle)</li>
+<li>Source chain note availability (Zcash: depends on orchard pool)</li>
+<li>Validator signature speed (Ed25519 signing: ~50k/sec per validator)</li>
+</ul>
+<h2 id="related-documentation"><a class="header" href="#related-documentation">Related Documentation</a></h2>
+<ul>
+<li><a href="../collectors.html">Collectors</a>: Off-chain monitoring infrastructure</li>
+<li><a href="./mempool.html">MemPool</a>: Bundle state management and packing</li>
+<li><a href="./network.html">Network</a>: QUIC-based bundle propagation</li>
+<li><a href="./transaction.html">Transaction</a>: Bridge request and receipt structure</li>
+<li><a href="./block.html">Block</a>: Block production and extrinsic inclusion</li>
+</ul>
 
                     </main>
 
                     <nav class="nav-wrapper" aria-label="Page navigation">
                         <!-- Mobile navigation buttons -->
-                            <a rel="prev" href="../intro.html" class="mobile-nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                            <a rel="prev" href="../protocol/block.html" class="mobile-nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
                                 <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M41.4 233.4c-12.5 12.5-12.5 32.8 0 45.3l160 160c12.5 12.5 32.8 12.5 45.3 0s12.5-32.8 0-45.3L109.3 256 246.6 118.6c12.5-12.5 12.5-32.8 0-45.3s-32.8-12.5-45.3 0l-160 160z"/></svg></span>
                             </a>
 
-                            <a rel="next prefetch" href="../bridge/zcash-to-solana.html" class="mobile-nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                            <a rel="next prefetch" href="../protocol/state.html" class="mobile-nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
                                 <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M278.6 233.4c12.5 12.5 12.5 32.8 0 45.3l-160 160c-12.5 12.5-32.8 12.5-45.3 0s-12.5-32.8 0-45.3L210.7 256 73.4 118.6c-12.5-12.5-12.5-32.8 0-45.3s32.8-12.5 45.3 0l160 160z"/></svg></span>
                             </a>
 
@@ -212,11 +386,11 @@
             </div>
 
             <nav class="nav-wide-wrapper" aria-label="Page navigation">
-                    <a rel="prev" href="../intro.html" class="nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                    <a rel="prev" href="../protocol/block.html" class="nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
                         <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M41.4 233.4c-12.5 12.5-12.5 32.8 0 45.3l160 160c12.5 12.5 32.8 12.5 45.3 0s12.5-32.8 0-45.3L109.3 256 246.6 118.6c12.5-12.5 12.5-32.8 0-45.3s-32.8-12.5-45.3 0l-160 160z"/></svg></span>
                     </a>
 
-                    <a rel="next prefetch" href="../bridge/zcash-to-solana.html" class="nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                    <a rel="next prefetch" href="../protocol/state.html" class="nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
                         <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M278.6 233.4c12.5 12.5 12.5 32.8 0 45.3l-160 160c-12.5 12.5-32.8 12.5-45.3 0s-12.5-32.8 0-45.3L210.7 256 73.4 118.6c-12.5-12.5-12.5-32.8 0-45.3s32.8-12.5 45.3 0l160 160z"/></svg></span>
                     </a>
             </nav>

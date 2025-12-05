@@ -36,10 +36,10 @@
             const path_to_root = "";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "searchindex-a4ca29d1.js";
+            window.path_to_searchindex_js = "searchindex-fc89b35d.js";
         </script>
         <!-- Start loading toc.js asap -->
-        <script src="toc-37462b22.js"></script>
+        <script src="toc-2a8adc88.js"></script>
     </head>
     <body>
     <div id="mdbook-help-container">
@@ -182,7 +182,6 @@
 <li><strong>Trustless</strong>: No centralized custody, on-chain MPC</li>
 <li><strong>Permissionless</strong>: Any Solana holder can be a validator.</li>
 </ul>
-<p>Check out <a href="/bridge">bridge</a> for a step-to-step guide.</p>
 <h2 id="why-zosh"><a class="header" href="#why-zosh">Why Zosh?</a></h2>
 <div class="table-wrapper">
 <table>
@@ -198,13 +197,13 @@
 </div>
 <h2 id="technical-overview"><a class="header" href="#technical-overview">Technical Overview</a></h2>
 <p>Zosh is a Solana L2 built for Zcash that focus on privacy and scalability.</p>
-<p>Zosh uses a custom consensus algorithm called <a href="/zoshbft.html">zoshBFT</a> inspired by Hotstuff and
+<p>Zosh uses a custom consensus algorithm called <a href="/protocol/zoshbft.html">zoshBFT</a> inspired by Hotstuff and
 its successors. Both the algorithm and networking stack are optimized from the ground up to
 support the unique demands of the crossing chain liquidity and privacy.</p>
 <pre class="mermaid">flowchart LR
     A[Zcash]
     B[Solana]
-    C[ZorshBFT &lt;-&gt; State Machine]
+    C[ZoshBFT &lt;-&gt; State Machine]
 
     A -.-&gt; |Sync| C
     B -.-&gt; |Sync| C
@@ -222,32 +221,132 @@ support the unique demands of the crossing chain liquidity and privacy.</p>
 <p>zosh state execution is heavily based on external transactions, all confirmed output transactions
 will be committed on chain and finally can be executed by anyone.</p>
 <div style="break-before: page; page-break-before: always;"></div>
-<h1 id="bridge"><a class="header" href="#bridge">Bridge</a></h1>
-<p>This chapter explains how the bridge works in Zorch step by step.</p>
+<h1 id="validators"><a class="header" href="#validators">Validators</a></h1>
+<p>Validators are the consensus nodes in the Zosh network. They run the zoshBFT consensus algorithm and sign bridge transactions using FROST threshold cryptography.</p>
+<h2 id="what-validators-do"><a class="header" href="#what-validators-do">What Validators Do</a></h2>
 <ul>
-<li><a href="#zcash-to-solana">Zcash to Solana</a></li>
-<li><a href="#solana-to-zcash">Solana to Zcash</a></li>
+<li>Participate in zoshBFT consensus (BFT voting, block production)</li>
+<li>Maintain the zosh blockchain state</li>
+<li>Sign blocks with Ed25519 signatures</li>
+<li>Create bridge bundles (batching multiple requests)</li>
+<li>Perform FROST threshold signing for bridge transactions</li>
+<li>Commit signed bundles to zosh blocks</li>
 </ul>
-<h2 id="v010-poc"><a class="header" href="#v010-poc">v0.1.0 (POC)</a></h2>
-<p>The on-chain addresses of the bridge.</p>
-<div class="table-wrapper">
-<table>
-<thead>
-<tr><th>Chain</th><th>Address</th></tr>
-</thead>
-<tbody>
-<tr><td>Solana Devnet</td><td><a href="https://orb.helius.dev/address/zosh4npemTuTj18MHgbn7NRihzMkTfgswTyP34LPaVx/history?cluster=devnet">zosh4npemTuTj1NR…zMkTfgswTyP34LPaVx</a></td></tr>
-<tr><td>Zcash Testnet</td><td><a href="https://cipherscan.app/address/utest1fltxax64jr7nu5j4h9kszknm0hg929sxl69y02zlfsh4r8wp6fuxh2mzrlhznedfdz94z2089cdxc7zfd98wqhdsjxqth3unkqsas0nc">utest1fltxax64jr…dsjxqth3unkqsas0nc</a></td></tr>
-</tbody>
-</table>
-</div>
+<blockquote>
+<p>Validators must also run <a href="#collectors">collectors</a> to monitor external chains for bridge events.</p>
+</blockquote>
+<h2 id="requirements"><a class="header" href="#requirements">Requirements</a></h2>
+<h3 id="infrastructure"><a class="header" href="#infrastructure">Infrastructure</a></h3>
+<ul>
+<li><strong>Storage</strong>: parity-db for blockchain state</li>
+<li><strong>Network</strong>: Stable connection for P2P consensus</li>
+<li><strong>Collectors</strong>: See <a href="#collectors">Collectors</a> for chain monitoring requirements</li>
+</ul>
+<h3 id="resources"><a class="header" href="#resources">Resources</a></h3>
+<ul>
+<li>Moderate compute for BFT consensus</li>
+<li>Network I/O for P2P communication</li>
+<li>Storage for blockchain state</li>
+</ul>
+<h2 id="running-a-validator-node"><a class="header" href="#running-a-validator-node">Running a Validator Node</a></h2>
+<p>See <a href="#node-cli">Node CLI</a> for detailed setup and commands.</p>
+<h2 id="validator-selection"><a class="header" href="#validator-selection">Validator Selection</a></h2>
+<p>Validators are selected as block leaders using VRF (Verifiable Random Function):</p>
+<ul>
+<li>Randomized leader selection prevents predictability</li>
+<li>Fair rotation based on cryptographic randomness</li>
+<li>Timeout conditions for leader rotation if unresponsive</li>
+</ul>
+<p>See <a href="#zoshbft">ZoshBFT</a> for consensus algorithm details.</p>
+<h2 id="economics"><a class="header" href="#economics">Economics</a></h2>
+<p><strong>Current (POC):</strong></p>
+<ul>
+<li>Permissionless - anyone can run a validator</li>
+<li>No staking requirements</li>
+<li>No rewards (testnet only)</li>
+</ul>
+<p><strong>Future:</strong></p>
+<ul>
+<li>Stake SOL to become a validator</li>
+<li>Transaction fees distributed to validators</li>
+<li>Slashing for malicious behavior:
+<ul>
+<li>Providing false bridge event data</li>
+<li>Double-signing</li>
+<li>Extended downtime</li>
+</ul>
+</li>
+</ul>
+<div style="break-before: page; page-break-before: always;"></div>
+<h1 id="collectors"><a class="header" href="#collectors">Collectors</a></h1>
+<p>Collectors are off-chain services that monitor Solana and Zcash for bridge events. Each validator must run their own collectors to independently verify bridge requests.</p>
+<h2 id="why-collectors-are-required"><a class="header" href="#why-collectors-are-required">Why Collectors Are Required</a></h2>
+<p>Validators cannot verify bridge events without off-chain data:</p>
+<ul>
+<li>Solana burn transactions require RPC access to verify</li>
+<li>Zcash deposits are in shielded pool (require light wallet scanning)</li>
+</ul>
+<blockquote>
+<p><strong>Critical:</strong> Validators MUST run their own collectors. Outsourcing to third parties creates a trust assumption that breaks the security model.</p>
+</blockquote>
+<h2 id="what-collectors-do"><a class="header" href="#what-collectors-do">What Collectors Do</a></h2>
+<h3 id="watching-solana"><a class="header" href="#watching-solana">Watching Solana</a></h3>
+<ul>
+<li>Subscribe to Solana program logs via WebSocket</li>
+<li>Detect <code>BurnEvent</code> emissions (zoZEC → ZEC bridges)</li>
+<li>Parse event data: sender, amount, Zcash recipient</li>
+<li>Submit bridge requests to local mempool</li>
+</ul>
+<h3 id="watching-zcash"><a class="header" href="#watching-zcash">Watching Zcash</a></h3>
+<ul>
+<li>Scan orchard shielded pool using light wallet</li>
+<li>Detect incoming ZEC deposits to bridge address</li>
+<li>Decode transaction memos to extract Solana recipient (32-byte pubkey, base58)</li>
+<li>Blacklist invalid memos</li>
+<li>Submit bridge requests to local mempool</li>
+</ul>
+<h2 id="requirements-1"><a class="header" href="#requirements-1">Requirements</a></h2>
+<h3 id="infrastructure-1"><a class="header" href="#infrastructure-1">Infrastructure</a></h3>
+<ul>
+<li><strong>Solana RPC</strong>: Self-hosted or third-party (Helius, Quicknode, etc.)</li>
+<li><strong>Zcash lightwalletd</strong>: Connection to Zcash network</li>
+<li><strong>Storage</strong>: Cache for blacklist and processed transactions</li>
+<li><strong>Bridge keys</strong>: Viewing keys for scanning Zcash orchard pool</li>
+</ul>
+<h3 id="resources-1"><a class="header" href="#resources-1">Resources</a></h3>
+<ul>
+<li>Network I/O for chain monitoring (primary bottleneck)</li>
+<li>Storage for cache and blacklist</li>
+<li>Minimal compute</li>
+</ul>
+<h2 id="running-collectors"><a class="header" href="#running-collectors">Running Collectors</a></h2>
+<p>Collectors are embedded in the zosh node:</p>
+<pre><code class="language-bash"># Collectors start automatically with the node
+cargo run -p zosh-node -- dev
+</code></pre>
+<p><strong>Configuration</strong> (<code>~/.config/zosh/</code>):</p>
+<ul>
+<li>Solana RPC endpoint</li>
+<li>Zcash lightwalletd server</li>
+<li>Bridge viewing keys</li>
+</ul>
+<p>See <a href="#node-cli">Node CLI</a> for detailed configuration.</p>
+<h2 id="verification-flow"><a class="header" href="#verification-flow">Verification Flow</a></h2>
+<ol>
+<li>Collector detects bridge event (Solana burn or Zcash deposit)</li>
+<li>Submits to validator’s local mempool</li>
+<li>Validator independently verifies using their collector’s data</li>
+<li>Validator votes on consensus only if their collector confirms the event</li>
+<li>Bridge bundle created only when threshold validators confirm</li>
+</ol>
+<p>This ensures no single point of failure - each validator independently verifies external chain state.</p>
 <div style="break-before: page; page-break-before: always;"></div>
 <h1 id="zcash-to-solana"><a class="header" href="#zcash-to-solana">Zcash to Solana</a></h1>
 <p>Since zcash doesn’t have a VM, we have to maintain a threshold wallet, to
 make the funds on zcash secure and trustless.</p>
 <h2 id="1-user-deposits-zec-to-the-shielded-address"><a class="header" href="#1-user-deposits-zec-to-the-shielded-address">1. User deposits ZEC to the shielded address</a></h2>
 <p>User send ZEC to the shielded address of bridge with <code>memo</code> which includes
-a serialized <code>bridge</code> instruction of Zorch network.</p>
+a serialized <code>bridge</code> instruction of Zosh network.</p>
 <pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
 </span><span class="boring">fn main() {
 </span>enum MemoInstruction {
@@ -260,74 +359,84 @@ a serialized <code>bridge</code> instruction of Zorch network.</p>
 <blockquote>
 <p>The sender will get refunded if the bridge can not decode the memo.</p>
 </blockquote>
-<h2 id="2-validators-identify-and-pack-the-transaction"><a class="header" href="#2-validators-identify-and-pack-the-transaction">2. Validators identify and pack the transaction</a></h2>
-<p>Anyone can submit the transaction to the zorch chain with a <code>bridge</code> transaction.</p>
+<h2 id="2-collectors-detect-and-submit-bridge-requests"><a class="header" href="#2-collectors-detect-and-submit-bridge-requests">2. Collectors detect and submit bridge requests</a></h2>
+<p>Collectors (off-chain services) watch the Zcash orchard pool for incoming deposits:</p>
+<ol>
+<li>Scan spendable notes using the bridge’s viewing key</li>
+<li>Decode memo to extract Solana recipient address (32-byte pubkey, base58 encoded)</li>
+<li>Create bridge request and submit to the zosh mempool</li>
+</ol>
 <pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
 </span><span class="boring">fn main() {
-</span>struct BridgeToSolana {
-    /// the recipient address on solana
-    recipient: Pubkey,
+</span>struct Bridge {
+    /// The token of the transaction
+    coin: Coin::Zec,
 
-    /// the amount of the transaction
+    /// The recipient address (Solana pubkey from memo)
+    recipient: Vec&lt;u8&gt;,
+
+    /// The amount of the transaction
     amount: u64,
 
-    /// the zcash transaction id
-    id: [u8; 32],
+    /// The zcash transaction id
+    txid: Vec&lt;u8&gt;,
+
+    /// The source chain
+    source: Chain::Zcash,
+
+    /// The target chain
+    target: Chain::Solana,
 }
 <span class="boring">}</span></code></pre>
-<p>The transactions will be packed into a block and get validated by all of the validators:</p>
-<ul>
-<li>Fetch spendable notes after the latest zcash height stored on the zorch chain.</li>
-<li>Check if the amount and the recipient are matched with the transaction id.</li>
-<li>Check if the notes have already been bridged.</li>
-</ul>
-<blockquote>
-<p>All bridged notes will be marked as bridged on the zorch chain, sort like the UTXO
-design.</p>
-</blockquote>
-<p>If everything are valid, the block will be committed to the chain.</p>
-<h2 id="3-validators-aggregate-signatures-for-solana"><a class="header" href="#3-validators-aggregate-signatures-for-solana">3. Validators aggregate signatures for solana</a></h2>
-<p>At the commitment of a block, the network will aggregate signatures for a bundle of
-bridging notes.</p>
+<p>Anyone can run a collector - it’s permissionless. Invalid bridge requests (wrong memo format, invalid addresses) are automatically blacklisted.</p>
+<h2 id="3-validators-aggregate-threshold-signatures"><a class="header" href="#3-validators-aggregate-threshold-signatures">3. Validators aggregate threshold signatures</a></h2>
+<p>Validators collect bridge requests in the mempool and create bundles:</p>
+<ol>
+<li><strong>Mempool queuing</strong>: Bridge requests enter the mempool</li>
+<li><strong>Bundle creation</strong>: Validators batch multiple bridge requests together</li>
+<li><strong>Threshold signing</strong>: Each validator signs the bundle. When threshold (e.g., 2/3) is reached, bundle is ready</li>
+<li><strong>Consensus</strong>: Bundle is committed to a zosh block</li>
+</ol>
 <pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
 </span><span class="boring">fn main() {
-</span>struct BridgeBundleToSolana {
-    /// The unbridged requests.
-    txs: Vec&lt;BridgeToSolana&gt;,
+</span>struct BridgeBundle {
+    /// The target chain of the bundle
+    target: Chain::Solana,
 
-    /// The merkle root of the requests.
-    root: [u8; 32],
+    /// The bridge transactions
+    bridge: Vec&lt;Bridge&gt;,
 
-    /// The nonce of the mint state
-    nonce: u64,
+    /// The data we need for reconstructing the outer transaction
+    data: Vec&lt;u8&gt;,
 
-    /// The signatures map of the merkle root.
-    signatures: BTreeMap&lt;ValidatorId, Signature&gt;,
+    /// The signatures for the upcoming outer transactions
+    signatures: Vec&lt;Vec&lt;u8&gt;&gt;,
 }
-
 <span class="boring">}</span></code></pre>
-<ol>
-<li>Select all unbridged notes on chain.</li>
-<li>Append signatures to the bridge bundle.</li>
-<li>Pack the bridge bundle into a new block.</li>
-</ol>
-<p>Once this block get committed on chain, all notes inside of it will be transited to
-the bridged status.</p>
-<h2 id="4-the-recipient-get-zozec-on-solana"><a class="header" href="#4-the-recipient-get-zozec-on-solana">4. The recipient get zoZEC on Solana</a></h2>
-<p>After the commitment of the bundle block, anyone can use the bundled data to mint
-zoZEC on solana, the user itself, a solver, a relayer, or anybody wants to do it,
-we likely need to do sort of incentive mechanism to encourage them to do it.</p>
-<p>On the solana program side, we verify the following stuffs:</p>
+<p>Once enough validators sign, the bundle moves to completed status in the mempool and can be executed on Solana.</p>
+<h2 id="4-the-recipient-receives-zozec-on-solana"><a class="header" href="#4-the-recipient-receives-zozec-on-solana">4. The recipient receives zoZEC on Solana</a></h2>
+<p>After validators sign the bundle, <strong>anyone</strong> can submit the mint transaction to Solana:</p>
 <ul>
-<li>all of the signatures are valid.</li>
-<li>validated signatures are over the threshold of the validator set.</li>
-<li>the nonce matches the one in the program</li>
+<li>The user themselves</li>
+<li>A collector/relayer service</li>
+<li>Any third party (permissionless)</li>
 </ul>
+<p>The Solana program verifies:</p>
+<ol>
+<li><strong>MPC signature</strong>: Transaction must be signed by the validator MPC pubkey</li>
+<li><strong>Batch processing</strong>: Up to 10 recipients can be minted in one transaction</li>
+<li><strong>ATA creation</strong>: Automatically creates Associated Token Accounts if needed</li>
+</ol>
+<pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>// Solana program validates MPC signature
+require!(payer.key() == bridge_state.mpc, InvalidMpcSigner);
+<span class="boring">}</span></code></pre>
+<p>The program mints <strong>zoZEC</strong> (8 decimals) directly to recipients’ token accounts.</p>
 <blockquote>
-<p>The solana program maintains a <code>nonce</code> to deduplicate the mint requests, each time
-a bundle processed, the <code>nonce</code> will be incremented.</p>
+<p>Validation is based on MPC threshold signatures, not nonces. The MPC pubkey represents
+the collective signing authority of the validator set.</p>
 </blockquote>
-<p>Mint the zoZEC, bumps the nonce.</p>
 <div style="break-before: page; page-break-before: always;"></div>
 <h1 id="solana-to-zcash"><a class="header" href="#solana-to-zcash">Solana to Zcash</a></h1>
 <p>Bridging zoZEC from Solana to Zcash is pretty straightforward here.</p>
@@ -338,77 +447,1060 @@ a bundle processed, the <code>nonce</code> will be incremented.</p>
     /// The amount of the transaction
     amount: u64,
 
-    /// The zcash recipient address (orchard only)
+    /// The zcash recipient address (orchard unified address, 110 chars)
     recipient: String,
 }
 <span class="boring">}</span></code></pre>
-<p>User send the burn instruction to our solana program.</p>
-<h2 id="2-validators-identify-and-pack-the-transaction-1"><a class="header" href="#2-validators-identify-and-pack-the-transaction-1">2. Validators identify and pack the transaction</a></h2>
-<p>Same as what we do in the zcash to solana bridging, anyone can submit the
-transaction to zorch, the difference is that for packing this block, we
-need two-round signature aggregation with frost.</p>
+<p>User calls the burn instruction on the Solana program. This is a public action - anyone can burn their own zoZEC.</p>
+<p>The program:</p>
+<ol>
+<li>Burns the zoZEC from the user’s token account</li>
+<li>Emits a <code>BurnEvent</code> with sender, amount, and Zcash recipient</li>
+<li>Collectors watch these events to trigger the bridge process</li>
+</ol>
+<h2 id="2-collectors-detect-and-submit-bridge-requests-1"><a class="header" href="#2-collectors-detect-and-submit-bridge-requests-1">2. Collectors detect and submit bridge requests</a></h2>
+<p>Collectors subscribe to Solana program logs and detect <code>BurnEvent</code> emissions:</p>
+<ol>
+<li>Listen to Solana program logs for burn events</li>
+<li>Parse the event to extract sender, amount, and Zcash recipient</li>
+<li>Submit bridge request to zosh mempool</li>
+</ol>
 <pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
 </span><span class="boring">fn main() {
-</span>struct BridgeBundleToZcash {
-    /// The unbridged requests.
-    txs: Vec&lt;(BridgeToZcash, [u8; 32])&gt;,
-
-    /// The orchard bundle of the requests.
-    bundle: OrchardBundle,
-
-    /// The signature of the randomizer.
-    signature: Signature,
+</span>struct Bridge {
+    coin: Coin::Zec,
+    recipient: Vec&lt;u8&gt;,  // Zcash orchard address
+    amount: u64,
+    txid: Vec&lt;u8&gt;,       // Solana burn transaction signature
+    source: Chain::Solana,
+    target: Chain::Zcash,
 }
 <span class="boring">}</span></code></pre>
+<p>Anyone can run a collector - it’s permissionless.</p>
+<h2 id="3-validators-create-and-sign-zcash-transaction"><a class="header" href="#3-validators-create-and-sign-zcash-transaction">3. Validators create and sign Zcash transaction</a></h2>
+<p>Validators collect bridge requests in the mempool and create Zcash transactions:</p>
 <ol>
-<li>Verify signatures of solana transactions</li>
-<li>Select all unbridged solan-to-zcash notes on chain.</li>
-<li>Pack the transactions into an orchard bundle.</li>
-<li>Do the 2-round signature aggregation with frost via p2p.</li>
-<li>Pack the finalized zcash transaction into a new block.</li>
+<li>Bridge requests enter the mempool</li>
+<li>Validators create a Zcash orchard transaction bundle</li>
+<li>FROST threshold signing: Validators perform 2-round signature aggregation to sign the Zcash transaction</li>
+<li>The finalized Zcash transaction is committed to a zosh block</li>
 </ol>
+<pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>struct BridgeBundle {
+    target: Chain::Zcash,
+    bridge: Vec&lt;Bridge&gt;,           // Burn requests
+    data: Vec&lt;u8&gt;,                 // Zcash transaction data
+    signatures: Vec&lt;Vec&lt;u8&gt;&gt;,      // FROST threshold signatures
+}
+<span class="boring">}</span></code></pre>
 <blockquote>
-<p>The selected validator who packs the bundle need also handle the UTXO stuff
-on the zcash side, unspent funds will transfer back to the bridge’s orchard
-address.</p>
+<p>The Zcash transaction is created using the bridge’s orchard wallet. Unspent funds (UTXO change)
+are sent back to the bridge’s orchard address.</p>
 </blockquote>
-<h2 id="3-the-recipient-get-zec-on-zcash"><a class="header" href="#3-the-recipient-get-zec-on-zcash">3. The recipient get ZEC on Zcash</a></h2>
-<p>The raw zcash transaction intrudoced at <code>2.</code> will be stored on chain as well,
-except the selected validator, anyone else can submit it to the zcash network
-as well!</p>
+<h2 id="4-the-recipient-receives-zec-on-zcash"><a class="header" href="#4-the-recipient-receives-zec-on-zcash">4. The recipient receives ZEC on Zcash</a></h2>
+<p>After validators sign the Zcash transaction with FROST, <strong>anyone</strong> can submit it to the Zcash network:</p>
+<ul>
+<li>The user themselves</li>
+<li>A collector/relayer service</li>
+<li>Any third party (permissionless)</li>
+</ul>
+<p>The signed Zcash transaction is stored in the zosh block and can be broadcast by anyone with access to a Zcash node.</p>
+<blockquote>
+<p>No on-chain verification on Zcash is needed - the FROST signature already proves validator consensus.
+Recipients receive ZEC directly to their orchard shielded address.</p>
+</blockquote>
 <div style="break-before: page; page-break-before: always;"></div>
-<h1 id="data-sources"><a class="header" href="#data-sources">Data Sources</a></h1>
-<p>Each zosh node wraps the following data sources:</p>
+<h1 id="block"><a class="header" href="#block">Block</a></h1>
+<p>Blocks are the fundamental units of the Zosh blockchain, containing both consensus metadata and transaction data. Each block extends the chain through cryptographic commitments to previous state and new transactions.</p>
+<h2 id="structure"><a class="header" href="#structure">Structure</a></h2>
+<p>A block consists of two components:</p>
 <ul>
-<li>Zcash light wallet for indexing/validating the incoming zcash transactions.</li>
-<li>Solana light client for indexing solana side operations.</li>
+<li><strong>Header</strong>: Consensus metadata and cryptographic commitments</li>
+<li><strong>Extrinsic</strong>: Transaction data (bridge bundles and receipts)</li>
 </ul>
-<p>It’s currently okay using third-party API to fetch data sources since we’ll submit our results of the data on chain and get validated by other nodes finally.</p>
+<h2 id="header"><a class="header" href="#header">Header</a></h2>
+<p>The block header contains all consensus-critical metadata:</p>
+<ul>
+<li><strong>slot</strong>: Block height (incrementing sequence number starting from genesis)</li>
+<li><strong>parent</strong>: Hash of the previous block header (32 bytes)</li>
+<li><strong>state</strong>: Merkle root of the parent state (32 bytes)</li>
+<li><strong>accumulator</strong>: Cumulative hash of all transaction IDs up to this block (32 bytes)</li>
+<li><strong>extrinsic</strong>: Merkle root of transactions included in this block (32 bytes)</li>
+<li><strong>votes</strong>: Map of validator public keys to Ed25519 signatures</li>
+</ul>
+<p><strong>Block Hash:</strong></p>
+<p>The block hash is computed as:</p>
+<pre><code>BLAKE3(slot || parent || state || accumulator || extrinsic)
+</code></pre>
+<p>The votes field is excluded from the hash computation to allow validators to sign and aggregate their signatures after the block is proposed.</p>
+<h2 id="extrinsic"><a class="header" href="#extrinsic">Extrinsic</a></h2>
+<p>The extrinsic contains the actual transaction data:</p>
+<ul>
+<li><strong>bridge</strong>: Map of bundle hashes to <a href="#bridge">bridge bundles</a> (batch bridge requests)</li>
+<li><strong>receipts</strong>: Vector of <a href="#receipt">receipt transactions</a> (bridge confirmations)</li>
+</ul>
+<p>Transactions are organized into bundles for efficient processing. The extrinsic root is a Merkle tree commitment to all transaction IDs, allowing efficient verification without processing all transactions.</p>
+<p>See <a href="#transaction">Transaction</a> for detailed information about bridge requests and receipts.</p>
+<h2 id="production"><a class="header" href="#production">Production</a></h2>
+<ol>
+<li>Leader collects transactions from the mempool</li>
+<li>Leader computes the new accumulator from parent accumulator + new transaction IDs</li>
+<li>Leader builds the header with all commitments</li>
+<li>Leader proposes the block to validators</li>
+<li>Validators sign the block hash if valid</li>
+<li>Once 2/3 threshold is reached, the block is finalized</li>
+</ol>
+<h2 id="validation"><a class="header" href="#validation">Validation</a></h2>
+<p>When receiving a block, validators verify:</p>
+<ol>
+<li><strong>Parent hash</strong>: Block extends the correct parent</li>
+<li><strong>State root</strong>: Parent state root matches current storage</li>
+<li><strong>Accumulator</strong>: New accumulator correctly extends previous</li>
+<li><strong>Extrinsic root</strong>: Merkle root matches included transactions</li>
+<li><strong>Signatures</strong>: At least 2/3 validators signed the block hash</li>
+</ol>
+<p>Failed validation results in block rejection, preventing invalid blocks from entering the chain.</p>
+<h2 id="finality"><a class="header" href="#finality">Finality</a></h2>
+<p>Blocks achieve finality once they receive 2/3 validator signatures. Unlike probabilistic finality in Nakamoto consensus, zoshBFT provides deterministic finality - finalized blocks cannot be reverted.</p>
+<p>The votes field accumulates signatures until the threshold is met. Once finalized, the block is committed to storage and propagated to the network.</p>
+<div style="break-before: page; page-break-before: always;"></div>
+<h1 id="bundle"><a class="header" href="#bundle">Bundle</a></h1>
+<p>Bridge transaction bundling is the end-to-end process of aggregating cross-chain transfer requests and executing them with validator consensus. This process involves collectors, validators, the mempool, and network coordination.</p>
+<h2 id="overview"><a class="header" href="#overview">Overview</a></h2>
+<p>Bundling transforms individual bridge requests into batched, threshold-signed transactions ready for execution on the target chain. The process ensures trustless operation - every validator independently verifies events, and 2/3 consensus is required before execution.</p>
+<h2 id="architecture"><a class="header" href="#architecture">Architecture</a></h2>
+<pre class="mermaid">flowchart LR
+    subgraph Collectors
+        A[Monitor Zcash&lt;br/&gt;Orchard Pool]
+        B[Monitor Solana&lt;br/&gt;Program Logs]
+    end
+    
+    subgraph Validators
+        C[Detect Bridge&lt;br/&gt;Events]
+        D[Create Bundles]
+        E[Sign Bundles]
+    end
+    
+    subgraph Network
+        F[Gossip Bundles]
+        G[Aggregate&lt;br/&gt;Signatures]
+    end
+    
+    subgraph Mempool
+        H[Queue Bundles]
+        I[Track Threshold]
+        J[Mark Completed]
+    end
+    
+    A --&gt; C
+    B --&gt; C
+    C --&gt; D
+    D --&gt; F
+    F --&gt; H
+    H --&gt; E
+    E --&gt; G
+    G --&gt; I
+    I --&gt;|2/3 reached| J
+    J --&gt; K[Leader Packs&lt;br/&gt;into Block]
+
+    style H fill:#4a5568,stroke:#718096,stroke-width:2px
+    style J fill:#2d3748,stroke:#48bb78,stroke-width:2px
+    style K fill:#2c5282,stroke:#63b3ed,stroke-width:2px
+</pre>
+
+<h2 id="workflow"><a class="header" href="#workflow">Workflow</a></h2>
+<h3 id="1-collection-phase"><a class="header" href="#1-collection-phase">1. Collection Phase</a></h3>
+<p><strong>Components:</strong> <a href="#collectors">Collectors</a></p>
+<p>Each validator runs collectors monitoring both chains:</p>
+<ul>
+<li><strong>Zcash collector</strong>: Scans orchard pool for shielded transactions with Zosh memo fields</li>
+<li><strong>Solana collector</strong>: Monitors program logs for zoZEC burn events</li>
+</ul>
+<p>Collectors detect bridge events and convert them to bridge requests containing:</p>
+<ul>
+<li>Source transaction ID</li>
+<li>Target chain recipient address</li>
+<li>Transfer amount</li>
+<li>Chain routing (source/target)</li>
+</ul>
+<h3 id="2-bundle-creation"><a class="header" href="#2-bundle-creation">2. Bundle Creation</a></h3>
+<p><strong>Components:</strong> Validators</p>
+<p>Validators aggregate bridge requests into bundles:</p>
+<ul>
+<li><strong>Solana bundles</strong>: Maximum 10 requests per bundle (transaction size limit)</li>
+<li><strong>Zcash bundles</strong>: Limited by available notes in the orchard pool</li>
+</ul>
+<p>Each bundle includes:</p>
+<ul>
+<li>Array of bridge requests</li>
+<li>Target chain identifier</li>
+<li>Serialized transaction data</li>
+<li>Empty signatures array (to be filled)</li>
+</ul>
+<p>Bundle hash computed: <code>BLAKE3(bundle_data)</code></p>
+<h3 id="3-network-propagation"><a class="header" href="#3-network-propagation">3. Network Propagation</a></h3>
+<p><strong>Components:</strong> <a href="#network">Network</a></p>
+<p>Bundles gossiped to all validators via QUIC:</p>
+<ul>
+<li>Each validator receives bundle proposal</li>
+<li>Validators verify bundle validity (valid source txs, correct target chain)</li>
+<li>Network ensures all validators see consistent bundle set</li>
+<li>Invalid bundles rejected before mempool</li>
+</ul>
+<h3 id="4-signature-collection"><a class="header" href="#4-signature-collection">4. Signature Collection</a></h3>
+<p><strong>Components:</strong> <a href="#mempool">Mempool</a> + <a href="#network">Network</a></p>
+<p>Validators independently sign and propagate signatures:</p>
+<ol>
+<li>Bundle queued in mempool (in-progress state)</li>
+<li>Each validator computes bundle hash and signs with Ed25519 key</li>
+<li>Signatures broadcast via network to all validators</li>
+<li>Mempool tracks signature count per bundle hash</li>
+<li>Network aggregates signatures from multiple validators</li>
+</ol>
+<h3 id="5-threshold-achievement"><a class="header" href="#5-threshold-achievement">5. Threshold Achievement</a></h3>
+<p><strong>Components:</strong> <a href="#mempool">Mempool</a></p>
+<p>When bundle reaches 2/3 validator signatures:</p>
+<ul>
+<li>Bundle transitions: in-progress → completed</li>
+<li>Bundle ready for block inclusion</li>
+<li>Completed bundles stored in mempool until next block</li>
+</ul>
+<p><strong>Example threshold calculation:</strong></p>
+<ul>
+<li>4 validators: 3 signatures required</li>
+<li>7 validators: 5 signatures required</li>
+<li>10 validators: 7 signatures required</li>
+</ul>
+<h3 id="6-block-inclusion"><a class="header" href="#6-block-inclusion">6. Block Inclusion</a></h3>
+<p><strong>Components:</strong> <a href="#block">Block</a> Production</p>
+<p>Leader packs completed bundles into block:</p>
+<ol>
+<li>Leader selected via VRF</li>
+<li>Leader calls <code>mempool.pack()</code> to drain completed bundles</li>
+<li>Bundles included in block extrinsic</li>
+<li>Block propagated for consensus</li>
+<li>Once block finalized, bundles executed on target chain</li>
+</ol>
+<h2 id="bundle-execution"><a class="header" href="#bundle-execution">Bundle Execution</a></h2>
+<p>After block finalization, bundles execute on the target chain:</p>
+<ol>
+<li>Validator constructs target chain transaction with bundle data</li>
+<li>MPC signs transaction using threshold signatures (FROST for Zcash)</li>
+<li>Transaction submitted to target chain</li>
+<li>Target chain processes transfer (Solana: mint zoZEC, Zcash: create shielded output)</li>
+<li>Receipt generated linking source tx → target tx</li>
+</ol>
+<p><strong>Chain-specific limits:</strong></p>
+<ul>
+<li>Solana: Batch up to 10 recipients per transaction</li>
+<li>Zcash: Limited by available notes in orchard pool</li>
+</ul>
+<h2 id="failure-handling"><a class="header" href="#failure-handling">Failure Handling</a></h2>
+<p>Bundles may fail to complete for several reasons:</p>
+<h3 id="insufficient-signatures"><a class="header" href="#insufficient-signatures">Insufficient Signatures</a></h3>
+<ul>
+<li>Bundle remains in-progress if threshold not reached</li>
+<li>Persists across blocks until threshold met</li>
+<li>May be included in future block once signatures collected</li>
+</ul>
+<h3 id="execution-failure"><a class="header" href="#execution-failure">Execution Failure</a></h3>
+<ul>
+<li>Target chain rejects transaction (insufficient funds, invalid recipient, etc.)</li>
+<li>Bundle marked as unresolved</li>
+<li>Validators may retry in future block</li>
+<li>Dispute mechanism (planned) allows challenging failed bundles</li>
+</ul>
+<h3 id="invalid-bundle"><a class="header" href="#invalid-bundle">Invalid Bundle</a></h3>
+<ul>
+<li>Detected during verification phase</li>
+<li>Rejected before mempool queuing</li>
+<li>Never reaches signature collection</li>
+<li>Malicious bundler may be slashed (future)</li>
+</ul>
+<h2 id="security-properties"><a class="header" href="#security-properties">Security Properties</a></h2>
+<p>The bundling process ensures:</p>
+<ol>
+<li><strong>Trustless verification</strong>: Every validator independently verifies source chain events via collectors</li>
+<li><strong>Threshold security</strong>: 2/3 consensus required, tolerates up to 1/3 Byzantine validators</li>
+<li><strong>No single point of failure</strong>: Distributed collectors, no centralized oracle</li>
+<li><strong>Censorship resistance</strong>: Any validator can propose bundles, leader cannot censor</li>
+<li><strong>Execution atomicity</strong>: All requests in bundle execute together or none execute</li>
+</ol>
+<h2 id="performance-considerations"><a class="header" href="#performance-considerations">Performance Considerations</a></h2>
+<h3 id="batch-efficiency"><a class="header" href="#batch-efficiency">Batch Efficiency</a></h3>
+<ul>
+<li>Solana: 10 requests per bundle reduces transaction count 10x</li>
+<li>Zcash: Variable bundle size based on orchard pool state</li>
+<li>Larger batches reduce per-request overhead</li>
+</ul>
+<h3 id="latency"><a class="header" href="#latency">Latency</a></h3>
+<p>Bundle processing time:</p>
+<ol>
+<li>Collection: ~1 block confirmation (Zcash: ~75s, Solana: ~400ms)</li>
+<li>Bundling + signing: ~1-2 zoshBFT rounds</li>
+<li>Block inclusion: Next block slot</li>
+<li>Execution: Target chain confirmation time</li>
+</ol>
+<p>Total latency typically 2-5 minutes depending on chain confirmations.</p>
+<h3 id="throughput"><a class="header" href="#throughput">Throughput</a></h3>
+<p>Limited by:</p>
+<ul>
+<li>Target chain transaction size (Solana: 10 per bundle)</li>
+<li>Source chain note availability (Zcash: depends on orchard pool)</li>
+<li>Validator signature speed (Ed25519 signing: ~50k/sec per validator)</li>
+</ul>
+<h2 id="related-documentation"><a class="header" href="#related-documentation">Related Documentation</a></h2>
+<ul>
+<li><a href="#collectors">Collectors</a>: Off-chain monitoring infrastructure</li>
+<li><a href="#mempool">MemPool</a>: Bundle state management and packing</li>
+<li><a href="#network">Network</a>: QUIC-based bundle propagation</li>
+<li><a href="#transaction">Transaction</a>: Bridge request and receipt structure</li>
+<li><a href="#block">Block</a>: Block production and extrinsic inclusion</li>
+</ul>
+<div style="break-before: page; page-break-before: always;"></div>
+<h1 id="chain-state"><a class="header" href="#chain-state">Chain State</a></h1>
+<p>The Zosh chain state maintains a cryptographic commitment to all on-chain data and consensus state. Each block header contains commitments to both the current state and the historical transaction accumulator.</p>
+<h2 id="state-root"><a class="header" href="#state-root">State Root</a></h2>
+<p>The state root is a Merkle root commitment to the current chain state, including:</p>
+<ul>
+<li><strong>BFT consensus state</strong>: Validator set, threshold, and randomness series</li>
+<li><strong>Present block head</strong>: Current slot height and block hash</li>
+<li><strong>Accumulator</strong>: Historical transaction accumulation root</li>
+</ul>
+<p>The state root is validated during block import to ensure continuity. Each new block must reference the correct parent state root, preventing forks from diverging state.</p>
+<h2 id="accumulator"><a class="header" href="#accumulator">Accumulator</a></h2>
+<p>The accumulator provides a cumulative cryptographic commitment to all processed transactions since genesis. It enables efficient verification that a transaction was included in the chain history without replaying the entire chain.</p>
+<p><strong>Accumulation process:</strong></p>
+<ol>
+<li>Start with the previous accumulator hash</li>
+<li>Concatenate all transaction IDs from the current block</li>
+<li>Hash the combined data to produce the new accumulator</li>
+</ol>
+<p>The accumulator hash is included in the block header and validated during import. Invalid accumulator values cause block rejection, ensuring transaction integrity across the chain.</p>
+<h2 id="state-validation"><a class="header" href="#state-validation">State Validation</a></h2>
+<p>When importing a block, validators verify:</p>
+<ol>
+<li><strong>State root match</strong>: Block’s parent state root equals current storage root</li>
+<li><strong>Accumulator continuity</strong>: New accumulator correctly extends previous accumulator</li>
+<li><strong>Vote threshold</strong>: Sufficient validator signatures (2/3 consensus)</li>
+<li><strong>Extrinsic root</strong>: Merkle root matches included transactions</li>
+</ol>
+<p>Failed validation results in block rejection, maintaining chain integrity and preventing invalid state transitions.</p>
+<h2 id="storage"><a class="header" href="#storage">Storage</a></h2>
+<p>The state is persisted using a key-value storage backend with atomic commits:</p>
+<ul>
+<li><strong>BFT state</strong>: Serialized validator set and consensus parameters</li>
+<li><strong>Present head</strong>: Current block slot and hash</li>
+<li><strong>Accumulator</strong>: Latest transaction accumulation root</li>
+<li><strong>Blocks</strong>: Full block data indexed by hash</li>
+<li><strong>Transactions</strong>: Individual transaction IDs for lookups</li>
+</ul>
+<p>State updates are atomic to prevent corruption from crashes or network failures during block import.</p>
+<div style="break-before: page; page-break-before: always;"></div>
+<h1 id="mempool"><a class="header" href="#mempool">MemPool</a></h1>
+<p>The mempool manages pending transactions before they are included in blocks. It handles two types of transactions: bridge bundles and receipts, coordinating signature aggregation for bridge operations.</p>
+<h2 id="architecture-1"><a class="header" href="#architecture-1">Architecture</a></h2>
+<p>The mempool consists of two components:</p>
+<ul>
+<li><strong>Bridge Pool</strong>: Manages bridge bundles with threshold signature aggregation</li>
+<li><strong>Receipt Queue</strong>: Stores receipt transactions awaiting inclusion</li>
+</ul>
+<h2 id="bridge-pool-states"><a class="header" href="#bridge-pool-states">Bridge Pool States</a></h2>
+<p>Bridge bundles progress through three states in the mempool:</p>
+<ol>
+<li><strong>Queued</strong>: Bundle submitted to mempool, awaiting validator signatures</li>
+<li><strong>In-Progress</strong>: Collecting validator signatures until threshold (2/3) is reached</li>
+<li><strong>Completed</strong>: Threshold met, ready for block inclusion</li>
+</ol>
+<h2 id="process-flow"><a class="header" href="#process-flow">Process Flow</a></h2>
+<pre class="mermaid">flowchart LR
+    A[Collectors&lt;br/&gt;detect events] --&gt; B[Create&lt;br/&gt;bundles]
+    B --&gt; C[Queue in&lt;br/&gt;mempool]
+    C --&gt; D[Validators&lt;br/&gt;sign]
+    D --&gt; E{Threshold?}
+    E --&gt;|No| D
+    E --&gt;|Yes| F[Completed]
+    F --&gt; G[Leader&lt;br/&gt;packs]
+    G --&gt; H[Execute on&lt;br/&gt;target chain]
+
+    style C fill:#4a5568,stroke:#718096,stroke-width:2px
+    style F fill:#2d3748,stroke:#48bb78,stroke-width:2px
+    style H fill:#2c5282,stroke:#63b3ed,stroke-width:2px
+</pre>
+
 <blockquote>
-<p>For the long-term plan, each of the nodes will be required to run</p>
-<ul>
-<li>a light client of solana, developed by us.</li>
-<li>a flyclient of zcash, developed by us.</li>
-</ul>
+<p>See <a href="#bundle">Bundle</a> for the complete end-to-end bundling workflow involving collectors, validators, network, and mempool.</p>
 </blockquote>
+<h2 id="signature-aggregation"><a class="header" href="#signature-aggregation">Signature Aggregation</a></h2>
+<p>The bridge pool aggregates threshold signatures before execution:</p>
+<ol>
+<li>Bundle submitted with <code>bundle.queue([bundles])</code></li>
+<li>Validators independently verify and sign the bundle hash</li>
+<li>Signatures collected via <code>bundle.complete(bundle_hash, signature)</code></li>
+<li>When <code>signatures.len() &gt;= threshold</code>, bundle moves to completed state</li>
+<li>Leader includes completed bundles in next block</li>
+</ol>
+<p><strong>Threshold:</strong> 2/3 of validator signatures required (e.g., 3 of 4 validators, 7 of 10 validators)</p>
+<h2 id="receipt-queue"><a class="header" href="#receipt-queue">Receipt Queue</a></h2>
+<p>Receipts are simpler than bridge bundles - they don’t require signature aggregation. When a bridge bundle executes successfully on the target chain, validators generate receipts and add them directly to the queue.</p>
+<p>Receipts are drained when the leader packs the mempool into a block extrinsic.</p>
+<h2 id="packing"><a class="header" href="#packing">Packing</a></h2>
+<p>When a validator becomes the block leader, they pack the mempool:</p>
+<pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>extrinsic = mempool.pack()
+// Returns:
+// - bridge: All completed bundles (cleared from completed map)
+// - receipts: All queued receipts (drained from queue)
+<span class="boring">}</span></code></pre>
+<p>The pack operation is atomic - all completed transactions are included in the block or none are.</p>
+<h2 id="validation-1"><a class="header" href="#validation-1">Validation</a></h2>
+<p>Before adding to mempool, validators verify:</p>
+<ul>
+<li><strong>Bridge bundles</strong>: Valid source chain transaction, correct target chain</li>
+<li><strong>Receipts</strong>: Matching anchor transaction exists, valid target chain confirmation</li>
+</ul>
+<p>Invalid transactions are rejected and never enter the mempool.</p>
+<div style="break-before: page; page-break-before: always;"></div>
+<h1 id="network"><a class="header" href="#network">Network</a></h1>
+<p>The Zosh network layer enables P2P communication between validators using QUIC protocol for efficient, secure message exchange. The network facilitates consensus operations, block propagation, and bridge transaction coordination.</p>
+<h2 id="transport"><a class="header" href="#transport">Transport</a></h2>
+<p>Zosh uses QUIC (Quick UDP Internet Connections) for P2P networking:</p>
+<ul>
+<li><strong>Low latency</strong>: UDP-based with multiplexing and 0-RTT connection establishment</li>
+<li><strong>Built-in encryption</strong>: TLS 1.3 by default, securing all validator communication</li>
+<li><strong>Connection migration</strong>: Maintains connections across network changes</li>
+<li><strong>Stream multiplexing</strong>: Multiple concurrent message streams without head-of-line blocking</li>
+</ul>
+<p>QUIC is well-suited for BFT consensus where rapid message exchange is critical for achieving 2/3 validator agreement.</p>
+<h2 id="message-types"><a class="header" href="#message-types">Message Types</a></h2>
+<p>The network layer handles several types of messages:</p>
+<h3 id="block-gossip"><a class="header" href="#block-gossip">Block Gossip</a></h3>
+<p>Validators propagate new blocks to the network:</p>
+<ol>
+<li>Leader authors a new block</li>
+<li>Leader broadcasts block to all validators</li>
+<li>Validators verify and sign the block</li>
+<li>Signatures gossiped back to leader and peers</li>
+<li>Once 2/3 threshold reached, block is finalized</li>
+</ol>
+<p>Block gossip ensures all validators maintain synchronized chain state.</p>
+<h3 id="round-signing"><a class="header" href="#round-signing">Round Signing</a></h3>
+<p>During consensus rounds, validators exchange signatures:</p>
+<ul>
+<li><strong>Vote messages</strong>: Validators sign block hashes and broadcast votes</li>
+<li><strong>Signature aggregation</strong>: Network collects votes until 2/3 threshold</li>
+<li><strong>QC formation</strong>: Quorum certificate formed when threshold met</li>
+</ul>
+<p>Round signing enables the zoshBFT consensus to achieve finality.</p>
+<h3 id="bridge-bundle-coordination"><a class="header" href="#bridge-bundle-coordination">Bridge Bundle Coordination</a></h3>
+<p>Validators coordinate bridge bundle creation and signing across the network. See <a href="#bundle">Bundle</a> for the complete bundling workflow.</p>
+<h3 id="state-synchronization"><a class="header" href="#state-synchronization">State Synchronization</a></h3>
+<p>New validators or validators recovering from downtime sync state:</p>
+<ul>
+<li>Request missing blocks from peers</li>
+<li>Download chain state snapshots</li>
+<li>Verify state transitions and accumulator</li>
+</ul>
+<h2 id="peer-discovery"><a class="header" href="#peer-discovery">Peer Discovery</a></h2>
+<p>Validators discover and maintain connections to peers:</p>
+<ul>
+<li><strong>Bootstrap nodes</strong>: Initial peer set from configuration</li>
+<li><strong>Peer exchange</strong>: Validators share known peer addresses</li>
+<li><strong>Connection management</strong>: Maintain stable connections to subset of network</li>
+</ul>
+<h2 id="security"><a class="header" href="#security">Security</a></h2>
+<p>Network security mechanisms:</p>
+<ul>
+<li><strong>TLS 1.3 encryption</strong>: All QUIC connections encrypted by default</li>
+<li><strong>Peer authentication</strong>: Validators verify peer identities using Ed25519 keys</li>
+<li><strong>Message validation</strong>: Invalid messages rejected before processing</li>
+<li><strong>DoS protection</strong>: Rate limiting and connection quotas</li>
+</ul>
+<p>The network layer ensures validators can securely coordinate consensus and bridge operations without centralized infrastructure.</p>
+<div style="break-before: page; page-break-before: always;"></div>
+<h1 id="transaction"><a class="header" href="#transaction">Transaction</a></h1>
+<p>Zosh processes three types of transactions: Bridge requests, Receipts, and Disputes.</p>
+<h2 id="bridge"><a class="header" href="#bridge">Bridge</a></h2>
+<p>Bridge transactions represent requests to move assets between Solana and Zcash. Collectors detect these requests when users lock ZEC on Zcash or burn zoZEC on Solana.</p>
+<p>Validators aggregate multiple bridge requests into bundles for batch processing. Each bundle requires threshold signatures from 2/3 of validators before execution on the target chain.</p>
+<p><strong>Limits:</strong></p>
+<ul>
+<li>Solana bundles: Maximum 10 requests per bundle</li>
+<li>Zcash bundles: Limited by available notes in the orchard pool</li>
+</ul>
+<h2 id="receipt"><a class="header" href="#receipt">Receipt</a></h2>
+<p>Receipts are confirmation transactions that link source and target chain operations. When validators successfully execute a bridge bundle, they generate receipts proving the cross-chain transfer completed.</p>
+<p>Receipts allow users to verify their bridge operations by matching the original transaction ID with the confirmation transaction on the target chain.</p>
+<h2 id="dispute"><a class="header" href="#dispute">Dispute</a></h2>
+<blockquote>
+<p><strong>Status</strong>: Not yet implemented</p>
+</blockquote>
+<p>Disputes allow validators to challenge bridge operations that failed or executed incorrectly. When a bridge request doesn’t complete successfully, validators can submit a dispute to trigger re-verification by other validators.</p>
+<p>Invalid disputes may result in slashing of the challenger’s staked SOL, preventing spam attacks on the dispute mechanism.</p>
+<h2 id="transaction-flow"><a class="header" href="#transaction-flow">Transaction Flow</a></h2>
+<ol>
+<li>Collector detects lock/burn on source chain</li>
+<li>Validators aggregate requests in mempool</li>
+<li>2/3 validators sign bundle with threshold signatures</li>
+<li>Bundle executed on target chain</li>
+<li>Receipt generated and propagated to network</li>
+<li>Dispute submitted if execution fails (planned feature)</li>
+</ol>
 <div style="break-before: page; page-break-before: always;"></div>
 <h1 id="zoshbft"><a class="header" href="#zoshbft">ZoshBFT</a></h1>
-<p>ZoshBFT is based on PoS with an optimized <a href="https://arxiv.org/abs/2107.04947">hotstuff</a> implementation, shortly:</p>
-<ul>
-<li>No fixed block time</li>
-<li>VRF for randomizing the leader selection</li>
-<li>Threshold signatures for the block commitment</li>
-<li>Timeout conditions for force rotating leaders</li>
-<li>Key refreshing for the orchard package</li>
-</ul>
 <blockquote>
-<p>We will upgrade zorch to a PoS network after getting the product market fit.</p>
+<p>NOTE: The consensus design is still under research &amp; confirmation, could be changed in the future.</p>
 </blockquote>
-<h2 id="dual-blocks"><a class="header" href="#dual-blocks">Dual blocks</a></h2>
-<p>Some of the multi-round signatures are processed across blocks, for fast confirmation
-cases, we’ll have dispute transactions to update them, users can cancel their bridge
-requests as well if they want, and such kind of transactions will have the priority
-to be processed.</p>
+<p>ZoshBFT is Zosh’s BFT consensus algorithm combining <a href="https://arxiv.org/abs/1803.05069">HotStuff</a> for BFT consensus with <a href="https://wiki.polkadot.network/docs/learn-safrole">Safrole</a> (from Polkadot JAM) for VRF-based leader selection. The consensus achieves deterministic finality through 2/3 validator agreement with epoch-based block production.</p>
+<h2 id="design-principles"><a class="header" href="#design-principles">Design Principles</a></h2>
+<ul>
+<li><strong>No fixed block time</strong>: Blocks produced when transactions ready or timeout reached</li>
+<li><strong>VRF leader selection</strong>: Randomized, unpredictable leader rotation</li>
+<li><strong>Threshold signatures</strong>: 2/3 validator consensus for finality</li>
+<li><strong>Timeout-based rotation</strong>: Automatic leader rotation on stalls</li>
+</ul>
+<h2 id="architecture-2"><a class="header" href="#architecture-2">Architecture</a></h2>
+<pre class="mermaid">flowchart LR
+    A[Leader Selected&lt;br/&gt;via VRF] --&gt; B[Propose Block]
+    B --&gt; C[Validators&lt;br/&gt;Verify]
+    C --&gt; D{Valid?}
+    D --&gt;|Yes| E[Broadcast Vote]
+    D --&gt;|No| F[Timeout]
+    E --&gt; G{2/3 Threshold?}
+    G --&gt;|Not Yet| H[Wait]
+    G --&gt;|Reached| I[Finalize Block]
+    H --&gt; G
+    F --&gt; J[Next Slot]
+    I --&gt; J
+
+    style I fill:#2d3748,stroke:#48bb78,stroke-width:2px
+</pre>
+
+<h2 id="consensus-state"><a class="header" href="#consensus-state">Consensus State</a></h2>
+<p>The BFT state maintains:</p>
+<ul>
+<li><strong>Validators</strong>: Set of Ed25519 public keys</li>
+<li><strong>Threshold</strong>: Number of signatures required (2/3 of validator count)</li>
+<li><strong>Series</strong>: Randomness series for VRF leader selection</li>
+</ul>
+<p>The state evolves through validator set updates (PoS staking/unstaking in future).</p>
+<h2 id="leader-selection"><a class="header" href="#leader-selection">Leader Selection</a></h2>
+<p>Leaders are selected via VRF (Verifiable Random Function) using an epoch-based mechanism inspired by Safrole:</p>
+<p><strong>Epoch System:</strong></p>
+<ul>
+<li>Leader assignments are fixed for the entire epoch</li>
+<li>Leaders determined in advance during the previous epoch</li>
+<li>VRF tickets submitted by validators to compete for leader slots</li>
+<li>Each slot in the epoch has a predetermined leader</li>
+</ul>
+<p><strong>VRF Process:</strong></p>
+<ol>
+<li>Validators submit VRF tickets during epoch N for epoch N+1</li>
+<li>VRF outputs are evaluated - smallest outputs win leader slots</li>
+<li>Leader schedule for epoch N+1 is finalized at end of epoch N</li>
+<li>During epoch N+1, assigned leaders produce blocks in their designated slots</li>
+<li>VRF output is verifiable by all validators</li>
+</ol>
+<p><strong>Security:</strong></p>
+<ul>
+<li>Leaders predetermined but verifiable prevents targeted DoS</li>
+<li>VRF ensures randomness and fairness in selection</li>
+<li>No validator can manipulate future epoch assignments</li>
+<li>Epoch-based system allows network to prepare for upcoming leaders</li>
+</ul>
+<h2 id="consensus-round"><a class="header" href="#consensus-round">Consensus Round</a></h2>
+<pre class="mermaid">flowchart LR
+    A[Slot N&lt;br/&gt;Assigned Leader] --&gt; B{Leader&lt;br/&gt;Online?}
+    B --&gt;|Yes| C[Propose Block]
+    B --&gt;|No| D[Timeout]
+    C --&gt; E[Validators&lt;br/&gt;Sign]
+    E --&gt; F{2/3?}
+    F --&gt;|Yes| G[Finalize]
+    F --&gt;|No| D
+    D --&gt; H[Slot N+1]
+    G --&gt; H
+
+    style G fill:#2d3748,stroke:#48bb78,stroke-width:2px
+</pre>
+
+<h3 id="round-steps"><a class="header" href="#round-steps">Round Steps</a></h3>
+<ol>
+<li><strong>Slot begins</strong>: Predetermined leader (from epoch VRF schedule) assigned to slot</li>
+<li><strong>Block proposal</strong>: If leader online, packs mempool and proposes block</li>
+<li><strong>Validation</strong>: Validators verify block (parent, state root, accumulator, extrinsic)</li>
+<li><strong>Voting</strong>: Validators broadcast Ed25519 signatures</li>
+<li><strong>Finalization</strong>: Once 2/3 threshold reached, block finalized</li>
+<li><strong>Timeout handling</strong>: If leader offline or 2/3 not reached, timeout expires and skip to next slot</li>
+</ol>
+<p><strong>Leader Failure Handling:</strong></p>
+<ul>
+<li>Leader offline: Timeout expires, slot skipped, next slot’s leader produces block</li>
+<li>Invalid block: Validators reject, timeout expires, move to next slot</li>
+<li>Network partition: Timeout expires if 2/3 signatures not collected</li>
+<li>Chain continues with next slot’s predetermined leader from epoch schedule</li>
+</ul>
+<h2 id="finality-1"><a class="header" href="#finality-1">Finality</a></h2>
+<p>ZoshBFT provides deterministic finality through threshold signatures:</p>
+<ul>
+<li>Blocks are only committed once 2/3 validator signatures are collected</li>
+<li>Deterministically final - cannot be reverted</li>
+<li>2/3 validator signatures prevent rollbacks</li>
+<li>All state transitions committed atomically</li>
+</ul>
+<p><strong>Finality Rule:</strong> A block achieves finality immediately upon receiving 2/3 validator signatures.</p>
+<h2 id="timeouts-and-liveness"><a class="header" href="#timeouts-and-liveness">Timeouts and Liveness</a></h2>
+<p>To prevent indefinite stalls, ZoshBFT uses timeout-based leader rotation:</p>
+<p><strong>Timeout Conditions:</strong></p>
+<ul>
+<li>Leader fails to propose block within timeout</li>
+<li>Proposed block is invalid</li>
+<li>Network partition prevents signature aggregation</li>
+</ul>
+<p><strong>Timeout Behavior:</strong></p>
+<ol>
+<li>Validators wait for timeout period</li>
+<li>On timeout, validators move to next slot</li>
+<li>Next slot’s predetermined leader (from epoch schedule) takes over</li>
+<li>New leader proposes block extending current chain</li>
+</ol>
+<p><strong>Liveness Guarantee:</strong> As long as 2/3 validators are online and network connected, chain progresses by achieving 2/3 consensus on each block.</p>
+<h2 id="safety-properties"><a class="header" href="#safety-properties">Safety Properties</a></h2>
+<p>ZoshBFT ensures:</p>
+<ol>
+<li><strong>Agreement</strong>: All honest validators agree on finalized blocks</li>
+<li><strong>Validity</strong>: Only valid state transitions are finalized</li>
+<li><strong>Integrity</strong>: Blocks cannot be altered after finalization</li>
+<li><strong>Liveness</strong>: Chain progresses as long as 2/3 validators online</li>
+</ol>
+<p><strong>Byzantine Tolerance:</strong> Tolerates up to 1/3 Byzantine (malicious or faulty) validators without compromising safety or liveness.</p>
+<h2 id="performance-characteristics"><a class="header" href="#performance-characteristics">Performance Characteristics</a></h2>
+<p><strong>Block Latency:</strong></p>
+<ul>
+<li>Proposal: ~100ms (block authoring + propagation)</li>
+<li>Validation: ~50ms (verification + signature)</li>
+<li>Signature aggregation: ~500ms - 2s (network-dependent)</li>
+<li>Total: ~650ms - 2.15s per block</li>
+</ul>
+<p><strong>Throughput:</strong></p>
+<ul>
+<li>Limited by transaction validation speed</li>
+<li>Bridge bundles: 10 Solana transfers per bundle</li>
+<li>Block size: Configurable based on network capacity</li>
+</ul>
+<h2 id="future-proof-of-stake"><a class="header" href="#future-proof-of-stake">Future: Proof of Stake</a></h2>
+<blockquote>
+<p><strong>Current Status:</strong> PoA (Proof of Authority) with fixed validator set</p>
+</blockquote>
+<p><strong>Planned PoS Migration:</strong></p>
+<ul>
+<li>Validators stake SOL to participate</li>
+<li>Slashing for malicious behavior (invalid blocks, double-signing)</li>
+<li>Rewards from transaction fees</li>
+<li>Dynamic validator set updates</li>
+<li>VRF already supports PoS transition</li>
+</ul>
+<p>See <a href="#validators">Validators</a> for economics and staking details.</p>
+<h2 id="comparison-to-base-protocols"><a class="header" href="#comparison-to-base-protocols">Comparison to Base Protocols</a></h2>
+<div class="table-wrapper">
+<table>
+<thead>
+<tr><th>Feature</th><th>HotStuff</th><th>Safrole</th><th>ZoshBFT</th></tr>
+</thead>
+<tbody>
+<tr><td>Consensus</td><td>3-phase BFT</td><td>BABE-based</td><td>HotStuff-inspired</td></tr>
+<tr><td>Leader Selection</td><td>Round-robin</td><td>VRF tickets (ring VRF)</td><td>VRF tickets (epoch-based)</td></tr>
+<tr><td>Block Time</td><td>Dynamic (view-based)</td><td>Constant (6s in JAM)</td><td>Dynamic (slot-based)</td></tr>
+<tr><td>Finality</td><td>After 3 phases</td><td>GRANDPA (separate)</td><td>Immediate with 2/3</td></tr>
+<tr><td>Signatures</td><td>Threshold or individual</td><td>Ring signatures</td><td>Threshold (Ed25519)</td></tr>
+<tr><td>Liveness</td><td>View change protocol</td><td>Fork-free by design</td><td>Timeout-based rotation</td></tr>
+</tbody>
+</table>
+</div>
+<p><strong>Innovations:</strong></p>
+<ul>
+<li>Combines HotStuff’s linear consensus with Safrole’s epoch-based VRF leader selection</li>
+<li>Simplified single-phase voting reduces latency compared to multi-phase HotStuff</li>
+<li>Epoch-based leader scheduling prevents targeted DoS while maintaining verifiability</li>
+<li>Threshold signatures optimized for bridge operations with MPC integration</li>
+</ul>
+<h2 id="related-documentation-1"><a class="header" href="#related-documentation-1">Related Documentation</a></h2>
+<ul>
+<li><a href="#block">Block</a>: Block structure and validation</li>
+<li><a href="#network">Network</a>: Signature propagation and gossip</li>
+<li><a href="#validators">Validators</a>: Validator operations and economics</li>
+</ul>
+<div style="break-before: page; page-break-before: always;"></div>
+<h1 id="deployments"><a class="header" href="#deployments">Deployments</a></h1>
+<div style="break-before: page; page-break-before: always;"></div>
+<h1 id="node-cli"><a class="header" href="#node-cli">Node CLI</a></h1>
+<p>Command-line interface for running the zosh node (<code>zoshd</code>).</p>
+<h2 id="installation"><a class="header" href="#installation">Installation</a></h2>
+<pre><code class="language-bash"># Build from source
+cargo build --release -p zosh-node
+
+# Binary location
+./target/release/zoshd
+</code></pre>
+<h2 id="commands"><a class="header" href="#commands">Commands</a></h2>
+<h3 id="dev---development-mode"><a class="header" href="#dev---development-mode"><code>dev</code> - Development Mode</a></h3>
+<p>Run a development node with default configuration.</p>
+<pre><code class="language-bash"># Start dev node (default port 1439)
+zoshd dev
+
+# Custom address
+zoshd dev --address 0.0.0.0:8080
+
+# Short flag
+zoshd dev -a 0.0.0.0:8080
+</code></pre>
+<h3 id="verbosity"><a class="header" href="#verbosity">Verbosity</a></h3>
+<p>Control log output level:</p>
+<pre><code class="language-bash"># Info level (default)
+zoshd dev
+
+# Debug level
+zoshd dev -v
+
+# Trace level (maximum verbosity)
+zoshd dev -vv
+</code></pre>
+<p><strong>Verbosity levels:</strong></p>
+<ul>
+<li><code>0</code> (default): Info</li>
+<li><code>1</code> (<code>-v</code>): Debug</li>
+<li><code>2</code> (<code>-vv</code>): Trace</li>
+</ul>
+<p>Alternatively, use <code>RUST_LOG</code> environment variable:</p>
+<pre><code class="language-bash">RUST_LOG=debug zoshd dev
+</code></pre>
+<h2 id="configuration"><a class="header" href="#configuration">Configuration</a></h2>
+<h3 id="config-directory"><a class="header" href="#config-directory">Config Directory</a></h3>
+<p><code>~/.config/zosh/</code></p>
+<p>Configuration files for:</p>
+<ul>
+<li>Solana RPC endpoint</li>
+<li>Zcash lightwalletd server</li>
+<li>Bridge viewing keys</li>
+<li>Network parameters</li>
+</ul>
+<h3 id="cache-directory"><a class="header" href="#cache-directory">Cache Directory</a></h3>
+<p><code>~/.cache/zosh/</code></p>
+<p>Cached data for:</p>
+<ul>
+<li>Collector blacklist</li>
+<li>Processed transactions</li>
+<li>Light wallet state</li>
+</ul>
+<h3 id="solana-keypair"><a class="header" href="#solana-keypair">Solana Keypair</a></h3>
+<p><code>~/.config/solana/id.json</code></p>
+<p>Required for:</p>
+<ul>
+<li>Signing Solana transactions</li>
+<li>MPC threshold operations</li>
+</ul>
+<h2 id="subcommands"><a class="header" href="#subcommands">Subcommands</a></h2>
+<h3 id="solana"><a class="header" href="#solana"><code>solana</code></a></h3>
+<p>Solana-specific operations (for advanced users):</p>
+<pre><code class="language-bash">zoshd solana &lt;subcommand&gt;
+</code></pre>
+<h3 id="zcash"><a class="header" href="#zcash"><code>zcash</code></a></h3>
+<p>Zcash-specific operations (for advanced users):</p>
+<pre><code class="language-bash">zoshd zcash &lt;subcommand&gt;
+</code></pre>
+<blockquote>
+<p><strong>Note:</strong> Subcommands are for development and testing. Normal operation uses <code>dev</code> mode.</p>
+</blockquote>
+<h2 id="port-configuration"><a class="header" href="#port-configuration">Port Configuration</a></h2>
+<p><strong>Default ports:</strong></p>
+<ul>
+<li>Node P2P: 1439</li>
+<li>RPC WebSocket: 9944 (default, configurable)</li>
+</ul>
+<h2 id="examples"><a class="header" href="#examples">Examples</a></h2>
+<pre><code class="language-bash"># Basic development node
+zoshd dev
+
+# Custom port with debug logging
+zoshd dev -a 0.0.0.0:8080 -v
+
+# Maximum verbosity for troubleshooting
+zoshd dev -vv
+</code></pre>
+<h2 id="version-information"><a class="header" href="#version-information">Version Information</a></h2>
+<pre><code class="language-bash"># Show version, branch, commit hash, build time
+zoshd --version
+</code></pre>
+<div style="break-before: page; page-break-before: always;"></div>
+<h1 id="rpc-api"><a class="header" href="#rpc-api">RPC API</a></h1>
+<p>JSON-RPC WebSocket API for querying zosh node state and subscribing to events.</p>
+<h2 id="connection"><a class="header" href="#connection">Connection</a></h2>
+<p><strong>Default endpoint:</strong> <code>ws://localhost:9944</code></p>
+<pre><code class="language-javascript">const WebSocket = require('ws');
+const ws = new WebSocket('ws://localhost:9944');
+</code></pre>
+<h2 id="methods"><a class="header" href="#methods">Methods</a></h2>
+<p>All methods are under the <code>zosh</code> namespace.</p>
+<h3 id="zosh_chaininfo"><a class="header" href="#zosh_chaininfo"><code>zosh_chainInfo</code></a></h3>
+<p>Get current chain state including validators and BFT configuration.</p>
+<p><strong>Request:</strong></p>
+<pre><code class="language-json">{
+  "jsonrpc": "2.0",
+  "method": "zosh_chainInfo",
+  "params": [],
+  "id": 1
+}
+</code></pre>
+<p><strong>Response:</strong></p>
+<pre><code class="language-json">{
+  "jsonrpc": "2.0",
+  "result": {
+    "validators": ["&lt;pubkey1&gt;", "&lt;pubkey2&gt;", ...],
+    "threshold": 2,
+    "height": 12345,
+    "...": "..."
+  },
+  "id": 1
+}
+</code></pre>
+<p><strong>Returns:</strong></p>
+<ul>
+<li><code>validators</code>: List of validator Ed25519 public keys</li>
+<li><code>threshold</code>: Number of validators required for BFT consensus</li>
+<li><code>height</code>: Current block height</li>
+<li>Additional state data</li>
+</ul>
+<h3 id="zosh_subscribeblock"><a class="header" href="#zosh_subscribeblock"><code>zosh_subscribeBlock</code></a></h3>
+<p>Subscribe to new block events.</p>
+<p><strong>Request:</strong></p>
+<pre><code class="language-json">{
+  "jsonrpc": "2.0",
+  "method": "zosh_subscribeBlock",
+  "params": [],
+  "id": 1
+}
+</code></pre>
+<p><strong>Response (initial):</strong></p>
+<pre><code class="language-json">{
+  "jsonrpc": "2.0",
+  "result": "&lt;subscription_id&gt;",
+  "id": 1
+}
+</code></pre>
+<p><strong>Notifications:</strong></p>
+<pre><code class="language-json">{
+  "jsonrpc": "2.0",
+  "method": "zosh_subscribeBlock",
+  "params": {
+    "subscription": "&lt;subscription_id&gt;",
+    "result": {
+      "block": "&lt;hex_encoded_block_data&gt;"
+    }
+  }
+}
+</code></pre>
+<p><strong>Block data:</strong></p>
+<ul>
+<li>Encoded in postcard format (binary)</li>
+<li>Contains: header, extrinsics, BFT votes</li>
+</ul>
+<h3 id="zosh_subscribetransaction"><a class="header" href="#zosh_subscribetransaction"><code>zosh_subscribeTransaction</code></a></h3>
+<p>Subscribe to a specific transaction status.</p>
+<p><strong>Request:</strong></p>
+<pre><code class="language-json">{
+  "jsonrpc": "2.0",
+  "method": "zosh_subscribeTransaction",
+  "params": ["&lt;txid_hex&gt;"],
+  "id": 1
+}
+</code></pre>
+<p><strong>Response (initial):</strong></p>
+<pre><code class="language-json">{
+  "jsonrpc": "2.0",
+  "result": "&lt;subscription_id&gt;",
+  "id": 1
+}
+</code></pre>
+<p><strong>Notifications:</strong></p>
+<pre><code class="language-json">{
+  "jsonrpc": "2.0",
+  "method": "zosh_subscribeTransaction",
+  "params": {
+    "subscription": "&lt;subscription_id&gt;",
+    "result": "&lt;tx_status_bytes&gt;"
+  }
+}
+</code></pre>
+<h2 id="error-handling"><a class="header" href="#error-handling">Error Handling</a></h2>
+<p>Errors follow JSON-RPC 2.0 specification:</p>
+<pre><code class="language-json">{
+  "jsonrpc": "2.0",
+  "error": {
+    "code": -32600,
+    "message": "Invalid request"
+  },
+  "id": 1
+}
+</code></pre>
+<h2 id="usage"><a class="header" href="#usage">Usage</a></h2>
+<p>The RPC API is primarily used by:</p>
+<ul>
+<li>UI service for block indexing</li>
+<li>Collectors for submitting bridge requests</li>
+<li>External monitoring tools</li>
+</ul>
+<p>See the UI service implementation for a complete example.</p>
+<div style="break-before: page; page-break-before: always;"></div>
+<h1 id="program-api"><a class="header" href="#program-api">Program API</a></h1>
+<p>Solana program interface for the Zosh bridge (Anchor framework).</p>
+<p><strong>Program ID:</strong> <code>zosh4npemTuTj18MHgbn7NRihzMkTfgswTyP34LPaVx</code></p>
+<h2 id="instructions"><a class="header" href="#instructions">Instructions</a></h2>
+<h3 id="initialize"><a class="header" href="#initialize"><code>initialize</code></a></h3>
+<p>Initialize the bridge state and create zoZEC SPL token mint.</p>
+<p><strong>Authority required:</strong> Program deployer (one-time setup)</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>mpc: Pubkey</code> - MPC public key for validator threshold signing</li>
+</ul>
+<p><strong>Accounts:</strong></p>
+<ul>
+<li>Creates <code>bridge_state</code> PDA</li>
+<li>Creates <code>zec_mint</code> PDA (8 decimals)</li>
+</ul>
+<p><strong>Example:</strong></p>
+<pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>initialize(
+    mpc: Pubkey
+)
+<span class="boring">}</span></code></pre>
+<h3 id="metadata"><a class="header" href="#metadata"><code>metadata</code></a></h3>
+<p>Update zoZEC token metadata (name, symbol, URI).</p>
+<p><strong>Authority required:</strong> Bridge authority only</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>name: String</code> - Token name</li>
+<li><code>symbol: String</code> - Token symbol (e.g., “zoZEC”)</li>
+<li><code>uri: String</code> - Metadata URI</li>
+</ul>
+<h3 id="mint"><a class="header" href="#mint"><code>mint</code></a></h3>
+<p>Mint zoZEC to recipients (threshold action, validator-only).</p>
+<p><strong>Authority required:</strong> MPC signature (validators)</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>mints: Vec&lt;MintEntry&gt;</code> - Batch of mint operations (max 10)</li>
+</ul>
+<p><strong>MintEntry structure:</strong></p>
+<pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>struct MintEntry {
+    recipient: Pubkey,  // Solana address to receive zoZEC
+    amount: u64,        // Amount in lamports (8 decimals)
+}
+<span class="boring">}</span></code></pre>
+<p><strong>Features:</strong></p>
+<ul>
+<li>Batch minting (up to 10 recipients per transaction)</li>
+<li>Automatic ATA creation if needed</li>
+<li>Emits <code>MintEvent</code> for each recipient</li>
+</ul>
+<p><strong>Requirements:</strong></p>
+<ul>
+<li>Transaction must be signed by MPC pubkey</li>
+<li>Validates all recipient addresses</li>
+</ul>
+<h3 id="burn"><a class="header" href="#burn"><code>burn</code></a></h3>
+<p>Burn zoZEC to bridge back to Zcash (public action).</p>
+<p><strong>Authority required:</strong> None (anyone can burn their own zoZEC)</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>amount: u64</code> - Amount to burn (8 decimals)</li>
+<li><code>zec_recipient: String</code> - Zcash orchard address (110 characters)</li>
+</ul>
+<p><strong>Requirements:</strong></p>
+<ul>
+<li>User must have sufficient zoZEC balance</li>
+<li>Zcash address must be valid orchard unified address (110 chars)</li>
+</ul>
+<p><strong>Emits:</strong></p>
+<ul>
+<li><code>BurnEvent</code> with sender, amount, and Zcash recipient</li>
+<li>Collectors watch for this event to trigger bridge process</li>
+</ul>
+<p><strong>Example:</strong></p>
+<pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>burn(
+    amount: 100_000_000,  // 1 ZEC (8 decimals)
+    zec_recipient: "utest1..."  // 110-char address
+)
+<span class="boring">}</span></code></pre>
+<h3 id="update_mpc"><a class="header" href="#update_mpc"><code>update_mpc</code></a></h3>
+<p>Update the MPC public key (threshold action, validator-only).</p>
+<p><strong>Authority required:</strong> Current MPC signature (validators)</p>
+<p><strong>Parameters:</strong></p>
+<ul>
+<li><code>mpc: Pubkey</code> - New MPC public key</li>
+</ul>
+<p><strong>Use case:</strong> Validator set rotation, key refresh</p>
+<h2 id="state-accounts"><a class="header" href="#state-accounts">State Accounts</a></h2>
+<h3 id="bridge_state"><a class="header" href="#bridge_state"><code>bridge_state</code></a></h3>
+<p>PDA storing bridge configuration.</p>
+<p><strong>Seeds:</strong> <code>["bridge-state"]</code></p>
+<p><strong>Fields:</strong></p>
+<ul>
+<li><code>authority: Pubkey</code> - Bridge authority (for metadata updates)</li>
+<li><code>mpc: Pubkey</code> - MPC public key (validator threshold signing)</li>
+<li><code>zec_mint: Pubkey</code> - zoZEC SPL token mint address</li>
+<li><code>bump: u8</code> - PDA bump seed</li>
+</ul>
+<h3 id="zec_mint"><a class="header" href="#zec_mint"><code>zec_mint</code></a></h3>
+<p>SPL token mint for zoZEC.</p>
+<p><strong>Seeds:</strong> <code>["zec-mint"]</code></p>
+<p><strong>Properties:</strong></p>
+<ul>
+<li>Decimals: 8 (same as Zcash)</li>
+<li>Mint authority: <code>bridge_state</code> PDA</li>
+<li>Freeze authority: None</li>
+</ul>
+<h2 id="events"><a class="header" href="#events">Events</a></h2>
+<h3 id="mintevent"><a class="header" href="#mintevent"><code>MintEvent</code></a></h3>
+<p>Emitted when zoZEC is minted.</p>
+<pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>struct MintEvent {
+    mints: Vec&lt;(Pubkey, u64)&gt;,  // (recipient, amount) pairs
+    timestamp: i64,
+}
+<span class="boring">}</span></code></pre>
+<h3 id="burnevent"><a class="header" href="#burnevent"><code>BurnEvent</code></a></h3>
+<p>Emitted when zoZEC is burned.</p>
+<pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>struct BurnEvent {
+    sender: Pubkey,
+    amount: u64,
+    zec_recipient: String,
+    timestamp: i64,
+}
+<span class="boring">}</span></code></pre>
+<h2 id="error-codes"><a class="header" href="#error-codes">Error Codes</a></h2>
+<ul>
+<li><code>InvalidMpcSigner</code> - Transaction not signed by MPC pubkey</li>
+<li><code>InvalidRecipient</code> - Invalid recipient address</li>
+<li><code>InvalidAmount</code> - Amount is zero or invalid</li>
+<li><code>InvalidMint</code> - Incorrect mint account</li>
+<li><code>InvalidBatchSize</code> - Batch size exceeds maximum (10)</li>
+<li><code>InvalidZcashAddress</code> - Zcash address invalid (must be 110 chars)</li>
+</ul>
+<h2 id="deployment"><a class="header" href="#deployment">Deployment</a></h2>
+<p><strong>Testnet (Devnet):</strong></p>
+<ul>
+<li>Program: <code>zosh4npemTuTj18MHgbn7NRihzMkTfgswTyP34LPaVx</code></li>
+<li>See <a href="#deployments">Addresses</a> for bridge state and mint addresses</li>
+</ul>
+<p><strong>Mainnet:</strong> Not yet deployed</p>
 
                     </main>
 

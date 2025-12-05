@@ -3,7 +3,7 @@
     <head>
         <!-- Book generated using mdBook -->
         <meta charset="UTF-8">
-        <title>Overview - Zosh - The trustless privacy bridge</title>
+        <title>Validators - Zosh - The trustless privacy bridge</title>
 
 
         <!-- Custom HTML head -->
@@ -174,58 +174,72 @@
 
                 <div id="mdbook-content" class="content">
                     <main>
-                        <h1 id="zosh"><a class="header" href="#zosh">Zosh</a></h1>
-<p>The trustless privacy bridge for Solana and Zcash.</p>
+                        <h1 id="validators"><a class="header" href="#validators">Validators</a></h1>
+<p>Validators are the consensus nodes in the Zosh network. They run the zoshBFT consensus algorithm and sign bridge transactions using FROST threshold cryptography.</p>
+<h2 id="what-validators-do"><a class="header" href="#what-validators-do">What Validators Do</a></h2>
 <ul>
-<li><strong>Privacy</strong>: Zcash orchard pool integrated.</li>
-<li><strong>Trustless</strong>: No centralized custody, on-chain MPC</li>
-<li><strong>Permissionless</strong>: Any Solana holder can be a validator.</li>
+<li>Participate in zoshBFT consensus (BFT voting, block production)</li>
+<li>Maintain the zosh blockchain state</li>
+<li>Sign blocks with Ed25519 signatures</li>
+<li>Create bridge bundles (batching multiple requests)</li>
+<li>Perform FROST threshold signing for bridge transactions</li>
+<li>Commit signed bundles to zosh blocks</li>
 </ul>
-<h2 id="why-zosh"><a class="header" href="#why-zosh">Why Zosh?</a></h2>
-<div class="table-wrapper">
-<table>
-<thead>
-<tr><th>Bridge</th><th>Privacy</th><th>Open Source</th><th>Trustless</th><th>Permissionless</th><th>Scalability</th></tr>
-</thead>
-<tbody>
-<tr><td>Zosh</td><td>🟢</td><td>🟢</td><td>🟢</td><td>🟢</td><td>🟢</td></tr>
-<tr><td>Near Intents</td><td>🔴</td><td>🟡</td><td>🟡</td><td>🔴</td><td>🟢</td></tr>
-<tr><td>Zenrock</td><td>🟢</td><td>🔴</td><td>🟡</td><td>🔴</td><td>🔴</td></tr>
-</tbody>
-</table>
-</div>
-<h2 id="technical-overview"><a class="header" href="#technical-overview">Technical Overview</a></h2>
-<p>Zosh is a Solana L2 built for Zcash that focus on privacy and scalability.</p>
-<p>Zosh uses a custom consensus algorithm called <a href="/./protocol/zoshbft.html">zoshBFT</a> inspired by Hotstuff and
-its successors. Both the algorithm and networking stack are optimized from the ground up to
-support the unique demands of the crossing chain liquidity and privacy.</p>
-<pre class="mermaid">flowchart LR
-    A[Zcash]
-    B[Solana]
-    C[ZoshBFT &lt;-&gt; State Machine]
-
-    A -.-&gt; |Sync| C
-    B -.-&gt; |Sync| C
-    C --&gt; |Frost| A
-    C --&gt; |Frost| B
-
-    subgraph The Privacy Bridge
-        direction LR
-        A
-        B
-    end
-
-</pre>
-
-<p>zosh state execution is heavily based on external transactions, all confirmed output transactions
-will be committed on chain and finally can be executed by anyone.</p>
+<blockquote>
+<p>Validators must also run <a href="./collectors.html">collectors</a> to monitor external chains for bridge events.</p>
+</blockquote>
+<h2 id="requirements"><a class="header" href="#requirements">Requirements</a></h2>
+<h3 id="infrastructure"><a class="header" href="#infrastructure">Infrastructure</a></h3>
+<ul>
+<li><strong>Storage</strong>: parity-db for blockchain state</li>
+<li><strong>Network</strong>: Stable connection for P2P consensus</li>
+<li><strong>Collectors</strong>: See <a href="./collectors.html">Collectors</a> for chain monitoring requirements</li>
+</ul>
+<h3 id="resources"><a class="header" href="#resources">Resources</a></h3>
+<ul>
+<li>Moderate compute for BFT consensus</li>
+<li>Network I/O for P2P communication</li>
+<li>Storage for blockchain state</li>
+</ul>
+<h2 id="running-a-validator-node"><a class="header" href="#running-a-validator-node">Running a Validator Node</a></h2>
+<p>See <a href="./api/node.html">Node CLI</a> for detailed setup and commands.</p>
+<h2 id="validator-selection"><a class="header" href="#validator-selection">Validator Selection</a></h2>
+<p>Validators are selected as block leaders using VRF (Verifiable Random Function):</p>
+<ul>
+<li>Randomized leader selection prevents predictability</li>
+<li>Fair rotation based on cryptographic randomness</li>
+<li>Timeout conditions for leader rotation if unresponsive</li>
+</ul>
+<p>See <a href="./protocol/zoshbft.html">ZoshBFT</a> for consensus algorithm details.</p>
+<h2 id="economics"><a class="header" href="#economics">Economics</a></h2>
+<p><strong>Current (POC):</strong></p>
+<ul>
+<li>Permissionless - anyone can run a validator</li>
+<li>No staking requirements</li>
+<li>No rewards (testnet only)</li>
+</ul>
+<p><strong>Future:</strong></p>
+<ul>
+<li>Stake SOL to become a validator</li>
+<li>Transaction fees distributed to validators</li>
+<li>Slashing for malicious behavior:
+<ul>
+<li>Providing false bridge event data</li>
+<li>Double-signing</li>
+<li>Extended downtime</li>
+</ul>
+</li>
+</ul>
 
                     </main>
 
                     <nav class="nav-wrapper" aria-label="Page navigation">
                         <!-- Mobile navigation buttons -->
+                            <a rel="prev" href="overview.html" class="mobile-nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                                <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M41.4 233.4c-12.5 12.5-12.5 32.8 0 45.3l160 160c12.5 12.5 32.8 12.5 45.3 0s12.5-32.8 0-45.3L109.3 256 246.6 118.6c12.5-12.5 12.5-32.8 0-45.3s-32.8-12.5-45.3 0l-160 160z"/></svg></span>
+                            </a>
 
-                            <a rel="next prefetch" href="validators.html" class="mobile-nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                            <a rel="next prefetch" href="collectors.html" class="mobile-nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
                                 <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M278.6 233.4c12.5 12.5 12.5 32.8 0 45.3l-160 160c-12.5 12.5-32.8 12.5-45.3 0s-12.5-32.8 0-45.3L210.7 256 73.4 118.6c-12.5-12.5-12.5-32.8 0-45.3s32.8-12.5 45.3 0l160 160z"/></svg></span>
                             </a>
 
@@ -235,8 +249,11 @@ will be committed on chain and finally can be executed by anyone.</p>
             </div>
 
             <nav class="nav-wide-wrapper" aria-label="Page navigation">
+                    <a rel="prev" href="overview.html" class="nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                        <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M41.4 233.4c-12.5 12.5-12.5 32.8 0 45.3l160 160c12.5 12.5 32.8 12.5 45.3 0s12.5-32.8 0-45.3L109.3 256 246.6 118.6c12.5-12.5 12.5-32.8 0-45.3s-32.8-12.5-45.3 0l-160 160z"/></svg></span>
+                    </a>
 
-                    <a rel="next prefetch" href="validators.html" class="nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                    <a rel="next prefetch" href="collectors.html" class="nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
                         <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M278.6 233.4c12.5 12.5 12.5 32.8 0 45.3l-160 160c-12.5 12.5-32.8 12.5-45.3 0s-12.5-32.8 0-45.3L210.7 256 73.4 118.6c-12.5-12.5-12.5-32.8 0-45.3s32.8-12.5 45.3 0l160 160z"/></svg></span>
                     </a>
             </nav>

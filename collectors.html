@@ -3,7 +3,7 @@
     <head>
         <!-- Book generated using mdBook -->
         <meta charset="UTF-8">
-        <title>Overview - Zosh - The trustless privacy bridge</title>
+        <title>Collectors - Zosh - The trustless privacy bridge</title>
 
 
         <!-- Custom HTML head -->
@@ -174,58 +174,78 @@
 
                 <div id="mdbook-content" class="content">
                     <main>
-                        <h1 id="zosh"><a class="header" href="#zosh">Zosh</a></h1>
-<p>The trustless privacy bridge for Solana and Zcash.</p>
+                        <h1 id="collectors"><a class="header" href="#collectors">Collectors</a></h1>
+<p>Collectors are off-chain services that monitor Solana and Zcash for bridge events. Each validator must run their own collectors to independently verify bridge requests.</p>
+<h2 id="why-collectors-are-required"><a class="header" href="#why-collectors-are-required">Why Collectors Are Required</a></h2>
+<p>Validators cannot verify bridge events without off-chain data:</p>
 <ul>
-<li><strong>Privacy</strong>: Zcash orchard pool integrated.</li>
-<li><strong>Trustless</strong>: No centralized custody, on-chain MPC</li>
-<li><strong>Permissionless</strong>: Any Solana holder can be a validator.</li>
+<li>Solana burn transactions require RPC access to verify</li>
+<li>Zcash deposits are in shielded pool (require light wallet scanning)</li>
 </ul>
-<h2 id="why-zosh"><a class="header" href="#why-zosh">Why Zosh?</a></h2>
-<div class="table-wrapper">
-<table>
-<thead>
-<tr><th>Bridge</th><th>Privacy</th><th>Open Source</th><th>Trustless</th><th>Permissionless</th><th>Scalability</th></tr>
-</thead>
-<tbody>
-<tr><td>Zosh</td><td>🟢</td><td>🟢</td><td>🟢</td><td>🟢</td><td>🟢</td></tr>
-<tr><td>Near Intents</td><td>🔴</td><td>🟡</td><td>🟡</td><td>🔴</td><td>🟢</td></tr>
-<tr><td>Zenrock</td><td>🟢</td><td>🔴</td><td>🟡</td><td>🔴</td><td>🔴</td></tr>
-</tbody>
-</table>
-</div>
-<h2 id="technical-overview"><a class="header" href="#technical-overview">Technical Overview</a></h2>
-<p>Zosh is a Solana L2 built for Zcash that focus on privacy and scalability.</p>
-<p>Zosh uses a custom consensus algorithm called <a href="/./protocol/zoshbft.html">zoshBFT</a> inspired by Hotstuff and
-its successors. Both the algorithm and networking stack are optimized from the ground up to
-support the unique demands of the crossing chain liquidity and privacy.</p>
-<pre class="mermaid">flowchart LR
-    A[Zcash]
-    B[Solana]
-    C[ZoshBFT &lt;-&gt; State Machine]
-
-    A -.-&gt; |Sync| C
-    B -.-&gt; |Sync| C
-    C --&gt; |Frost| A
-    C --&gt; |Frost| B
-
-    subgraph The Privacy Bridge
-        direction LR
-        A
-        B
-    end
-
-</pre>
-
-<p>zosh state execution is heavily based on external transactions, all confirmed output transactions
-will be committed on chain and finally can be executed by anyone.</p>
+<blockquote>
+<p><strong>Critical:</strong> Validators MUST run their own collectors. Outsourcing to third parties creates a trust assumption that breaks the security model.</p>
+</blockquote>
+<h2 id="what-collectors-do"><a class="header" href="#what-collectors-do">What Collectors Do</a></h2>
+<h3 id="watching-solana"><a class="header" href="#watching-solana">Watching Solana</a></h3>
+<ul>
+<li>Subscribe to Solana program logs via WebSocket</li>
+<li>Detect <code>BurnEvent</code> emissions (zoZEC → ZEC bridges)</li>
+<li>Parse event data: sender, amount, Zcash recipient</li>
+<li>Submit bridge requests to local mempool</li>
+</ul>
+<h3 id="watching-zcash"><a class="header" href="#watching-zcash">Watching Zcash</a></h3>
+<ul>
+<li>Scan orchard shielded pool using light wallet</li>
+<li>Detect incoming ZEC deposits to bridge address</li>
+<li>Decode transaction memos to extract Solana recipient (32-byte pubkey, base58)</li>
+<li>Blacklist invalid memos</li>
+<li>Submit bridge requests to local mempool</li>
+</ul>
+<h2 id="requirements"><a class="header" href="#requirements">Requirements</a></h2>
+<h3 id="infrastructure"><a class="header" href="#infrastructure">Infrastructure</a></h3>
+<ul>
+<li><strong>Solana RPC</strong>: Self-hosted or third-party (Helius, Quicknode, etc.)</li>
+<li><strong>Zcash lightwalletd</strong>: Connection to Zcash network</li>
+<li><strong>Storage</strong>: Cache for blacklist and processed transactions</li>
+<li><strong>Bridge keys</strong>: Viewing keys for scanning Zcash orchard pool</li>
+</ul>
+<h3 id="resources"><a class="header" href="#resources">Resources</a></h3>
+<ul>
+<li>Network I/O for chain monitoring (primary bottleneck)</li>
+<li>Storage for cache and blacklist</li>
+<li>Minimal compute</li>
+</ul>
+<h2 id="running-collectors"><a class="header" href="#running-collectors">Running Collectors</a></h2>
+<p>Collectors are embedded in the zosh node:</p>
+<pre><code class="language-bash"># Collectors start automatically with the node
+cargo run -p zosh-node -- dev
+</code></pre>
+<p><strong>Configuration</strong> (<code>~/.config/zosh/</code>):</p>
+<ul>
+<li>Solana RPC endpoint</li>
+<li>Zcash lightwalletd server</li>
+<li>Bridge viewing keys</li>
+</ul>
+<p>See <a href="./api/node.html">Node CLI</a> for detailed configuration.</p>
+<h2 id="verification-flow"><a class="header" href="#verification-flow">Verification Flow</a></h2>
+<ol>
+<li>Collector detects bridge event (Solana burn or Zcash deposit)</li>
+<li>Submits to validator’s local mempool</li>
+<li>Validator independently verifies using their collector’s data</li>
+<li>Validator votes on consensus only if their collector confirms the event</li>
+<li>Bridge bundle created only when threshold validators confirm</li>
+</ol>
+<p>This ensures no single point of failure - each validator independently verifies external chain state.</p>
 
                     </main>
 
                     <nav class="nav-wrapper" aria-label="Page navigation">
                         <!-- Mobile navigation buttons -->
+                            <a rel="prev" href="validators.html" class="mobile-nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                                <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M41.4 233.4c-12.5 12.5-12.5 32.8 0 45.3l160 160c12.5 12.5 32.8 12.5 45.3 0s12.5-32.8 0-45.3L109.3 256 246.6 118.6c12.5-12.5 12.5-32.8 0-45.3s-32.8-12.5-45.3 0l-160 160z"/></svg></span>
+                            </a>
 
-                            <a rel="next prefetch" href="validators.html" class="mobile-nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                            <a rel="next prefetch" href="bridge/zcash-to-solana.html" class="mobile-nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
                                 <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M278.6 233.4c12.5 12.5 12.5 32.8 0 45.3l-160 160c-12.5 12.5-32.8 12.5-45.3 0s-12.5-32.8 0-45.3L210.7 256 73.4 118.6c-12.5-12.5-12.5-32.8 0-45.3s32.8-12.5 45.3 0l160 160z"/></svg></span>
                             </a>
 
@@ -235,8 +255,11 @@ will be committed on chain and finally can be executed by anyone.</p>
             </div>
 
             <nav class="nav-wide-wrapper" aria-label="Page navigation">
+                    <a rel="prev" href="validators.html" class="nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                        <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M41.4 233.4c-12.5 12.5-12.5 32.8 0 45.3l160 160c12.5 12.5 32.8 12.5 45.3 0s12.5-32.8 0-45.3L109.3 256 246.6 118.6c12.5-12.5 12.5-32.8 0-45.3s-32.8-12.5-45.3 0l-160 160z"/></svg></span>
+                    </a>
 
-                    <a rel="next prefetch" href="validators.html" class="nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                    <a rel="next prefetch" href="bridge/zcash-to-solana.html" class="nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
                         <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M278.6 233.4c12.5 12.5 12.5 32.8 0 45.3l-160 160c-12.5 12.5-32.8 12.5-45.3 0s-12.5-32.8 0-45.3L210.7 256 73.4 118.6c-12.5-12.5-12.5-32.8 0-45.3s32.8-12.5 45.3 0l160 160z"/></svg></span>
                     </a>
             </nav>

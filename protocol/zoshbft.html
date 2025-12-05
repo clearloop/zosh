@@ -3,7 +3,7 @@
     <head>
         <!-- Book generated using mdBook -->
         <meta charset="UTF-8">
-        <title>Data Sources - Zosh - The trustless privacy bridge</title>
+        <title>ZoshBFT - Zosh - The trustless privacy bridge</title>
 
 
         <!-- Custom HTML head -->
@@ -12,33 +12,33 @@
         <meta name="viewport" content="width=device-width, initial-scale=1">
         <meta name="theme-color" content="#ffffff">
 
-        <link rel="icon" href="favicon-de23e50b.svg">
-        <link rel="shortcut icon" href="favicon-8114d1fc.png">
-        <link rel="stylesheet" href="css/variables-8adf115d.css">
-        <link rel="stylesheet" href="css/general-2459343d.css">
-        <link rel="stylesheet" href="css/chrome-ae938929.css">
-        <link rel="stylesheet" href="css/print-9e4910d8.css" media="print">
+        <link rel="icon" href="../favicon-de23e50b.svg">
+        <link rel="shortcut icon" href="../favicon-8114d1fc.png">
+        <link rel="stylesheet" href="../css/variables-8adf115d.css">
+        <link rel="stylesheet" href="../css/general-2459343d.css">
+        <link rel="stylesheet" href="../css/chrome-ae938929.css">
+        <link rel="stylesheet" href="../css/print-9e4910d8.css" media="print">
 
         <!-- Fonts -->
-        <link rel="stylesheet" href="fonts/fonts-9644e21d.css">
+        <link rel="stylesheet" href="../fonts/fonts-9644e21d.css">
 
         <!-- Highlight.js Stylesheets -->
-        <link rel="stylesheet" id="mdbook-highlight-css" href="highlight-493f70e1.css">
-        <link rel="stylesheet" id="mdbook-tomorrow-night-css" href="tomorrow-night-4c0ae647.css">
-        <link rel="stylesheet" id="mdbook-ayu-highlight-css" href="ayu-highlight-3fdfc3ac.css">
+        <link rel="stylesheet" id="mdbook-highlight-css" href="../highlight-493f70e1.css">
+        <link rel="stylesheet" id="mdbook-tomorrow-night-css" href="../tomorrow-night-4c0ae647.css">
+        <link rel="stylesheet" id="mdbook-ayu-highlight-css" href="../ayu-highlight-3fdfc3ac.css">
 
         <!-- Custom theme stylesheets -->
 
 
         <!-- Provide site root and default themes to javascript -->
         <script>
-            const path_to_root = "";
+            const path_to_root = "../";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "searchindex-a4ca29d1.js";
+            window.path_to_searchindex_js = "../searchindex-fc89b35d.js";
         </script>
         <!-- Start loading toc.js asap -->
-        <script src="toc-37462b22.js"></script>
+        <script src="../toc-2a8adc88.js"></script>
     </head>
     <body>
     <div id="mdbook-help-container">
@@ -105,7 +105,7 @@
             <!-- populated by js -->
             <mdbook-sidebar-scrollbox class="sidebar-scrollbox"></mdbook-sidebar-scrollbox>
             <noscript>
-                <iframe class="sidebar-iframe-outer" src="toc.html"></iframe>
+                <iframe class="sidebar-iframe-outer" src="../toc.html"></iframe>
             </noscript>
             <div id="mdbook-sidebar-resize-handle" class="sidebar-resize-handle">
                 <div class="sidebar-resize-indicator"></div>
@@ -140,7 +140,7 @@
                     <h1 class="menu-title">Zosh - The trustless privacy bridge</h1>
 
                     <div class="right-buttons">
-                        <a href="print.html" title="Print this book" aria-label="Print this book">
+                        <a href="../print.html" title="Print this book" aria-label="Print this book">
                             <span class=fa-svg id="print-button"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M128 0C92.7 0 64 28.7 64 64v96h64V64H354.7L384 93.3V160h64V93.3c0-17-6.7-33.3-18.7-45.3L400 18.7C388 6.7 371.7 0 354.7 0H128zM384 352v32 64H128V384 368 352H384zm64 32h32c17.7 0 32-14.3 32-32V256c0-35.3-28.7-64-64-64H64c-35.3 0-64 28.7-64 64v96c0 17.7 14.3 32 32 32H64v64c0 35.3 28.7 64 64 64H384c35.3 0 64-28.7 64-64V384zm-16-88c-13.3 0-24-10.7-24-24s10.7-24 24-24s24 10.7 24 24s-10.7 24-24 24z"/></svg></span>
                         </a>
 
@@ -174,30 +174,198 @@
 
                 <div id="mdbook-content" class="content">
                     <main>
-                        <h1 id="data-sources"><a class="header" href="#data-sources">Data Sources</a></h1>
-<p>Each zosh node wraps the following data sources:</p>
-<ul>
-<li>Zcash light wallet for indexing/validating the incoming zcash transactions.</li>
-<li>Solana light client for indexing solana side operations.</li>
-</ul>
-<p>It’s currently okay using third-party API to fetch data sources since we’ll submit our results of the data on chain and get validated by other nodes finally.</p>
+                        <h1 id="zoshbft"><a class="header" href="#zoshbft">ZoshBFT</a></h1>
 <blockquote>
-<p>For the long-term plan, each of the nodes will be required to run</p>
-<ul>
-<li>a light client of solana, developed by us.</li>
-<li>a flyclient of zcash, developed by us.</li>
-</ul>
+<p>NOTE: The consensus design is still under research &amp; confirmation, could be changed in the future.</p>
 </blockquote>
+<p>ZoshBFT is Zosh’s BFT consensus algorithm combining <a href="https://arxiv.org/abs/1803.05069">HotStuff</a> for BFT consensus with <a href="https://wiki.polkadot.network/docs/learn-safrole">Safrole</a> (from Polkadot JAM) for VRF-based leader selection. The consensus achieves deterministic finality through 2/3 validator agreement with epoch-based block production.</p>
+<h2 id="design-principles"><a class="header" href="#design-principles">Design Principles</a></h2>
+<ul>
+<li><strong>No fixed block time</strong>: Blocks produced when transactions ready or timeout reached</li>
+<li><strong>VRF leader selection</strong>: Randomized, unpredictable leader rotation</li>
+<li><strong>Threshold signatures</strong>: 2/3 validator consensus for finality</li>
+<li><strong>Timeout-based rotation</strong>: Automatic leader rotation on stalls</li>
+</ul>
+<h2 id="architecture"><a class="header" href="#architecture">Architecture</a></h2>
+<pre class="mermaid">flowchart LR
+    A[Leader Selected&lt;br/&gt;via VRF] --&gt; B[Propose Block]
+    B --&gt; C[Validators&lt;br/&gt;Verify]
+    C --&gt; D{Valid?}
+    D --&gt;|Yes| E[Broadcast Vote]
+    D --&gt;|No| F[Timeout]
+    E --&gt; G{2/3 Threshold?}
+    G --&gt;|Not Yet| H[Wait]
+    G --&gt;|Reached| I[Finalize Block]
+    H --&gt; G
+    F --&gt; J[Next Slot]
+    I --&gt; J
+
+    style I fill:#2d3748,stroke:#48bb78,stroke-width:2px
+</pre>
+
+<h2 id="consensus-state"><a class="header" href="#consensus-state">Consensus State</a></h2>
+<p>The BFT state maintains:</p>
+<ul>
+<li><strong>Validators</strong>: Set of Ed25519 public keys</li>
+<li><strong>Threshold</strong>: Number of signatures required (2/3 of validator count)</li>
+<li><strong>Series</strong>: Randomness series for VRF leader selection</li>
+</ul>
+<p>The state evolves through validator set updates (PoS staking/unstaking in future).</p>
+<h2 id="leader-selection"><a class="header" href="#leader-selection">Leader Selection</a></h2>
+<p>Leaders are selected via VRF (Verifiable Random Function) using an epoch-based mechanism inspired by Safrole:</p>
+<p><strong>Epoch System:</strong></p>
+<ul>
+<li>Leader assignments are fixed for the entire epoch</li>
+<li>Leaders determined in advance during the previous epoch</li>
+<li>VRF tickets submitted by validators to compete for leader slots</li>
+<li>Each slot in the epoch has a predetermined leader</li>
+</ul>
+<p><strong>VRF Process:</strong></p>
+<ol>
+<li>Validators submit VRF tickets during epoch N for epoch N+1</li>
+<li>VRF outputs are evaluated - smallest outputs win leader slots</li>
+<li>Leader schedule for epoch N+1 is finalized at end of epoch N</li>
+<li>During epoch N+1, assigned leaders produce blocks in their designated slots</li>
+<li>VRF output is verifiable by all validators</li>
+</ol>
+<p><strong>Security:</strong></p>
+<ul>
+<li>Leaders predetermined but verifiable prevents targeted DoS</li>
+<li>VRF ensures randomness and fairness in selection</li>
+<li>No validator can manipulate future epoch assignments</li>
+<li>Epoch-based system allows network to prepare for upcoming leaders</li>
+</ul>
+<h2 id="consensus-round"><a class="header" href="#consensus-round">Consensus Round</a></h2>
+<pre class="mermaid">flowchart LR
+    A[Slot N&lt;br/&gt;Assigned Leader] --&gt; B{Leader&lt;br/&gt;Online?}
+    B --&gt;|Yes| C[Propose Block]
+    B --&gt;|No| D[Timeout]
+    C --&gt; E[Validators&lt;br/&gt;Sign]
+    E --&gt; F{2/3?}
+    F --&gt;|Yes| G[Finalize]
+    F --&gt;|No| D
+    D --&gt; H[Slot N+1]
+    G --&gt; H
+
+    style G fill:#2d3748,stroke:#48bb78,stroke-width:2px
+</pre>
+
+<h3 id="round-steps"><a class="header" href="#round-steps">Round Steps</a></h3>
+<ol>
+<li><strong>Slot begins</strong>: Predetermined leader (from epoch VRF schedule) assigned to slot</li>
+<li><strong>Block proposal</strong>: If leader online, packs mempool and proposes block</li>
+<li><strong>Validation</strong>: Validators verify block (parent, state root, accumulator, extrinsic)</li>
+<li><strong>Voting</strong>: Validators broadcast Ed25519 signatures</li>
+<li><strong>Finalization</strong>: Once 2/3 threshold reached, block finalized</li>
+<li><strong>Timeout handling</strong>: If leader offline or 2/3 not reached, timeout expires and skip to next slot</li>
+</ol>
+<p><strong>Leader Failure Handling:</strong></p>
+<ul>
+<li>Leader offline: Timeout expires, slot skipped, next slot’s leader produces block</li>
+<li>Invalid block: Validators reject, timeout expires, move to next slot</li>
+<li>Network partition: Timeout expires if 2/3 signatures not collected</li>
+<li>Chain continues with next slot’s predetermined leader from epoch schedule</li>
+</ul>
+<h2 id="finality"><a class="header" href="#finality">Finality</a></h2>
+<p>ZoshBFT provides deterministic finality through threshold signatures:</p>
+<ul>
+<li>Blocks are only committed once 2/3 validator signatures are collected</li>
+<li>Deterministically final - cannot be reverted</li>
+<li>2/3 validator signatures prevent rollbacks</li>
+<li>All state transitions committed atomically</li>
+</ul>
+<p><strong>Finality Rule:</strong> A block achieves finality immediately upon receiving 2/3 validator signatures.</p>
+<h2 id="timeouts-and-liveness"><a class="header" href="#timeouts-and-liveness">Timeouts and Liveness</a></h2>
+<p>To prevent indefinite stalls, ZoshBFT uses timeout-based leader rotation:</p>
+<p><strong>Timeout Conditions:</strong></p>
+<ul>
+<li>Leader fails to propose block within timeout</li>
+<li>Proposed block is invalid</li>
+<li>Network partition prevents signature aggregation</li>
+</ul>
+<p><strong>Timeout Behavior:</strong></p>
+<ol>
+<li>Validators wait for timeout period</li>
+<li>On timeout, validators move to next slot</li>
+<li>Next slot’s predetermined leader (from epoch schedule) takes over</li>
+<li>New leader proposes block extending current chain</li>
+</ol>
+<p><strong>Liveness Guarantee:</strong> As long as 2/3 validators are online and network connected, chain progresses by achieving 2/3 consensus on each block.</p>
+<h2 id="safety-properties"><a class="header" href="#safety-properties">Safety Properties</a></h2>
+<p>ZoshBFT ensures:</p>
+<ol>
+<li><strong>Agreement</strong>: All honest validators agree on finalized blocks</li>
+<li><strong>Validity</strong>: Only valid state transitions are finalized</li>
+<li><strong>Integrity</strong>: Blocks cannot be altered after finalization</li>
+<li><strong>Liveness</strong>: Chain progresses as long as 2/3 validators online</li>
+</ol>
+<p><strong>Byzantine Tolerance:</strong> Tolerates up to 1/3 Byzantine (malicious or faulty) validators without compromising safety or liveness.</p>
+<h2 id="performance-characteristics"><a class="header" href="#performance-characteristics">Performance Characteristics</a></h2>
+<p><strong>Block Latency:</strong></p>
+<ul>
+<li>Proposal: ~100ms (block authoring + propagation)</li>
+<li>Validation: ~50ms (verification + signature)</li>
+<li>Signature aggregation: ~500ms - 2s (network-dependent)</li>
+<li>Total: ~650ms - 2.15s per block</li>
+</ul>
+<p><strong>Throughput:</strong></p>
+<ul>
+<li>Limited by transaction validation speed</li>
+<li>Bridge bundles: 10 Solana transfers per bundle</li>
+<li>Block size: Configurable based on network capacity</li>
+</ul>
+<h2 id="future-proof-of-stake"><a class="header" href="#future-proof-of-stake">Future: Proof of Stake</a></h2>
+<blockquote>
+<p><strong>Current Status:</strong> PoA (Proof of Authority) with fixed validator set</p>
+</blockquote>
+<p><strong>Planned PoS Migration:</strong></p>
+<ul>
+<li>Validators stake SOL to participate</li>
+<li>Slashing for malicious behavior (invalid blocks, double-signing)</li>
+<li>Rewards from transaction fees</li>
+<li>Dynamic validator set updates</li>
+<li>VRF already supports PoS transition</li>
+</ul>
+<p>See <a href="../validators.html">Validators</a> for economics and staking details.</p>
+<h2 id="comparison-to-base-protocols"><a class="header" href="#comparison-to-base-protocols">Comparison to Base Protocols</a></h2>
+<div class="table-wrapper">
+<table>
+<thead>
+<tr><th>Feature</th><th>HotStuff</th><th>Safrole</th><th>ZoshBFT</th></tr>
+</thead>
+<tbody>
+<tr><td>Consensus</td><td>3-phase BFT</td><td>BABE-based</td><td>HotStuff-inspired</td></tr>
+<tr><td>Leader Selection</td><td>Round-robin</td><td>VRF tickets (ring VRF)</td><td>VRF tickets (epoch-based)</td></tr>
+<tr><td>Block Time</td><td>Dynamic (view-based)</td><td>Constant (6s in JAM)</td><td>Dynamic (slot-based)</td></tr>
+<tr><td>Finality</td><td>After 3 phases</td><td>GRANDPA (separate)</td><td>Immediate with 2/3</td></tr>
+<tr><td>Signatures</td><td>Threshold or individual</td><td>Ring signatures</td><td>Threshold (Ed25519)</td></tr>
+<tr><td>Liveness</td><td>View change protocol</td><td>Fork-free by design</td><td>Timeout-based rotation</td></tr>
+</tbody>
+</table>
+</div>
+<p><strong>Innovations:</strong></p>
+<ul>
+<li>Combines HotStuff’s linear consensus with Safrole’s epoch-based VRF leader selection</li>
+<li>Simplified single-phase voting reduces latency compared to multi-phase HotStuff</li>
+<li>Epoch-based leader scheduling prevents targeted DoS while maintaining verifiability</li>
+<li>Threshold signatures optimized for bridge operations with MPC integration</li>
+</ul>
+<h2 id="related-documentation"><a class="header" href="#related-documentation">Related Documentation</a></h2>
+<ul>
+<li><a href="./block.html">Block</a>: Block structure and validation</li>
+<li><a href="./network.html">Network</a>: Signature propagation and gossip</li>
+<li><a href="../validators.html">Validators</a>: Validator operations and economics</li>
+</ul>
 
                     </main>
 
                     <nav class="nav-wrapper" aria-label="Page navigation">
                         <!-- Mobile navigation buttons -->
-                            <a rel="prev" href="bridge/solana-to-zcash.html" class="mobile-nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                            <a rel="prev" href="../protocol/transaction.html" class="mobile-nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
                                 <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M41.4 233.4c-12.5 12.5-12.5 32.8 0 45.3l160 160c12.5 12.5 32.8 12.5 45.3 0s12.5-32.8 0-45.3L109.3 256 246.6 118.6c12.5-12.5 12.5-32.8 0-45.3s-32.8-12.5-45.3 0l-160 160z"/></svg></span>
                             </a>
 
-                            <a rel="next prefetch" href="zoshbft.html" class="mobile-nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                            <a rel="next prefetch" href="../api/addresses.html" class="mobile-nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
                                 <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M278.6 233.4c12.5 12.5 12.5 32.8 0 45.3l-160 160c-12.5 12.5-32.8 12.5-45.3 0s-12.5-32.8 0-45.3L210.7 256 73.4 118.6c-12.5-12.5-12.5-32.8 0-45.3s32.8-12.5 45.3 0l160 160z"/></svg></span>
                             </a>
 
@@ -207,11 +375,11 @@
             </div>
 
             <nav class="nav-wide-wrapper" aria-label="Page navigation">
-                    <a rel="prev" href="bridge/solana-to-zcash.html" class="nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                    <a rel="prev" href="../protocol/transaction.html" class="nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
                         <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M41.4 233.4c-12.5 12.5-12.5 32.8 0 45.3l160 160c12.5 12.5 32.8 12.5 45.3 0s12.5-32.8 0-45.3L109.3 256 246.6 118.6c12.5-12.5 12.5-32.8 0-45.3s-32.8-12.5-45.3 0l-160 160z"/></svg></span>
                     </a>
 
-                    <a rel="next prefetch" href="zoshbft.html" class="nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                    <a rel="next prefetch" href="../api/addresses.html" class="nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
                         <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M278.6 233.4c12.5 12.5 12.5 32.8 0 45.3l-160 160c-12.5 12.5-32.8 12.5-45.3 0s-12.5-32.8 0-45.3L210.7 256 73.4 118.6c-12.5-12.5-12.5-32.8 0-45.3s32.8-12.5 45.3 0l160 160z"/></svg></span>
                     </a>
             </nav>
@@ -231,17 +399,17 @@
         </script>
 
 
-        <script src="elasticlunr-ef4e11c1.min.js"></script>
-        <script src="mark-09e88c2c.min.js"></script>
-        <script src="searcher-c2a407aa.js"></script>
+        <script src="../elasticlunr-ef4e11c1.min.js"></script>
+        <script src="../mark-09e88c2c.min.js"></script>
+        <script src="../searcher-c2a407aa.js"></script>
 
-        <script src="clipboard-1626706a.min.js"></script>
-        <script src="highlight-abc7f01d.js"></script>
-        <script src="book-a0b12cfe.js"></script>
+        <script src="../clipboard-1626706a.min.js"></script>
+        <script src="../highlight-abc7f01d.js"></script>
+        <script src="../book-a0b12cfe.js"></script>
 
         <!-- Custom JS scripts -->
-        <script src="mermaid-3a6b472a.min.js"></script>
-        <script src="mermaid-init-025d9952.js"></script>
+        <script src="../mermaid-3a6b472a.min.js"></script>
+        <script src="../mermaid-init-025d9952.js"></script>
 
 
 

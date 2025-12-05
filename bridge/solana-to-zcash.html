@@ -35,10 +35,10 @@
             const path_to_root = "../";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "../searchindex-a4ca29d1.js";
+            window.path_to_searchindex_js = "../searchindex-fc89b35d.js";
         </script>
         <!-- Start loading toc.js asap -->
-        <script src="../toc-37462b22.js"></script>
+        <script src="../toc-2a8adc88.js"></script>
     </head>
     <body>
     <div id="mdbook-help-container">
@@ -183,44 +183,69 @@
     /// The amount of the transaction
     amount: u64,
 
-    /// The zcash recipient address (orchard only)
+    /// The zcash recipient address (orchard unified address, 110 chars)
     recipient: String,
 }
 <span class="boring">}</span></code></pre>
-<p>User send the burn instruction to our solana program.</p>
-<h2 id="2-validators-identify-and-pack-the-transaction"><a class="header" href="#2-validators-identify-and-pack-the-transaction">2. Validators identify and pack the transaction</a></h2>
-<p>Same as what we do in the zcash to solana bridging, anyone can submit the
-transaction to zorch, the difference is that for packing this block, we
-need two-round signature aggregation with frost.</p>
+<p>User calls the burn instruction on the Solana program. This is a public action - anyone can burn their own zoZEC.</p>
+<p>The program:</p>
+<ol>
+<li>Burns the zoZEC from the user’s token account</li>
+<li>Emits a <code>BurnEvent</code> with sender, amount, and Zcash recipient</li>
+<li>Collectors watch these events to trigger the bridge process</li>
+</ol>
+<h2 id="2-collectors-detect-and-submit-bridge-requests"><a class="header" href="#2-collectors-detect-and-submit-bridge-requests">2. Collectors detect and submit bridge requests</a></h2>
+<p>Collectors subscribe to Solana program logs and detect <code>BurnEvent</code> emissions:</p>
+<ol>
+<li>Listen to Solana program logs for burn events</li>
+<li>Parse the event to extract sender, amount, and Zcash recipient</li>
+<li>Submit bridge request to zosh mempool</li>
+</ol>
 <pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
 </span><span class="boring">fn main() {
-</span>struct BridgeBundleToZcash {
-    /// The unbridged requests.
-    txs: Vec&lt;(BridgeToZcash, [u8; 32])&gt;,
-
-    /// The orchard bundle of the requests.
-    bundle: OrchardBundle,
-
-    /// The signature of the randomizer.
-    signature: Signature,
+</span>struct Bridge {
+    coin: Coin::Zec,
+    recipient: Vec&lt;u8&gt;,  // Zcash orchard address
+    amount: u64,
+    txid: Vec&lt;u8&gt;,       // Solana burn transaction signature
+    source: Chain::Solana,
+    target: Chain::Zcash,
 }
 <span class="boring">}</span></code></pre>
+<p>Anyone can run a collector - it’s permissionless.</p>
+<h2 id="3-validators-create-and-sign-zcash-transaction"><a class="header" href="#3-validators-create-and-sign-zcash-transaction">3. Validators create and sign Zcash transaction</a></h2>
+<p>Validators collect bridge requests in the mempool and create Zcash transactions:</p>
 <ol>
-<li>Verify signatures of solana transactions</li>
-<li>Select all unbridged solan-to-zcash notes on chain.</li>
-<li>Pack the transactions into an orchard bundle.</li>
-<li>Do the 2-round signature aggregation with frost via p2p.</li>
-<li>Pack the finalized zcash transaction into a new block.</li>
+<li>Bridge requests enter the mempool</li>
+<li>Validators create a Zcash orchard transaction bundle</li>
+<li>FROST threshold signing: Validators perform 2-round signature aggregation to sign the Zcash transaction</li>
+<li>The finalized Zcash transaction is committed to a zosh block</li>
 </ol>
+<pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>struct BridgeBundle {
+    target: Chain::Zcash,
+    bridge: Vec&lt;Bridge&gt;,           // Burn requests
+    data: Vec&lt;u8&gt;,                 // Zcash transaction data
+    signatures: Vec&lt;Vec&lt;u8&gt;&gt;,      // FROST threshold signatures
+}
+<span class="boring">}</span></code></pre>
 <blockquote>
-<p>The selected validator who packs the bundle need also handle the UTXO stuff
-on the zcash side, unspent funds will transfer back to the bridge’s orchard
-address.</p>
+<p>The Zcash transaction is created using the bridge’s orchard wallet. Unspent funds (UTXO change)
+are sent back to the bridge’s orchard address.</p>
 </blockquote>
-<h2 id="3-the-recipient-get-zec-on-zcash"><a class="header" href="#3-the-recipient-get-zec-on-zcash">3. The recipient get ZEC on Zcash</a></h2>
-<p>The raw zcash transaction intrudoced at <code>2.</code> will be stored on chain as well,
-except the selected validator, anyone else can submit it to the zcash network
-as well!</p>
+<h2 id="4-the-recipient-receives-zec-on-zcash"><a class="header" href="#4-the-recipient-receives-zec-on-zcash">4. The recipient receives ZEC on Zcash</a></h2>
+<p>After validators sign the Zcash transaction with FROST, <strong>anyone</strong> can submit it to the Zcash network:</p>
+<ul>
+<li>The user themselves</li>
+<li>A collector/relayer service</li>
+<li>Any third party (permissionless)</li>
+</ul>
+<p>The signed Zcash transaction is stored in the zosh block and can be broadcast by anyone with access to a Zcash node.</p>
+<blockquote>
+<p>No on-chain verification on Zcash is needed - the FROST signature already proves validator consensus.
+Recipients receive ZEC directly to their orchard shielded address.</p>
+</blockquote>
 
                     </main>
 
@@ -230,7 +255,7 @@ as well!</p>
                                 <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M41.4 233.4c-12.5 12.5-12.5 32.8 0 45.3l160 160c12.5 12.5 32.8 12.5 45.3 0s12.5-32.8 0-45.3L109.3 256 246.6 118.6c12.5-12.5 12.5-32.8 0-45.3s-32.8-12.5-45.3 0l-160 160z"/></svg></span>
                             </a>
 
-                            <a rel="next prefetch" href="../data-sources.html" class="mobile-nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                            <a rel="next prefetch" href="../protocol/block.html" class="mobile-nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
                                 <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M278.6 233.4c12.5 12.5 12.5 32.8 0 45.3l-160 160c-12.5 12.5-32.8 12.5-45.3 0s-12.5-32.8 0-45.3L210.7 256 73.4 118.6c-12.5-12.5-12.5-32.8 0-45.3s32.8-12.5 45.3 0l160 160z"/></svg></span>
                             </a>
 
@@ -244,7 +269,7 @@ as well!</p>
                         <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M41.4 233.4c-12.5 12.5-12.5 32.8 0 45.3l160 160c12.5 12.5 32.8 12.5 45.3 0s12.5-32.8 0-45.3L109.3 256 246.6 118.6c12.5-12.5 12.5-32.8 0-45.3s-32.8-12.5-45.3 0l-160 160z"/></svg></span>
                     </a>
 
-                    <a rel="next prefetch" href="../data-sources.html" class="nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                    <a rel="next prefetch" href="../protocol/block.html" class="nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
                         <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M278.6 233.4c12.5 12.5 12.5 32.8 0 45.3l-160 160c-12.5 12.5-32.8 12.5-45.3 0s-12.5-32.8 0-45.3L210.7 256 73.4 118.6c-12.5-12.5-12.5-32.8 0-45.3s32.8-12.5 45.3 0l160 160z"/></svg></span>
                     </a>
             </nav>
