@@ -1,13 +1,29 @@
 # Summary
 
-# Zorch
+# Zosh
 
-- [Intro](./intro.md)
-- [Bridge](./bridge/README.md)
-  - [Zcash to Solana](./bridge/zcash-to-solana.md)
-  - [Solana to Zcash](./bridge/solana-to-zcash.md)
+- [Overview](./overview.md)
+- [Validators](./validators.md)
+- [Collectors](./collectors.md)
 
-# Development
+# Bridge
 
-- [Data Sources](./data-sources.md)
-- [ZoshBFT](./zoshbft.md)
+- [Zcash to Solana](./bridge/zcash-to-solana.md)
+- [Solana to Zcash](./bridge/solana-to-zcash.md)
+
+# Protocol
+
+- [Block](./protocol/block.md)
+- [Bundle](./protocol/bundle.md)
+- [Chain State](./protocol/state.md)
+- [MemPool](./protocol/mempool.md)
+- [Network](./protocol/network.md)
+- [Transaction](./protocol/transaction.md)
+- [ZoshBFT](./protocol/zoshbft.md)
+
+# Reference
+
+- [Addresses](./api/addresses.md)
+- [Node](./api/node.md)
+- [RPC API](./api/rpc.md)
+- [Program API](./api/program.md)
