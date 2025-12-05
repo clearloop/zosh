@@ -35,6 +35,8 @@ flowchart LR
     style H fill:#2c5282,stroke:#63b3ed,stroke-width:2px
 ```
 
+> See [Bundle](./bundle.md) for the complete end-to-end bundling workflow involving collectors, validators, network, and mempool.
+
 ## Signature Aggregation
 
 The bridge pool aggregates threshold signatures before execution:

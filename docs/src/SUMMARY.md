@@ -14,8 +14,10 @@
 # Protocol
 
 - [Block](./protocol/block.md)
-- [MemPool](./protocol/mempool.md)
+- [Bundle](./protocol/bundle.md)
 - [Chain State](./protocol/state.md)
+- [MemPool](./protocol/mempool.md)
+- [Network](./protocol/network.md)
 - [Transaction](./protocol/transaction.md)
 - [ZoshBFT](./protocol/zoshbft.md)
 
