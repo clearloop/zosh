@@ -13,6 +13,7 @@
 
 # Protocol
 
+- [Block](./protocol/block.md)
 - [MemPool](./protocol/mempool.md)
 - [Chain State](./protocol/state.md)
 - [Transaction](./protocol/transaction.md)
