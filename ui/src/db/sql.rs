@@ -43,7 +43,7 @@ impl Database {
 
                 conn.execute(
                     "INSERT OR REPLACE INTO bridges 
-                     (txid, hash, coin, recipient, amount, source, target, block_slot, bundle_hash)
+                     (txid, hash, coin, recipient, amount, source, target, slot, bundle_hash)
                      VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9)",
                     params![
                         &bridge.txid[..],
@@ -68,7 +68,7 @@ impl Database {
 
             conn.execute(
                 "INSERT OR REPLACE INTO receipts 
-                 (txid, anchor, coin, source, target, block_slot)
+                 (txid, anchor, coin, source, target, slot)
                  VALUES (?1, ?2, ?3, ?4, ?5, ?6)",
                 params![
                     &receipt.txid[..],
